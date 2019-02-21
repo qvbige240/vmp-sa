@@ -1,0 +1,73 @@
+sinclude $(TOP)/env.conf
+
+#---------------------------------------------------------------------------
+# Define Toolchains
+#---------------------------------------------------------------------------
+ifeq (1, $(TOOLCHAIN))
+CROSS       ?= mipsel-24kec-linux-uclibc-
+else
+CROSS       ?= 
+endif
+
+XCC			= $(CROSS)gcc
+XCXX		= $(CROSS)g++
+XCPP		= $(CROSS)cpp
+XAR			= $(CROSS)ar
+XLD			= $(CROSS)gcc
+XOBJCOPY	= $(CROSS)objcopy
+XOBJDUMP	= $(CROSS)objdump
+XSTRIP  	= $(CROSS)strip
+XNM	    	= $(CROSS)nm
+XNM		= $(CROSS)nm
+ECHO		= echo
+
+BIN			= $(TOP)/bin
+LIB_DIR		= $(TOP)/lib
+
+
+#---------------------------------------------------------------------------
+# Complier options
+#---------------------------------------------------------------------------
+
+COMMON_FLAGS = -Wall -Wundef -Wsign-compare -Wno-missing-braces -Wstrict-prototypes -O2 -fPIC -ffunction-sections -fdata-sections -msoft-float
+
+ifdef CONFIG_MEMORY_TRACE
+CFLAGS_DEBUG += -g
+endif
+
+ifdef CONFIG_MEMORY_WATCH
+CFLAGS_DEBUG += -DMEMWATCH -DMW_STDIO -DMW_PTHREADS
+endif
+
+#
+# Build mode
+#
+ifdef CONFIG_BUILD_RELEASE
+COMMON_FLAGS += -O2
+endif
+ifdef CONFIG_BUILD_DEBUG
+COMMON_FLAGS += -O0 -ggdb
+endif
+
+INCLUDE_DIR	= -I$(TOP)/include
+
+
+#---------------------------------------------------------------------------
+# Linker options
+#---------------------------------------------------------------------------
+LIBS = -lm  -ldl -lstdc++ -lpthread -lz
+
+LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
+
+LIB_EVENT += $(LIB_DIR)/libevent.a
+LIB_THREADPOOL += $(LIB_DIR)/libthreadpool.a
+LIB_BLL += $(LIB_DIR)/libbll.a
+LIB_MW += $(LIB_DIR)/libmw.a
+LIB_SERVER += $(LIB_DIR)/libserver.a
+
+STATIC_LIBS += $(LIB_EVENT)
+STATIC_LIBS += $(LIB_THREADPOOL)
+STATIC_LIBS += $(LIB_BLL)
+STATIC_LIBS += $(LIB_MW)
+STATIC_LIBS += $(LIB_SERVER)
+

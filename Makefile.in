@@ -1,0 +1,126 @@
+.PHONY: all dis clean force
+
+ifeq (1,$(SHARED_LIB))
+COMMON_FLAGS += -fPIC -DSHARED_LIB
+#LDFLAGS += -shared #-rdynamic -nostartfiles
+endif
+
+INCLUDE_DIR += $(LOCAL_INCLUDE)
+
+CFLAGS		+= $(COMMON_FLAGS) $(INCLUDE_DIR) $(CFLAGS_DEBUG)
+CPPFLAGS	+= $(INCLUDE_DIR)
+CXXFLAGS	+= $(COMMON_FLAGS) $(INCLUDE_DIR)
+
+LDFLAGS		+= -Wl,--gc-sections -msoft-float -L$(LIB_DIR) -L$(DEPEND_DIR)/lib -Wl,--warn-common
+
+#---------------------------------------------------------------------------
+# Implicit rules
+#---------------------------------------------------------------------------
+OBJ=obj/obj
+$(OBJ)/%.o: $(OBJ)/%.d
+
+$(OBJ)/%.d: %.c
+	@mkdir -p $(dir $@)
+	@$(ECHO) "   [DEP] $<"
+	@$(XCC) -MM -MT '$(@:.d=.o) $@' $(CFLAGS) -o $@ $<
+
+$(OBJ)/%.d: %.S
+	echo "1"
+	@mkdir -p $(dir $@)
+	@$(XCC) -MM -MT $(@:.d=.o) $(CFLAGS) -o $@ $<
+
+$(OBJ)/%.d: %.cpp
+	@mkdir -p $(dir $@)
+	@$(XCC) -MM -MT $(@:.d=.o) $(CXXFLAGS) -o $@ $<
+
+$(OBJ)/%.o: %.c
+	@$(ECHO) "     [$(XCC)] $<"
+	@$(XCC) -c $(CFLAGS) -o $@ $<
+
+$(OBJ)/%.o: %.S
+	@$(ECHO) "     [S] $<"
+	@$(XCC) -c $(CFLAGS) -o $@ $<
+
+$(OBJ)/%.o: %.cpp
+	@$(ECHO) "   [$(XCXX)] $<"
+	@$(XCC) -c $(CXXFLAGS) -o $@ $<
+
+#---------------------------------------------------------------------------
+# Explicit ruls
+#---------------------------------------------------------------------------
+OBJS_RSRC := $(addprefix $(OBJ)/,$(RSRCXXXX:%.c=%.o))
+OBJS := $(SOURCES:%.c=%.o)
+OBJS := $(OBJS:%.cpp=%.o)
+OBJS := $(OBJS:%.S=%.o)
+OBJS := $(addprefix $(OBJ)/,$(OBJS))
+OBJS := $(OBJS_RSRC) $(OBJS)
+
+DEPENDS := $(OBJS:.o=.d)
+
+LINK_OBJS := $(OBJS) $(OBJS_MOD)
+
+all: $(TARGET) $(TARGET_DAEMON)
+
+ifneq ($(APP),Y)
+ifneq ($(WHOLE_ARCHIVE),Y)
+$(TARGET): $(LINK_OBJS) force
+#ifeq (1,$(SHARED_LIB))
+	@$(ECHO) "    [SO] $@.so"
+#	@$(XCC) -shared -Wl,-soname,$(shell basename $@.so) -o $@.so $(OBJS) $(DEP_LIBS)
+	@$(XCC) -shared -Wl,-soname,$(shell basename $@ .a).so -o $@.so $(OBJS) $(DEP_LIBS)
+#	need to remove when sMedio modify the name of dlopen()
+	@rm -f $(shell dirname $@)/$(shell basename $@ .a).so
+#	@ln $@.so $(shell dirname $@)/$(shell basename $@ .a).so
+	@mv $@.so $(shell dirname $@)/$(shell basename $@ .a).so
+#else
+	@$(ECHO) "    [AR] $@"
+	@$(XAR) rcs $@ $(OBJS)
+#	@$(XAR) ru $@ $(OBJS)
+#endif
+else
+$(TARGET): $(LINK_OBJS) force
+	@rm $(TARGET) -fr
+	@$(ECHO) " [AR WA] $@"
+	@$(XAR) -cur $(LOCAL_LIB) $(LINK_OBJS)
+	@$(XCC) -Wl,-r,--whole-archive -o $(LOCAL_OBJ) $(LOCAL_LIB) -Wl,--no-whole-archive
+	mv $(LOCAL_OBJ) $(TARGET)
+	rm $(LOCAL_LIB)
+endif
+else
+$(TARGET): $(LINK_OBJS) $(LOCAL_LIBS) force
+ifeq (1,$(SHARED_LIB))
+	@$(ECHO) "  [LINK(dynamic)] $(BIN)/$@"
+#	@$(XCC) $(LDFLAGS) $(LOCAL_LIBS) $(LIBS)  $(OBJS) -o $(BIN)/$@ $(LIBS_SYSTEM)
+	@$(XLD) $(LDFLAGS) -Wl,-Map,$(BIN)/$@.map -Wl,--start-group $(SMEDIO_LIB) $(LOCAL_LIBS)  $(OBJS)  $(TIMA_LIBS) -Wl,--end-group -o $(BIN)/$@ $(LIBS) $(LIBS_SYSTEM)
+else
+	@$(ECHO) "  [LINK(static)] $(BIN)/$@"
+	@$(XLD) $(LDFLAGS) -Wl,-Map,$(BIN)/$@.map -Wl,--start-group $(SMEDIO_LIB) $(LOCAL_LIBS)  $(OBJS)  $(STATIC_LIBS) -Wl,--end-group -o $(BIN)/$@ $(LIBS) $(LIBS_SYSTEM)
+endif
+	@$(XSTRIP) $(TARGET)
+	#cp $(TARGET) $(BIN)
+endif
+
+$(OBJS_RSRC): $(OBJ)/%.o: %.c
+	@$(ECHO) "[RSRC C] $<"
+	@$(XCC) -c  $(CFLAGS) -o $@ $<
+	@$(RENAMESECTION) $(XOBJDUMP) $(XOBJCOPY) .rodata .m_resource.data $(OBJ)/$*.o
+	@$(RENAMESECTION) $(XOBJDUMP) $(XOBJCOPY) .data .m_resource.data $(OBJ)/$*.o
+
+dis:
+	@$(ECHO) "[DISASM] $(TARGET).text"
+	@cp $(BIN)/$(TARGET) $(BIN)/__tmp_$(TARGET)_tmp__
+	@$(XOBJCOPY) -g $(BIN)/$(TARGET)
+	@$(XOBJDUMP) -CDhpr $(BIN)/$(TARGET) > $(BIN)/$(TARGET).text
+	@mv $(BIN)/__tmp_$(TARGET)_tmp__ $(BIN)/$(TARGET)
+	@$(XNM) -C $(BIN)/$(TARGET) > $(BIN)/$(TARGET).symbol
+
+clean:
+	@$(ECHO) " [CLEAN]"
+	@rm -f $(DEPENDS) $(OBJS) $(TARGET)* $(TARGET_DAEMON)
+ifneq ($(OBJ),.)
+	@rm -rf $(OBJ)
+endif
+
+ifneq ($(MAKECMDGOALS),clean)
+sinclude $(DEPENDS)
+endif
