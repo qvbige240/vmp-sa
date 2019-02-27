@@ -31,6 +31,15 @@ LIB_DIR		= $(TOP)/lib
 
 COMMON_FLAGS = -Wall -Wundef -Wsign-compare -Wno-missing-braces -Wstrict-prototypes -O2 -fPIC -ffunction-sections -fdata-sections -msoft-float
 
+COMMON_FLAGS += -DUSE_ZLOG
+
+
+ifeq (1,$(DEBUG_MODE))
+CFLAGS_DEBUG += -g -O0 -DDEBUG
+XSTRIP      = echo "  [NO STRIP]"
+endif
+
+	
 ifdef CONFIG_MEMORY_TRACE
 CFLAGS_DEBUG += -g
 endif
@@ -57,17 +66,32 @@ INCLUDE_DIR	= -I$(TOP)/include
 #---------------------------------------------------------------------------
 LIBS = -lm  -ldl -lstdc++ -lpthread -lz
 
-LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
+#LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 
-LIB_EVENT += $(LIB_DIR)/libevent.a
-LIB_THREADPOOL += $(LIB_DIR)/libthreadpool.a
-LIB_BLL += $(LIB_DIR)/libbll.a
-LIB_MW += $(LIB_DIR)/libmw.a
-LIB_SERVER += $(LIB_DIR)/libserver.a
+DEPEND_DIR      = $(TOP)/depends/x86/install
 
-STATIC_LIBS += $(LIB_EVENT)
-STATIC_LIBS += $(LIB_THREADPOOL)
-STATIC_LIBS += $(LIB_BLL)
-STATIC_LIBS += $(LIB_MW)
-STATIC_LIBS += $(LIB_SERVER)
 
+INCLUDE_DIR     += -I$(DEPEND_DIR)/include
+
+
+LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
+LIB_EVENT       = $(LIB_DIR)/libevent.a
+LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
+
+LIB_VMP         = $(LIB_DIR)/libvmp.a
+LIB_SUPPORT     = $(LIB_DIR)/libsupport.a
+LIB_BLL         = $(LIB_DIR)/libbll.a
+LIB_MW          = $(LIB_DIR)/libmw.a
+LIB_SERVER      = $(LIB_DIR)/libserver.a
+
+
+STATIC_LIBS     += $(LIB_ZLOG)
+STATIC_LIBS     += $(LIB_EVENT)
+STATIC_LIBS     += $(LIB_THREADPOOL)
+STATIC_LIBS     += $(LIB_VMP)
+STATIC_LIBS     += $(LIB_SUPPORT)
+STATIC_LIBS     += $(LIB_BLL)
+STATIC_LIBS     += $(LIB_MW)
+STATIC_LIBS     += $(LIB_SERVER)
+
+DEP_LIBS        += $(LIB_ZLOG)

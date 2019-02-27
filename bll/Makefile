@@ -14,8 +14,10 @@ LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
 	-I$(ROOT_DIR)/include/	\
+	-I$(ROOT_DIR)/include/vmp/ \
 	-I$(ROOT_DIR)/include/common/  \
 	-I$(ROOT_DIR)/include/threadpool/  \
+	-I$(ROOT_DIR)/include/mw/support/ \
 	-I$(ROOT_DIR)/include/bll/	\
 	-I$(ROOT_DIR)/include/mw/ 	\
 

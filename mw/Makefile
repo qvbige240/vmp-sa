@@ -4,7 +4,7 @@ endif
 
 include $(TOP)/make.include
 
-DIRS = common server
+DIRS = common support server
 
 .PHONY:	all clean $(DIRS)
 

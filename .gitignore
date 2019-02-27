@@ -18,10 +18,10 @@ obj/
 *.lo
 *.la
 *.o.*
-#*.a
+*.a
 *.s
 *.ko
-#*.so
+*.so
 *.so.dbg
 *.mod.c
 *.i
@@ -31,6 +31,7 @@ obj/
 # vs 
 #
 *.ncb
+solution/vmp/
 
 #
 # Top-level generic files

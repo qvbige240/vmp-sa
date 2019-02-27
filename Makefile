@@ -2,7 +2,7 @@ TOP=.
 include $(TOP)/env.conf
 include $(TOP)/make.include
 
-DIRS = common mw bll
+DIRS = vmp common mw bll
 
 APP_DIR =  app
 ALL_DIRS = $(DIRS) $(APP_DIR)
