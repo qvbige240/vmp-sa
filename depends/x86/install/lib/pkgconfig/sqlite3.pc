@@ -1,0 +1,13 @@
+# Package Information for pkg-config
+
+prefix=/media/zouqing/9d0165e6-5910-46c0-9389-cb9a7e7b899b/zouqing/work/auto/src/../premake/x86/install
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: SQLite
+Description: SQL database engine
+Version: 3.19.3
+Libs: -L${libdir} -lsqlite3
+Libs.private: -ldl -lpthread 
+Cflags: -I${includedir}
