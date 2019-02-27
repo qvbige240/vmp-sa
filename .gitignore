@@ -1,0 +1,83 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# Normal rules
+#
+*tmp
+*bak
+*.swp
+*.db
+*.log
+*~
+obj/
+
+.*
+*.o
+*.lo
+*.la
+*.o.*
+*.a
+*.s
+*.ko
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.lst
+*.symtypes
+#
+# vs 
+#
+*.ncb
+
+#
+# Top-level generic files
+#
+tags
+TAGS
+vmlinux*
+!vmlinux.lds.S
+System.map
+Module.symvers
+*.map
+!.gitignore
+
+
+#
+# Generated include files
+#
+
+
+# stgit generated dirs
+
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+
+*.orig
+*.rej
+
+#automake
+libtool
+ltmain.sh
+config*
+!configure.in
+!configure.ac
+aclocal.m4
+depcomp
+install-sh
+Makefile*
+!Makefile.am
+missing
+stamp-h1
+
+autom4te.cache/
+autoscan.log
+compile
+
+¸´¼þ*
