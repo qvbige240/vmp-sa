@@ -25,7 +25,8 @@ typedef struct h264_meta_t
 } h264_meta_t;
 
 
-int h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_t *meta);
+size_t h264_nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t *nalu);
+size_t h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_t *meta);
 
 TIMA_END_DELS
 

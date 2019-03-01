@@ -8,6 +8,7 @@
 #define TIMA_SUPPORT_H
 
 #include "tima_logs.h"
+#include "tima_buffer.h"
 
 
 #endif // TIMA_SUPPORT_H

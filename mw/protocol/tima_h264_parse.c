@@ -25,7 +25,7 @@ static inline size_t find_start_code(const char *buf)
 	return 0;
 }
 
-static int nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t *nalu)
+static size_t nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t *nalu)
 {
 	size_t start = 0;
 	if (offset < size) {
@@ -39,7 +39,7 @@ static int nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t
 		}
 
 		if (start == 0) {
-			VMP_LOGW("can't find 00 00 01");
+			//VMP_LOGW("can't find 00 00 01");
 			return 0;
 		}
 
@@ -60,7 +60,12 @@ static int nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t
 	return 0;
 }
 
-int h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_t *meta)
+size_t h264_nalu_read(const char *buffer, size_t size, size_t offset, h264_nalu_t *nalu)
+{
+	return nalu_read(buffer, size, offset, nalu);
+}
+
+size_t h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_t *meta)
 {
 	size_t pos = offset, len = 0;
 	h264_nalu_t sps, pps;
@@ -69,7 +74,7 @@ int h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_
 	if (len == 0) {
 		VMP_LOGE("h264 meta header format error: %02x %02x %02x %02x.", 
 		buffer[offset+0], buffer[offset+1], buffer[offset+2], buffer[offset+3]);
-		return -1;
+		return 0;
 	}
 
 	pos = offset + len;
@@ -83,7 +88,7 @@ int h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_
 		meta->data = calloc(1, meta->size);
 		if (!meta->data) {
 			VMP_LOGE("calloc error.");
-			return -1;
+			return 0;
 		}
 
 		if (sps.nalu_type == 0x07) {
@@ -100,5 +105,5 @@ int h264_metadata_get(const char *buffer, size_t size, size_t offset, h264_meta_
 		VMP_LOGI("metadata size: %d", meta->size);
 	}
 
-	return 0;
+	return pos;
 }

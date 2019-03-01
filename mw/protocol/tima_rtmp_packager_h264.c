@@ -12,7 +12,12 @@ typedef struct _PrivInfo
 
 } PrivInfo;
 
-static RTMPPacket	rtmp_data_pack(TimaRTMPPackager* thiz, char* buf, const char* data, int length)
+static int rtmp_body_length(int length) 
+{ 
+	return length + 5 + 4 + RTMP_MAX_HEADER_SIZE; 
+}
+
+static RTMPPacket	rtmp_data_pack(/*TimaRTMPPackager* thiz, */char* buf, const char* data, int length)
 {
 	char *body = buf + RTMP_MAX_HEADER_SIZE;
 
@@ -45,7 +50,7 @@ static RTMPPacket	rtmp_data_pack(TimaRTMPPackager* thiz, char* buf, const char* 
 	return packet;
 }
 
-static RTMPPacket	rtmp_metadata(TimaRTMPPackager* thiz, char* buf, const char* data, int length)
+static RTMPPacket	rtmp_metadata(/*TimaRTMPPackager* thiz, */char* buf, const char* data, int length)
 {
 	char *body = buf + RTMP_MAX_HEADER_SIZE;
 
@@ -96,8 +101,9 @@ TimaRTMPPackager* tima_h264_rtmp_create(void)
 	{
 		//DECL_PRIV(thiz, priv);
 
-		thiz->data_pack		= rtmp_data_pack;
+		thiz->body_len		= rtmp_body_length;
 		thiz->meta_pack		= rtmp_metadata;
+		thiz->data_pack		= rtmp_data_pack;
 		thiz->destory		= rtmp_packager_destory;
 	}
 

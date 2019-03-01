@@ -24,6 +24,7 @@ TimaRTMPPublisher* tima_rtmp_create(const char *url)
 	DECL_PRIV(thiz, priv);
 	RTMP_Init(&priv->rtmp);
 	RTMP_LogSetLevel(RTMP_LOGWARNING);
+	//RTMP_LogSetLevel(RTMP_LOGDEBUG);
 	thiz->url = strdup(url);
 
 	return thiz;
@@ -70,7 +71,9 @@ int tima_rtmp_send(TimaRTMPPublisher *publisher, RTMPPacket *packet, unsigned in
 	}
 
 	packet->m_nInfoField2 = priv->rtmp.m_stream_id;
-	packet->m_nTimeStamp = timestamp & 0xffffff;
+
+	packet->m_nTimeStamp = RTMP_GetTime() & 0xffffff;
+	//packet->m_nTimeStamp = timestamp & 0xffffff;
 	//packet->m_nTimeStamp = timestamp;
 
 	if (!RTMP_IsConnected(&priv->rtmp)) {

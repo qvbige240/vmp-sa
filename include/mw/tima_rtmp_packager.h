@@ -15,14 +15,16 @@ TIMA_BEGIN_DELS
 struct TimaRTMPPackager;
 typedef struct TimaRTMPPackager TimaRTMPPackager;
 
-typedef RTMPPacket	(*TimaRTMPDataPack)(TimaRTMPPackager* thiz, char* buf, const char* data, int length);
-typedef RTMPPacket	(*TimaRTMPMetaPack)(TimaRTMPPackager* thiz, char* buf, const char* data, int length);
+typedef int			(*TimaRTMPBodyLength)(int length);
+typedef RTMPPacket	(*TimaRTMPDataPack)(/*TimaRTMPPackager* thiz, */char* buf, const char* data, int length);
+typedef RTMPPacket	(*TimaRTMPMetaPack)(/*TimaRTMPPackager* thiz, */char* buf, const char* data, int length);
 typedef void		(*TimaRTMPPackagerDestory)(TimaRTMPPackager* thiz);
 
 struct TimaRTMPPackager
 {
-	TimaRTMPDataPack			data_pack;
+	TimaRTMPBodyLength			body_len;
 	TimaRTMPMetaPack			meta_pack;
+	TimaRTMPDataPack			data_pack;
 	TimaRTMPPackagerDestory		destory;
 
 	char priv[ZERO_LEN_ARRAY];

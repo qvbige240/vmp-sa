@@ -16,6 +16,7 @@
 #include "tima_support.h"
 
 #include "bll.h"
+#include "bll_rtmp_stream_demo.h"
 #include "context.h"
 #include "ThreadPool.h"
 #include "tcpserver.h"
@@ -71,6 +72,8 @@ void bll_init(void)
 	tima_log_init(0);
 	context_init();
 	tcpserver_init();
+
+	bll_demo_init();
 }
 
 int bll_cond(void)

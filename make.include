@@ -65,7 +65,7 @@ INCLUDE_DIR	+= -I/usr/include
 #---------------------------------------------------------------------------
 # Linker options
 #---------------------------------------------------------------------------
-LIBS = -lm  -ldl -lstdc++ -lpthread -lz
+LIBS = -lrtmp -lm  -ldl -lstdc++ -lpthread -lz
 
 #LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 

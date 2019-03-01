@@ -29,6 +29,7 @@ static int flag_audio = 0;
 
 size_t hander_packet(const unsigned char* packet, int copy_len);
 void parser_h264_bitstream (const unsigned char *data_buf, int len);
+extern int bll_demo_proc(const char* buf, size_t size, long long timestamp);
 
 void server_on_event(struct bufferevent* bev, short event, void* arg)
 {
@@ -51,12 +52,12 @@ void server_on_event(struct bufferevent* bev, short event, void* arg)
     }
     bufferevent_free(bev);
 }
-
+#if 0
 static void server_on_read(struct bufferevent* bev,void* arg)
 {
     struct evbuffer* input = bufferevent_get_input(bev);
-    size_t len = 0;
-    len = evbuffer_get_length(input);
+    //size_t len = 0;
+    //len = evbuffer_get_length(input);
 
     if (flag_audio)
     {
@@ -81,15 +82,15 @@ static void server_on_read(struct bufferevent* bev,void* arg)
                           | pre_buf[16+4] << 24 | pre_buf[16+5] << 16
                           | pre_buf[16+6] << 8 | pre_buf[16+7];
 
-    printf("timestamp: %lld, ", timestamp);
-    int ii = 0;
-    for (ii = 0; ii < 8; ii++)
-    {
-        printf("%02x ", pre_buf[16+ii]);
-    }
+    //printf("timestamp: %lld, ", timestamp);
+    //int ii = 0;
+    //for (ii = 0; ii < 8; ii++)
+    //{
+    //    printf("%02x ", pre_buf[16+ii]);
+    //}
 
-    printf("#[15]=%02x,[28]=%02x,[29]=%02x,channelid=%d, copy_len=%d, packet_len=%d\n",
-           pre_buf[15],pre_buf[28],pre_buf[29],pre_buf[14], copy_len, packet_len);
+    //printf("#[15]=%02x,[28]=%02x,[29]=%02x,channelid=%d, copy_len=%d, packet_len=%d\n",
+    //       pre_buf[15],pre_buf[28],pre_buf[29],pre_buf[14], copy_len, packet_len);
 
 
     if ((pre_buf[15]& 0xf0) == 0x30)
@@ -116,10 +117,87 @@ static void server_on_read(struct bufferevent* bev,void* arg)
     }
 
     evbuffer_remove(input, pre_buf,packet_len); // clear the buffer
-    parser_h264_bitstream(pre_buf, packet_len);
+    //parser_h264_bitstream(pre_buf, packet_len);
+
+
+	if (pre_buf[14] == 1)
+		bll_demo_proc(pre_buf+30, packet_len-30, timestamp);
+
     return;
 }
+#else
+static void server_on_read(struct bufferevent* bev,void* arg)
+{
+	struct evbuffer* input = bufferevent_get_input(bev);
+	size_t len = evbuffer_get_length(input);
 
+	if (flag_audio)
+	{
+		if (audio_buf_len > 0)
+		{
+			size_t ret_len = evbuffer_remove(input, pre_buf, audio_buf_len);
+			audio_buf_len -= ret_len;
+			printf("audio_buf_len=%d, ret_len=%d\n", audio_buf_len, ret_len);
+			return;
+		}
+		else
+		{
+			flag_audio = 0;
+		}
+	}
+
+
+	do 	 
+	{
+
+		size_t copy_len = evbuffer_copyout(input, pre_buf, 1024);
+		size_t packet_len = hander_packet(pre_buf, copy_len);
+
+		long long timestamp = pre_buf[16] << 56 | pre_buf[16+1] << 48
+			| pre_buf[16+2] << 40 | pre_buf[16+3] << 32
+			| pre_buf[16+4] << 24 | pre_buf[16+5] << 16
+			| pre_buf[16+6] << 8 | pre_buf[16+7];
+
+		// for audio
+		if ((pre_buf[15]& 0xf0) == 0x30)
+		{
+			flag_audio = 1;
+			audio_buf_len = packet_len;
+			if (packet_len > 980)
+			{
+				evbuffer_remove(input, pre_buf, 980);
+				audio_buf_len -= 950;
+			}
+			else
+			{
+				evbuffer_remove(input, pre_buf, packet_len);
+				audio_buf_len = audio_buf_len - packet_len - 30;
+			}
+			return;
+		}
+
+		if (packet_len > 980)
+		{
+			packet_len = 980;
+			printf("#packet_len > 980\n");
+		}
+
+		if (copy_len < packet_len)
+			break;
+
+		evbuffer_remove(input, pre_buf, packet_len); // clear the buffer
+
+		if (pre_buf[14] == 1)
+			bll_demo_proc(pre_buf+30, packet_len-30, timestamp);
+
+		len -= packet_len;
+		
+
+	} while (len > 0);
+
+	return;
+}
+#endif
 
 void server_on_accept(struct evconnlistener* listener,evutil_socket_t fd,struct sockaddr *address,int socklen,void *arg)
 {
