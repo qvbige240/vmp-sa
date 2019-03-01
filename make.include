@@ -59,6 +59,7 @@ COMMON_FLAGS += -O0 -ggdb
 endif
 
 INCLUDE_DIR	= -I$(TOP)/include
+INCLUDE_DIR	+= -I/usr/include
 
 
 #---------------------------------------------------------------------------
@@ -80,6 +81,7 @@ LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
 
 LIB_VMP         = $(LIB_DIR)/libvmp.a
 LIB_SUPPORT     = $(LIB_DIR)/libsupport.a
+LIB_PROTOCOL    = $(LIB_DIR)/libprotocol.a
 LIB_BLL         = $(LIB_DIR)/libbll.a
 LIB_MW          = $(LIB_DIR)/libmw.a
 LIB_SERVER      = $(LIB_DIR)/libserver.a
@@ -90,6 +92,7 @@ STATIC_LIBS     += $(LIB_EVENT)
 STATIC_LIBS     += $(LIB_THREADPOOL)
 STATIC_LIBS     += $(LIB_VMP)
 STATIC_LIBS     += $(LIB_SUPPORT)
+STATIC_LIBS     += $(LIB_PROTOCOL)
 STATIC_LIBS     += $(LIB_BLL)
 STATIC_LIBS     += $(LIB_MW)
 STATIC_LIBS     += $(LIB_SERVER)

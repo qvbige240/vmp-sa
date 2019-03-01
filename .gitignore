@@ -12,6 +12,8 @@
 *.log
 *~
 obj/
+solution/vmp
+bin/
 
 .*
 *.o
