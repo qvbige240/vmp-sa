@@ -74,7 +74,7 @@ config*
 aclocal.m4
 depcomp
 install-sh
-Makefile*
+#Makefile*
 !Makefile.am
 missing
 stamp-h1
