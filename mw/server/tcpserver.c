@@ -71,6 +71,26 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 	return ret;
 }
 
+#define BCD_PARSE(c)		(((c & 0xf0) >> 4) * 10 + (c & 0x0f))
+
+static unsigned long long simno_get(unsigned char *bcd)
+{
+	unsigned long long num = 0;
+	unsigned char *ptr = bcd;
+	int i = 0;
+	//printf("bcd: ");
+	for (i = 0; i < 6; i++)
+	{
+		unsigned digital = BCD_PARSE(*(ptr+i));
+		num = num * 100 + digital;
+		//printf("%02x ", *(ptr+i));
+	}
+	//printf("\nparsed: %lld\n", num);
+
+	return num;
+}
+
+
 #if 0
 static void server_on_read(struct bufferevent* bev,void* arg)
 {
@@ -163,7 +183,7 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 
 	return;
 }
-#else
+#elif 0
 static void server_on_read(struct bufferevent* bev,void* arg)
 {
 	struct evbuffer* input = bufferevent_get_input(bev);
@@ -227,6 +247,56 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 
 		if (pre_buf[14] == 1)
 			bll_demo_proc(pre_buf+30, packet_len-30, timestamp);
+
+		len -= packet_len;
+
+
+	} while (len > 0);
+
+	return;
+}
+#else
+
+
+static void server_on_read(struct bufferevent* bev,void* arg)
+{
+	struct evbuffer* input = bufferevent_get_input(bev);
+	size_t len = evbuffer_get_length(input);
+
+	do 	 
+	{
+		size_t copy_len = evbuffer_copyout(input, pre_buf, 1024);
+		size_t packet_len = hander_packet(pre_buf, copy_len);
+
+		unsigned long long sim_num = simno_get(pre_buf+8);
+
+		long long timestamp = pre_buf[16] << 56 | pre_buf[16+1] << 48
+			| pre_buf[16+2] << 40 | pre_buf[16+3] << 32
+			| pre_buf[16+4] << 24 | pre_buf[16+5] << 16
+			| pre_buf[16+6] << 8 | pre_buf[16+7];
+
+		if (packet_len > 980)
+		{
+			packet_len = 980;
+			printf("#packet_len > 980\n");
+		}
+
+		if (copy_len < packet_len)
+			break;
+
+		evbuffer_remove(input, pre_buf, packet_len); // clear the buffer
+
+		// for audio
+		if ((pre_buf[15]& 0xf0) == 0x30)
+		{
+			parser_h264_bitstream(pre_buf, packet_len);
+		}
+		else 
+		{
+			if (pre_buf[14] == 1)
+				bll_demo_proc(pre_buf+30, packet_len-30, sim_num);
+
+		}
 
 		len -= packet_len;
 
@@ -339,9 +409,14 @@ void parser_h264_bitstream (const unsigned char *data_buf, int len)
 
 size_t hander_packet(const unsigned char* packet, int copy_len)
 {
+	size_t data_len = 0;
 	if (packet[0] == 0x30 && packet[1] == 0x31 && packet[2] == 0x63 && packet[3] == 0x64)
 	{
-		size_t data_len = packet[29] | packet[28] << 8;
+		int is_audio = ((packet[15]& 0xf0) == 0x30);
+		if (is_audio)
+			data_len = packet[28] * 2;
+		else
+			data_len = packet[29] | packet[28] << 8;
 		return data_len + 30;
 	}
 	else
