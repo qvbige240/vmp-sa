@@ -24,11 +24,10 @@ Description :
 
 static unsigned char pre_buf[102400] = {0};
 static size_t audio_buf_len;
-static unsigned char* tmp_buff;
 static int flag_audio = 0;
 
 size_t hander_packet(const unsigned char* packet, int copy_len);
-void parser_h264_bitstream (const unsigned char *data_buf, int len);
+void save_h264_bitstream (const unsigned char *data_buf, int len);
 extern int bll_demo_proc(const char* buf, size_t size, long long timestamp);
 
 void server_on_event(struct bufferevent* bev, short event, void* arg)
@@ -179,7 +178,7 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 	evbuffer_remove(input, pre_buf,packet_len); // clear the buffer
 
 	vpk_file_save("raw_data.media", pre_buf, packet_len);
-	//parser_h264_bitstream(pre_buf, packet_len);
+	//save_h264_bitstream(pre_buf, packet_len);
 
 	return;
 }
@@ -204,10 +203,8 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 		}
 	}
 
-
 	do 	 
 	{
-
 		size_t copy_len = evbuffer_copyout(input, pre_buf, 1024);
 		size_t packet_len = hander_packet(pre_buf, copy_len);
 
@@ -240,19 +237,12 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 			printf("#packet_len > 980\n");
 		}
 
-		if (copy_len < packet_len)
-			break;
-
+		if (copy_len < packet_len) break;
 		evbuffer_remove(input, pre_buf, packet_len); // clear the buffer
-
 		if (pre_buf[14] == 1)
 			bll_demo_proc(pre_buf+30, packet_len-30, timestamp);
-
 		len -= packet_len;
-
-
 	} while (len > 0);
-
 	return;
 }
 #else
@@ -389,7 +379,7 @@ static char* file_path[8] = {
 	"./media_data8"
 };
 
-void parser_h264_bitstream (const unsigned char *data_buf, int len)
+void save_h264_bitstream (const unsigned char *data_buf, int len)
 {
 	FILE *fp;
 	int i;
@@ -426,7 +416,7 @@ size_t hander_packet(const unsigned char* packet, int copy_len)
 		{
 			printf("%02x ", packet[ii]);
 		}
-		printf("...   data packet exception\n");
+		printf("... data packet exception\n");
 		return 0;
 	}
 }
