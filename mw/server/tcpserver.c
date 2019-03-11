@@ -279,7 +279,7 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 		// for audio
 		if ((pre_buf[15]& 0xf0) == 0x30)
 		{
-			parser_h264_bitstream(pre_buf, packet_len);
+			save_h264_bitstream(pre_buf, packet_len);
 		}
 		else 
 		{
