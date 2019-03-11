@@ -17,77 +17,16 @@
 #include "ThreadPool.h"
 
 
-#define TP_MAX_THREADS 			20
+#define TP_MAX_THREADS 			100
 #define TP_MIN_THREADS 			0
 #define TP_JOBS_PER_THREAD 		1
 #define TP_THREAD_IDLE_TIME 		5000
 #define TP_MAX_JOBS_TOTAL 		100
 
-
-#ifdef TEST
-
-static void 
-PrintThreadPoolStats(ThreadPool *tp,
-					 const char *msg)
+ThreadPool* tp_create()
 {
-	char log[1024]={0};
-	ThreadPoolStats stats;
-
-	log_d("PrintThreadPoolStats 1");
-	
-	ThreadPoolGetStats(tp, &stats);
-	log_d("%s"
-		"High Jobs pending: %d\n"
-		"Med Jobs Pending: %d\n"
-		"Low Jobs Pending: %d\n"
-		"Average wait in High Q in milliseconds: %lf\n"
-		"Average wait in Med Q in milliseconds: %lf\n"
-		"Average wait in Low Q in milliseconds: %lf\n"
-		"Max Threads Used: %d\n"
-		"Worker Threads: %d\n"
-		"Persistent Threads: %d\n"
-		"Idle Threads: %d\n"
-		"Total Threads: %d\n"
-		"Total Work Time: %lf\n"
-		"Total Idle Time: %lf\n",
-		msg,
-		stats.currentJobsHQ,
-		stats.currentJobsMQ,
-		stats.currentJobsLQ,
-		stats.avgWaitHQ,
-		stats.avgWaitMQ,
-		stats.avgWaitLQ,
-		stats.maxThreads,
-		stats.workerThreads,
-		stats.persistentThreads,
-		stats.idleThreads,
-		stats.totalThreads,
-		stats.totalWorkTime,
-		stats.totalIdleTime);
-
-}
-#endif
-
-void* RunThread( void* param)
-{
-	do
-	{
-		printf("begin\n");
-		sleep(2);
-		printf("end\n");
-	}while (0);
-
-	return NULL;
-}
-
-
-void tp_init(void)
-{
-	context* p = Context();
-	ThreadPool* pTP = NULL;
 	int nRet = -1;
-
-	printf("TP_Init begin\n");
+	ThreadPool* pTP = NULL;
 
 	pTP = (ThreadPool*)malloc(sizeof(ThreadPool));
 	if(pTP)
@@ -106,34 +45,33 @@ void tp_init(void)
 			printf("TP init failed, nRet=%d", nRet);
 			return;
 		}
-		
-		p->tp = pTP;
 	}
-#ifdef TEST
-	int i;
-	for (i=0; i< 100; i++)
+
+	return pTP;
+}
+
+void tp_delete(ThreadPool* tp)
+{
+	if(tp)
 	{
-		ThreadPoolJob job;
-		TPJobInit( &job, ( start_routine) RunThread, NULL);
-		TPJobSetFreeFunction( &job, ( free_routine ) NULL );
-		TPJobSetPriority( &job, MED_PRIORITY );
-		ThreadPoolAdd( p->tp, &job, NULL );
+		ThreadPool* pTP = (ThreadPool*)tp;
+		ThreadPoolShutdown(pTP);
+		free(tp);
 	}
+}
 
-	while(1)
-		{
-			context *p = Context();
-			PrintThreadPoolStats(&p->tp, "");
-			sleep(1);
-		}
+void tp_init(void)
+{
+	context* p = Context();
+	int nRet = -1;
 
-	log_d("pTP=%d", pTP);
+	printf("TP_Init begin\n");
 
-	int id = 0;
-	tmHttpPost("www.baidu.com", "test", p, RunThread, 3, NULL, &id);
-	tmHttpPost("www.baidu.com", "test", p, RunThread, 3, NULL, &id);
-	tmHttpPost("www.baidu.com", "test", p, RunThread, 3, NULL, &id);
-#endif
+	p->tp = tp_create();
+	p->tp_connect = tp_create();
+	p->tp_transcode = tp_create();
+	p->tp_push = tp_create();
+
 
 	printf("TP_Init end\n");
 }
@@ -144,9 +82,26 @@ void tp_done(void)
 
 	if(p->tp)
 	{
-		ThreadPool* pTP = (ThreadPool*)p->tp;
-		ThreadPoolShutdown(pTP);
-		free(p->tp);
+		tp_delete(p->tp);
+		p->tp = NULL;
+	}
+
+	if(p->tp_connect)
+	{
+		tp_delete(p->tp_connect);
+		p->tp_connect= NULL;
+	}
+
+	if(p->tp_transcode)
+	{
+		tp_delete(p->tp_transcode);
+		p->tp_transcode= NULL;
+	}
+
+	if(p->tp_push)
+	{
+		tp_delete(p->tp_push);
+		p->tp_push = NULL;
 	}
 }
 

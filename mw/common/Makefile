@@ -33,6 +33,7 @@ SOURCES =
 SOURCES +=  \
 	context.c \
 	tp.c \
+	node.c
 
 OBJS_NAME = $(basename $(SOURCES))
 

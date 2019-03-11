@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include "context.h"
 #include "tp.h"
-
+#include "node.h"
 
 static context* g_context = NULL;
 
@@ -33,16 +33,17 @@ void context_init(void)
 	if(!p) return;
 	
 	memset(p, 0, sizeof(context));
-	p->nVersion = CONTEXT_VERSION;
 	
 	Context_SetContext(p);
 	
+	node_init();
 	tp_init();
 }
 
 void context_done(void)
 {
 	tp_done();
+	node_done();
 
 	if(g_context != NULL)
 	{

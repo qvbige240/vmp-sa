@@ -85,6 +85,7 @@ LIB_PROTOCOL    = $(LIB_DIR)/libprotocol.a
 LIB_BLL         = $(LIB_DIR)/libbll.a
 LIB_MW          = $(LIB_DIR)/libmw.a
 LIB_SERVER      = $(LIB_DIR)/libserver.a
+LIB_UTILS       = $(LIB_DIR)/libutils.a
 
 
 STATIC_LIBS     += $(LIB_ZLOG)
@@ -96,5 +97,6 @@ STATIC_LIBS     += $(LIB_PROTOCOL)
 STATIC_LIBS     += $(LIB_BLL)
 STATIC_LIBS     += $(LIB_MW)
 STATIC_LIBS     += $(LIB_SERVER)
+STATIC_LIBS     += $(LIB_UTILS)
 
 DEP_LIBS        += $(LIB_ZLOG)
