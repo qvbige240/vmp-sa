@@ -30,6 +30,7 @@ LDFLAGS = -L$(LIB_DIR)/ -nostartfiles -L$(INSTALL_DIR)/lib -Ttarget.ld
 SOURCES =
 
 SOURCES +=  \
+	audio_trancode.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 
