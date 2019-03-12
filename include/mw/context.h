@@ -17,19 +17,23 @@ extern "C"
 {
 #endif
 
-#define CONTEXT_VERSION	0x100
+#define CONTEXT_VERSION		0x100
 
 typedef struct context
 {
-	int nVersion;
-	void* tp;
-	void* bll;
+	//int nVersion;
+
+	VmpVector	vector_node;
+
+	void*		tp;
+	void*		service;
+	void*		bll;
 
 } context;
 
 void context_init(void);
 void context_done(void);
-context* Context(void);
+context* context_get(void);
 
 #pragma pack()
 

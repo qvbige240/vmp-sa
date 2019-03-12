@@ -30,7 +30,7 @@ LDFLAGS = -L$(LIB_DIR)/ -nostartfiles -L$(INSTALL_DIR)/lib -Ttarget.ld
 SOURCES =
 
 SOURCES +=  \
-	tcpserver.c \
+	server_listener.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 

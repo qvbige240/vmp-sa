@@ -9,6 +9,7 @@
 
 #include "vpk.h"
 #include "vmp_log.h"
+#include "vmp_node.h"
 
 #ifdef __cplusplus
 extern "C" {

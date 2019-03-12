@@ -97,6 +97,9 @@ typedef enum _ret
 #define	VPK_MEMCPY		memcpy
 #define	VPK_REALLOC		realloc
 
+
+#define vpk_bcopy(src,dst,sz)	bcopy((src),(dst),(sz))
+
 #define VPKAPI			extern	
 
 #endif //VPK_TYPEDEF_H

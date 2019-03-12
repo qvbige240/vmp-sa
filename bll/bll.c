@@ -6,26 +6,23 @@
  Description : 
  ============================================================================
  */
-#define LOG_TAG    "bll"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "vmp.h"
-#include "tima_support.h"
-
-#include "bll.h"
-#include "bll_rtmp_stream_demo.h"
 #include "context.h"
 #include "ThreadPool.h"
-#include "tcpserver.h"
 
+#include "bll.h"
+#include "server_listener.h"
+#include "bll_core.h"
+#include "bll_h264_stream.h"
 
 static void PrintThreadPoolStats(void)
 {
 	ThreadPoolStats stats;
-	ThreadPool *tp = Context()->tp;
+	ThreadPool *tp = context_get()->tp;
 	
 	//ThreadPoolGetStats(tp, &stats);
 	//printf("job(%d, %d, %d)\t"
@@ -71,9 +68,10 @@ void bll_init(void)
 {
 	tima_log_init(0);
 	context_init();
-	tcpserver_init();
+	server_listener_init();
+	bll_core_init();
+	bll_h264_init();
 
-	bll_demo_init();
 }
 
 int bll_cond(void)
@@ -89,7 +87,6 @@ void bll_idle(void)
 
 void bll_done(void)
 {
-	tcpserver_done();
 	context_done();
 }
 

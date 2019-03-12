@@ -28,7 +28,9 @@ SOURCES =
 
 SOURCES += 	vpk_util.c \
 			vpk_libc.c \
-			vpk_ifilesys.c
+			vpk_ifilesys.c \
+			vmp_node.c \
+			vmp_vector.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 
