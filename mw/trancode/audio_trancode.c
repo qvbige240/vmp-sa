@@ -215,7 +215,7 @@ int g711a_decode(void *pout_buf, int *pout_len, const void *pin_buf, const int  
 {
     int16_t *dst = (int16_t *)pout_buf;
     uint8_t *src = (uint8_t *)pin_buf;
-    uint32_t i = 0;
+    int i = 0;
     int Ret = 0;
      
     if ((NULL == pout_buf) || \
@@ -246,7 +246,7 @@ int g711a_encode(void *pout_buf, int *pout_len, const void *pin_buf, const int i
 {
     int8_t *dst = (int8_t *)pout_buf;
     int16_t *src = (int16_t *)pin_buf;
-    uint32_t i = 0;
+    int i = 0;
     int Ret = 0;
      
     if ((NULL == pout_buf) || \
@@ -282,7 +282,7 @@ int g711a_encode(void *pout_buf, int *pout_len, const void *pin_buf, const int i
     return Ret;
 }
 
-int g711a2aac(p_acc_packet_st p_acc_st unsigned char *pbG711ABuffer, int len)
+int g711a2aac(p_acc_packet_st *p_acc_st, unsigned char *pbG711ABuffer, int len)
 { 
     int nRet = 0;
     int nTmp = 0;
@@ -401,6 +401,7 @@ int g711a2aac(p_acc_packet_st p_acc_st unsigned char *pbG711ABuffer, int len)
     free(pbPCMTmpBuffer);
     pbPCMTmpBuffer = NULL;
 
+     *p_acc_st = (p_acc_packet_st)malloc(sizeof(acc_packet_st));
     (*p_acc_st)->size = nRet;
     (*p_acc_st)->pb_acc_buf = pbAACBuffer;
     return nRet;

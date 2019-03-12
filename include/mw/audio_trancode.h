@@ -19,11 +19,11 @@ extern "C"
 typedef struct{
     unsigned char *pb_acc_buf;
     int size;
-}acc_packet;
+}acc_packet_st;
 
-typedef acc_packet* p_acc_packet;
+typedef acc_packet_st* p_acc_packet_st;
 
-p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len);
+int g711a2aac(p_acc_packet_st *p_acc_st, unsigned char *pbG711ABuffer, int len);
 
 #ifdef __cplusplus
 }
