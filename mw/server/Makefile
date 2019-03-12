@@ -10,16 +10,18 @@ include $(TOP)/make.include
 
 LOCAL_INCLUDE += $(LOCAL_INCLUDE_DIR:%=-I$(ROOT_DIR)/%)  
 
+
 LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
-	-I$(ROOT_DIR)/include/mw/ \
 	-I$(ROOT_DIR)/include/	\
+	-I$(ROOT_DIR)/include/vmp/ \
 	-I$(ROOT_DIR)/include/common/  \
-	-I$(ROOT_DIR)/include/utils/  \
-	-I$(ROOT_DIR)/include/threadpool/ \
-	-I$(ROOT_DIR)/include/libevent/ 
-	
+	-I$(ROOT_DIR)/include/libevent \
+	-I$(ROOT_DIR)/include/threadpool/  \
+	-I$(ROOT_DIR)/include/mw/support/ \
+	-I$(ROOT_DIR)/include/mw/ 	\
+
 
 CFLAGS += $(LOCAL_INCLUDE) 
 

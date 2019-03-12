@@ -135,13 +135,13 @@ static const nodedef node_h264_stream =
 void bll_h264_init(void)
 {
 	VMP_LOGD("bll_h264_init");
-
-	node_register_class(&node_h264_stream);
+	
+	NODE_CLASS_REGISTER(node_h264_stream);
 }
 
 void bll_h264_done(void)
 {
 	VMP_LOGD("bll_h264_done");
 
-	node_unregister_class(BLL_H264STREAM_CLASS);
+	NODE_CLASS_UNREGISTER(BLL_H264STREAM_CLASS);
 }

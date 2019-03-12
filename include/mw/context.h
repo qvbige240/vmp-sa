@@ -10,6 +10,8 @@
 #ifndef TM_CONTEXT_H
 #define TM_CONTEXT_H
 
+#include "vmp.h"
+
 #pragma pack(1)
 
 #ifdef __cplusplus

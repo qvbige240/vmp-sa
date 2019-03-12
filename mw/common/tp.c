@@ -83,7 +83,7 @@ void* RunThread( void* param)
 
 void tp_init(void)
 {
-	context* p = Context();
+	context* p = context_get();
 	ThreadPool* pTP = NULL;
 	int nRet = -1;
 
@@ -122,7 +122,7 @@ void tp_init(void)
 
 	while(1)
 		{
-			context *p = Context();
+			context *p = context_get();
 			PrintThreadPoolStats(&p->tp, "");
 			sleep(1);
 		}
@@ -140,7 +140,7 @@ void tp_init(void)
 
 void tp_done(void)
 {
-	context* p = Context();
+	context* p = context_get();
 
 	if(p->tp)
 	{

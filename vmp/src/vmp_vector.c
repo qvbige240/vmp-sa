@@ -1,5 +1,5 @@
 
-#include "vmp_vector.h
+#include "vmp_vector.h"
 
 #define CVECTOR_MALLOC	malloc
 #define CVECTOR_FREE	free

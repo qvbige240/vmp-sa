@@ -64,13 +64,13 @@ typedef struct nodedef
 } nodedef;
 
 
-void node_init(void);
-void node_done(void);
+void node_init(void** node_vector);
+void node_done(void** node_vector);
 
-void node_register_class(const nodedef* def);
-void node_unregister_class(int nclass);
+void node_register_class(const nodedef* def, void *node_vector);
+void node_unregister_class(int nclass, void *node_vector);
 
-vmp_node_t* node_create(int nclass);
+vmp_node_t* node_create(int nclass, void *node_vector);
 void node_delete(vmp_node_t*);
 
 #pragma pack()

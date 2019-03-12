@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "tima_support.h"
+
 #include "context.h"
 #include "ThreadPool.h"
 

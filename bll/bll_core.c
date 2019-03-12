@@ -45,7 +45,8 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 
 static int task_server_listener(PrivInfo* thiz)
 {
-	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS);
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS, ctx->vector_node);
 
 	vmp_server_t *server = calloc(1, sizeof(vmp_server_t));
 	server->read_cb = relay_receive_message;

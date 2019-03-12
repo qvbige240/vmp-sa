@@ -114,12 +114,12 @@ void bll_demo_init(void)
 {
 	VMP_LOGD("bll_demo_init");
 
-	node_register_class(&node_demo);
+	NODE_CLASS_REGISTER(node_demo);
 }
 
 void bll_demo_done(void)
 {
 	VMP_LOGD("bll_demo_done");
 
-	node_unregister_class(BLL_DEMO_CLASS);
+	NODE_CLASS_UNREGISTER(BLL_DEMO_CLASS);
 }

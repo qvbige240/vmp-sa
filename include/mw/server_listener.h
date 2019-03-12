@@ -39,7 +39,8 @@ typedef union {
 struct stream_server;
 typedef struct stream_server vmp_server_t;
 
-typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t *sm);
+struct vmp_connection_s;
+typedef struct vmp_connection_s vmp_connection_t;
 
 typedef struct vmp_launcher_s
 {
@@ -47,14 +48,8 @@ typedef struct vmp_launcher_s
 	struct event_base		*event_base;
 } vmp_launcher_t;
 
-struct listener_server {
-	struct event_base		*event_base;
-	vmp_launcher_t			*e;
-	struct evconnlistener	*lis;
-	vmp_server_t			*server;
-	vmp_connection_t		conn;
-	server_new_connection_handler on_connect;
-};
+typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t *sm);
+
 
 typedef struct vmp_socket_s
 {
@@ -74,12 +69,11 @@ struct stream_server {
 	bufferevent_data_cb		read_cb;
 };
 
-typedef struct vmp_connection_s {
+struct vmp_connection_s {
 	VmpStreamType		t;
 	vmp_server_t		*stream_server;
 	vmp_socket_t		sock;
-} vmp_connection_t;
-
+};
 
 
 

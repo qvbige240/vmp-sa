@@ -39,4 +39,16 @@
 #endif
 
 
+#define NODE_CLASS_REGISTER(nodeinfo) \
+	do {		\
+		context* ctx = context_get();	\
+		node_register_class(&(nodeinfo), (void*)ctx->vector_node);  \
+	} while(0)
+
+#define NODE_CLASS_UNREGISTER(nclass) \
+	do {		\
+		context* ctx = context_get();	\
+		node_unregister_class(nclass, (void*)ctx->vector_node);  \
+	} while(0)
+
 #endif // TIMA_TYPEDEF_H

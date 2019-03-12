@@ -10,9 +10,23 @@
 #include <event2/event.h>
 #include <event2/listener.h>
 
+#include <event2/thread.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent.h>
+
 #include "server_listener.h"
 
 #include "context.h"
+#include "ThreadPool.h"
+
+struct listener_server {
+	struct event_base		*event_base;
+	vmp_launcher_t			*e;
+	struct evconnlistener	*lis;
+	vmp_server_t			*server;
+	vmp_connection_t		conn;
+	server_new_connection_handler on_connect;
+};
 
 typedef struct _PrivInfo
 {
@@ -107,7 +121,7 @@ static struct listener_server *create_tcp_listener_server(vmp_addr *addr, vmp_la
 
 	listener->lis = evconnlistener_new_bind(listener->e->event_base, server_accept_handler, 
 						listener, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,	
-						(struct sockaddr*)addr->ss, sizeof(vmp_addr));
+						(struct sockaddr*)addr, sizeof(vmp_addr));
 	if(!listener->lis)
 	{
 		TIMA_LOGE("create_tcp_listener_server listener->lis null\n");
@@ -180,12 +194,12 @@ static void run_events(struct event_base *base, vmp_launcher_t *e)
 	event_base_dispatch(base);
 }
 
-static void run_listener_server(struct listener_server *lis)
+static void run_listener_server(struct listener_server *listener)
 {
-	run_events(lis->event_base, lis->e);
+	run_events(listener->event_base, listener->e);
 
-	evconnlistener_free(lis);
-	event_base_free(lis->event_base);
+	evconnlistener_free(listener->lis);
+	event_base_free(listener->event_base);
 }
 
 static void* server_listener_thread(void* arg)
@@ -323,12 +337,12 @@ void server_listener_init(void)
 {
 	VMP_LOGD("server_listener_init");
 
-	node_register_class(&node_server_listener);
+	NODE_CLASS_REGISTER(node_server_listener);
 }
 
 void server_listener_done(void)
 {
 	VMP_LOGD("server_listener_done");
 
-	node_unregister_class(SERVER_LISTENER_CLASS);
+	NODE_CLASS_UNREGISTER(SERVER_LISTENER_CLASS);
 }

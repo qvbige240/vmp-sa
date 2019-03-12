@@ -1,62 +1,55 @@
 
 #include <stdbool.h>
 
-#include "context.h"
 #include "vmp_vector.h"
 #include "vmp_node.h"
 
-void node_init(void)
+void node_init(void** node_vector)
 {
-	context* p = context_get();
-
-	tmVectorCreate(&p->vector_node, sizeof(nodedef), 100);
-}
-void node_done(void)
-{
-	context* p = context_get();
-
-	tmVectorFree(&p->vector_node);
+	tmVectorCreate((VmpVector*)node_vector, sizeof(nodedef), 100);
 }
 
-void node_register_class(const nodedef* def)
+void node_done(void** node_vector)
 {
-	context* p = context_get();
-
-	tmVectorAddElement(p->vector_node,def);
-
-	TIMA_LOGD("node_register_class %d", tmVectorSize(p->vector_node));
+	tmVectorFree((VmpVector*)node_vector);
 }
 
-void node_unregister_class(int nclass)
+void node_register_class(const nodedef* def, void *node_vector)
 {
-	context* p = context_get();
+	tmVectorAddElement((VmpVector)node_vector, def);	
+
+	VMP_LOGD("node_register_class %d", tmVectorSize((VmpVector)node_vector));
+}
+
+void node_unregister_class(int nclass, void *node_vector)
+{
 	int i;
 
-	for(i=0; i<tmVectorSize(p->vector_node); i++)
+	for (i = 0; i < tmVectorSize((VmpVector)node_vector); i++)
 	{
 		nodedef def;
-		tmVectorGetElement(p->vector_node, &def, i);
+		tmVectorGetElement((VmpVector)node_vector, &def, i);
 
 		if(def.nclass == nclass)
 		{
-			tmVectorRemoveElement(p->vector_node,i);
+			tmVectorRemoveElement((VmpVector)node_vector, i);
 			break;	
 		}
 	}	
 }
 
-bool node_find_class(context* p, nodedef*def,  int nclass)
+bool node_find_class(void *node_vector, nodedef*def, int nclass)
 {
 	int i;
 	
-	for(i=0; i<tmVectorSize(p->vector_node); i++)
+	for (i = 0; i < tmVectorSize((VmpVector)node_vector); i++)
 	{
-		nodedef tmpDef;
-		tmVectorGetElement(p->vector_node, &tmpDef, i);
+		nodedef tmpdef;
+		tmVectorGetElement((VmpVector)node_vector, &tmpdef, i);
 
-		if(tmpDef.nclass == nclass)
+		if(tmpdef.nclass == nclass)
 		{
-			*def = tmpDef;
+			*def = tmpdef;
 			return true;
 		}
 	}
@@ -64,13 +57,12 @@ bool node_find_class(context* p, nodedef*def,  int nclass)
 	return false;
 }
 
-vmp_node_t* node_create(int nclass)
+vmp_node_t* node_create(int nclass, void *node_vector)
 {
-	context* p = context_get();
 	nodedef def;
 	bool bfound;
 	
-	bfound = node_find_class(p, &def, nclass);
+	bfound = node_find_class(node_vector, &def, nclass);
 	if(bfound == true)
 	{
 		return def.pfn_create();

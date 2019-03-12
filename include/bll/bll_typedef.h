@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "vmp.h"
+#include "tima_support.h"
 
 #ifndef TIMA_BEGIN_DELS
   #ifdef __cplusplus
