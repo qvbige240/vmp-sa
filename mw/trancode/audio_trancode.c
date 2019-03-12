@@ -282,7 +282,7 @@ int g711a_encode(void *pout_buf, int *pout_len, const void *pin_buf, const int i
     return Ret;
 }
 
-p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len)
+int g711a2aac(p_acc_packet_st p_acc_st unsigned char *pbG711ABuffer, int len)
 { 
     int nRet = 0;
     int nTmp = 0;
@@ -314,7 +314,7 @@ p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len)
     if(NULL == pbG711ABuffer)
     {
         printf("%s:[%d] pbG711ABuffer is NULL\n",__FUNCTION__,__LINE__);
-        return NULL;
+        return -1;
     }
  
     /*open FAAC engine*/
@@ -322,7 +322,7 @@ p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len)
     if(hEncoder == NULL)
     {
         printf("%s:[%d] failed to call faacEncOpen !\n",__FUNCTION__,__LINE__);
-        return NULL;
+        return -1;
     }
  
     printf("%s:[%d] nInputSamples == %ld, nMaxOutput == %ld !\n",\
@@ -358,7 +358,7 @@ p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len)
     if((nPCMRead = g711a_decode(pbPCMTmpBuffer, &PCMSize, pPCM, gBytesRead - 4)) < 0)
     {
         printf("%s:[%d] G711A -> PCM  failed !\n",__FUNCTION__,__LINE__);  
-        return NULL;
+        return -1;
     }
  
     if((nPCMBufferSize - nCount) < nPCMRead)
@@ -401,8 +401,7 @@ p_acc_packet g711a2aac(unsigned char *pbG711ABuffer, int len)
     free(pbPCMTmpBuffer);
     pbPCMTmpBuffer = NULL;
 
-    p_acc_packet *packet = (p_acc_packet *)malloc(sizeof(acc_packet));
-    (*packet)->size = nRet;
-    (*packet)->pb_acc_buf = pbAACBuffer;
-    return *packet;
+    (*p_acc_st)->size = nRet;
+    (*p_acc_st)->pb_acc_buf = pbAACBuffer;
+    return nRet;
 }
