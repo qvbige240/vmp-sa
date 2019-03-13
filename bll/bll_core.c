@@ -30,7 +30,7 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 	vmp_connection_t session;
 	int n = 0;
 	struct evbuffer *input = bufferevent_get_input(bev);
-	struct stream_server *ss = (struct stream_server *)ptr;
+	//struct stream_server *ss = (struct stream_server *)ptr;
 
 	while ((n = evbuffer_remove(input, &session, sizeof(vmp_connection_t))) > 0) {
 
@@ -38,6 +38,8 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 			perror("Weird buffer error\n");
 			continue;
 		}
+
+		TIMA_LOGD("handle fd: %d", session.sock.fd);
 
 		//handle_relay_message(ss, &session);
 	}
@@ -66,6 +68,9 @@ static int task_server_listener(PrivInfo* thiz)
 static void* bll_core_thread(void* arg)
 {
 	PrivInfo* thiz = (PrivInfo*)arg;
+
+	//test...
+	task_server_listener(thiz);
 
 	while(thiz->cond)
 	{

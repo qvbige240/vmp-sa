@@ -76,7 +76,9 @@ INCLUDE_DIR     += -I$(DEPEND_DIR)/include
 
 
 LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
-LIB_EVENT       = $(LIB_DIR)/libevent.a
+LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
+LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
+#LIB_EVENT       = $(LIB_DIR)/libevent.a
 LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
 
 LIB_VMP         = $(LIB_DIR)/libvmp.a

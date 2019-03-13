@@ -20,8 +20,8 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/utils/  \
 	-I$(ROOT_DIR)/include/threadpool/ \
 	-I$(ROOT_DIR)/include/tima/ \
-	-I$(ROOT_DIR)/include/libevent/ 
 	
+	#-I$(ROOT_DIR)/include/libevent/ 
 
 CFLAGS += $(LOCAL_INCLUDE) 
 

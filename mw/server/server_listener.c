@@ -205,7 +205,8 @@ static void run_listener_server(struct listener_server *listener)
 static void* server_listener_thread(void* arg)
 {
 	vmp_server_t *server = NULL;
-	PrivInfo* thiz = (PrivInfo*)arg;
+	vmp_node_t *p = (vmp_node_t*)arg;
+	PrivInfo* thiz = p->private;
 	evthread_use_pthreads();
 
 	VMP_LOGI("server_listener_thread begin\n");
@@ -244,6 +245,7 @@ static void* server_listener_thread(void* arg)
 	//event_base_free(base);
 
 	VMP_LOGI("server_listener_thread end\n");
+	return NULL;
 }
 
 
