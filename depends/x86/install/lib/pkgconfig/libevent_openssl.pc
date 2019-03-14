@@ -1,6 +1,6 @@
 #libevent pkg-config source file
 
-prefix=/home/zouqing/osource/network/pc/final_libevent2
+prefix=/home/zouqing/osource/network/pc/final_libevent2_release
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
