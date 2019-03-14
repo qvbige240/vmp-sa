@@ -16,6 +16,7 @@ typedef struct _PrivInfo
 	H264StreamRep		rep;
 
 	int					id;
+	int					cond;
 } PrivInfo;
 
 int bll_h264_delete(vmp_node_t* p);
@@ -39,9 +40,27 @@ static void *h264_stream_thread(void* arg)
 	TIMA_LOGD("h264_stream_thread");
 
 	vmp_node_t* p = (vmp_node_t*)arg;
+	PrivInfo* thiz = p->private;
 
 
+	while (1) {
+		thiz->cond = 1;
 
+
+		while (thiz->cond) {
+			sleep(30);
+			thiz->cond = 0;
+		}
+
+		sleep(1);
+
+		if (thiz->cond == 0)
+			break;
+	}
+
+	TIMA_LOGD("========== flowid[%d] client[fd %d] end ==========", thiz->req.flowid, thiz->req.client.fd);
+
+	bll_h264_delete(p);
 
 	return NULL;
 }
@@ -61,7 +80,7 @@ int bll_h264_set(vmp_node_t* p, int id, void* data, int size)
 
 void* bll_h264_start(vmp_node_t* p)
 {
-	VMP_LOGD("bll h264 stream start");
+	VMP_LOGD("bll_h264_start");
 
 	PrivInfo* thiz = p->private;
 
@@ -71,8 +90,10 @@ void* bll_h264_start(vmp_node_t* p)
 	TPJobInit( &job, ( start_routine) h264_stream_thread, p);
 	TPJobSetFreeFunction( &job, ( free_routine ) NULL );
 	TPJobSetStopFunction( &job, ( stop_routine ) NULL );
-	TPJobSetPriority( &job, MED_PRIORITY );
-	ThreadPoolAdd( ctx->tp, &job, &job.jobId );
+	//TPJobSetPriority( &job, MED_PRIORITY );
+	//ThreadPoolAdd( ctx->tp, &job, &job.jobId );
+	TPJobSetPriority( &job, HIGH_PRIORITY );
+	ThreadPoolAddPersistent( ctx->tp, &job, &job.jobId);
 	thiz->id = job.jobId;
 	
 	return NULL;
@@ -110,7 +131,7 @@ vmp_node_t* bll_h264_create(void)
 
 int bll_h264_delete(vmp_node_t* p)
 {
-	//VMP_LOGD("bll_h264_delete");
+	VMP_LOGD("bll_h264_delete");
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)
@@ -134,14 +155,14 @@ static const nodedef node_h264_stream =
 
 void bll_h264_init(void)
 {
-	VMP_LOGD("bll_h264_init");
+	VMP_LOGI("bll_h264_init");
 	
 	NODE_CLASS_REGISTER(node_h264_stream);
 }
 
 void bll_h264_done(void)
 {
-	VMP_LOGD("bll_h264_done");
+	VMP_LOGI("bll_h264_done");
 
 	NODE_CLASS_UNREGISTER(BLL_H264STREAM_CLASS);
 }

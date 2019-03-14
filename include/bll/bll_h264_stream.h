@@ -9,6 +9,7 @@
 #define BLL_H264STREAM_H
 
 #include "bll_typedef.h"
+#include "tima_server.h"
 
 #pragma pack(1)
 
@@ -19,7 +20,8 @@ TIMA_BEGIN_DELS
 
 typedef struct
 {
-	char*	data;
+	unsigned long	flowid;
+	vmp_socket_t	client;
 } H264StreamReq;
 
 typedef struct

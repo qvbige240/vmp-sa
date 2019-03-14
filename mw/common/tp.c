@@ -17,11 +17,11 @@
 #include "ThreadPool.h"
 
 
-#define TP_MAX_THREADS 			20
+#define TP_MAX_THREADS 			200
 #define TP_MIN_THREADS 			0
 #define TP_JOBS_PER_THREAD 		1
 #define TP_THREAD_IDLE_TIME 		5000
-#define TP_MAX_JOBS_TOTAL 		100
+#define TP_MAX_JOBS_TOTAL 		200
 
 
 #ifdef TEST
@@ -149,4 +149,3 @@ void tp_done(void)
 		free(p->tp);
 	}
 }
-

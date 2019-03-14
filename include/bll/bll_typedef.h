@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "vmp.h"
+#include "tima_typedef.h"
 #include "tima_support.h"
 
 #ifndef TIMA_BEGIN_DELS
@@ -24,14 +25,5 @@
   #endif
 #endif
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // BLL_TYPEDEF_H

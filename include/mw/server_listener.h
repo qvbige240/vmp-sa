@@ -8,11 +8,9 @@
 #ifndef SERVER_LISTENER_H
 #define SERVER_LISTENER_H
 
-#include <event2/event.h>
-#include <event2/buffer.h>
-#include <event2/bufferevent.h>
 
 #include "tima_typedef.h"
+#include "tima_server.h"
 
 #pragma pack(1)
 
@@ -30,11 +28,11 @@ typedef enum VmpStreamType {
 	VMP_STREAM_RECORDER,
 } VmpStreamType;
 
-typedef union {
-	struct sockaddr ss;
-	struct sockaddr_in s4;
-	struct sockaddr_in6 s6;
-} vmp_addr;
+//typedef union {
+//	struct sockaddr ss;
+//	struct sockaddr_in s4;
+//	struct sockaddr_in6 s6;
+//} vmp_addr;
 
 struct stream_server;
 typedef struct stream_server vmp_server_t;
@@ -50,18 +48,18 @@ typedef struct vmp_launcher_s
 
 typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t *sm);
 
-
-typedef struct vmp_socket_s
-{
-	int				cached;
-	//buffer_list buff_list;
-	vmp_addr		peer_addr;
-
-	evutil_socket_t	fd;
-} vmp_socket_t;
+//typedef struct vmp_socket_s
+//{
+//	int				cached;
+//	//buffer_list buff_list;
+//	vmp_addr		peer_addr;
+//
+//	evutil_socket_t	fd;
+//} vmp_socket_t;
 
 struct stream_server {
 	//tima_memory_t			*mem;
+	void					*priv;
 	struct event_base		*event_base;
 	vmp_launcher_t			*e;
 	struct bufferevent		*in_buf;

@@ -10,38 +10,60 @@
 
 #include "bll_core.h"
 #include "server_listener.h"
+#include "bll_h264_stream.h"
 
 typedef struct _PrivInfo
 {
-	long			flowid;
+	unsigned long	flowid;
 
 	int				cond;
 	int				id;
+
+	//list_t			client_head;
+	//test...
+	int				count;
 
 	vmp_server_t	*server;
 } PrivInfo;
 
 
 
+static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(BLL_H264STREAM_CLASS, ctx->vector_node);
 
+	PrivInfo* thiz = (PrivInfo*)ss->priv;
+	thiz->flowid++;
+
+	H264StreamReq req = {0};
+	req.flowid	= thiz->flowid;
+	memcpy(&req.client, sock, sizeof(vmp_socket_t));
+	p->parent	= ss->priv;
+	p->pfn_set(p, 0, &req, sizeof(H264StreamReq));
+	p->pfn_start(p);
+
+	return 0;
+}
 
 static void relay_receive_message(struct bufferevent *bev, void *ptr)
 {
 	vmp_connection_t session;
 	int n = 0;
 	struct evbuffer *input = bufferevent_get_input(bev);
-	//struct stream_server *ss = (struct stream_server *)ptr;
+	struct stream_server *ss = (struct stream_server *)ptr;
 
 	while ((n = evbuffer_remove(input, &session, sizeof(vmp_connection_t))) > 0) {
 
 		if (n != sizeof(vmp_connection_t)) {
-			perror("Weird buffer error\n");
+			TIMA_LOGE("Weird buffer error");
 			continue;
 		}
 
 		TIMA_LOGD("handle fd: %d", session.sock.fd);
 
 		//handle_relay_message(ss, &session);
+		handle_message(ss, &session.sock);
 	}
 }
 
@@ -51,6 +73,7 @@ static int task_server_listener(PrivInfo* thiz)
 	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS, ctx->vector_node);
 
 	vmp_server_t *server = calloc(1, sizeof(vmp_server_t));
+	server->priv	= thiz;
 	server->read_cb = relay_receive_message;
 	thiz->server = server;
 
