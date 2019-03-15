@@ -26,25 +26,6 @@ static void PrintThreadPoolStats(void)
 	ThreadPoolStats stats;
 	ThreadPool *tp = context_get()->tp;
 	
-	//ThreadPoolGetStats(tp, &stats);
-	//printf("job(%d, %d, %d)\t"
-	//	"wait(%lf, %lf, %lf)\t"
-	//	"thread(%d, %d, %d, %d, %d)\t"
-	//	"time(%lf, %lf)\n",
-	//	stats.currentJobsHQ,
-	//	stats.currentJobsMQ,
-	//	stats.currentJobsLQ,
-	//	stats.avgWaitHQ,
-	//	stats.avgWaitMQ,
-	//	stats.avgWaitLQ,
-	//	stats.maxThreads,
-	//	stats.workerThreads,
-	//	stats.persistentThreads,
-	//	stats.idleThreads,
-	//	stats.totalThreads,
-	//	stats.totalWorkTime,
-	//	stats.totalIdleTime);
-
 	ThreadPoolGetStats(tp, &stats);
 	VMP_LOGN("job(%d, %d, %d)  "
 		"wait(%lf, %lf, %lf)  "
@@ -64,7 +45,6 @@ static void PrintThreadPoolStats(void)
 		stats.totalWorkTime,
 		stats.totalIdleTime);
 }
-
 
 void bll_init(void)
 {
@@ -91,4 +71,3 @@ void bll_done(void)
 {
 	context_done();
 }
-

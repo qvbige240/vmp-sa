@@ -21,8 +21,8 @@ typedef struct _PrivInfo
 
 	int					id;
 
-TimaRTMPPackager* packager;
-TimaRTMPPublisher* publisher;
+	TimaRTMPPackager* packager;
+	TimaRTMPPublisher* publisher;
 
 	int					started;
 	h264_meta_t			meta_data;
@@ -61,7 +61,7 @@ void bll_demo_init(void)
 	//priv->publisher = tima_rtmp_create("rtmp://localhost/live");
 	//priv->publisher = tima_rtmp_create("rtmp://172.20.25.209:2019/timalive/test1");
 	priv->publisher = tima_rtmp_create("rtmp://172.20.25.47:1935/hls/1");
-	
+	//priv->publisher = tima_rtmp_create("rtmp://172.20.25.47:1936/live/1");
 	tima_rtmp_connect(priv->publisher);
 }
 
@@ -81,6 +81,10 @@ int bll_demo_proc(const char* buf, size_t size, long long timestamp)
 	tima_buffer_strdup(&thiz->buffer, data, length, 1);
 	data = tima_buffer_data(&thiz->buffer, 0);
 	length = tima_buffer_used(&thiz->buffer);
+
+	//size_t s = tima_buffer_size(&thiz->buffer);
+	//if (s > 64 << 10)
+	//	printf("buffer total size: %d\n", s);
 
 	if (!thiz->started) {
 
