@@ -20,9 +20,9 @@ TIMA_BEGIN_DELS
 
 typedef struct
 {
-	unsigned long	flowid;
-	vmp_launcher_t	*e;
-	vmp_socket_t	client;
+	unsigned long		flowid;
+	vmp_launcher_t		*e;
+	vmp_socket_t		client;
 } H264StreamReq;
 
 typedef struct

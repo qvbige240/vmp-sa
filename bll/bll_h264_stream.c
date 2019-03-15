@@ -12,6 +12,25 @@
 
 #include "bll_h264_stream.h"
 
+#include "tima_jt1078_parser.h"
+#include "tima_h264.h"
+#include "rtmp_publish.h"
+
+#define JT1078_STREAM_PACKAGE_SIZE		980
+
+
+typedef void* (*pack_callback)(void* ctx, void* data, void* result);
+
+typedef struct StreamChannel
+{
+	int					id;
+	TimaBuffer			buffer;
+
+	int					started;
+	h264_meta_t			meta_data;
+
+} StreamChannel;
+
 typedef struct _PrivInfo
 {
 	H264StreamReq		req;
@@ -20,10 +39,60 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
+	unsigned long long	sim;
+	StreamChannel		channel[8];
+
+	void				*publish;
+	void				*packager;
+
 	unsigned char		buff[1024];
 } PrivInfo;
 
 int bll_h264_delete(vmp_node_t* p);
+
+#if 0
+typedef void (*node_destroy)(void* ctx, void* data);
+
+typedef struct nal_node_s {
+	list_t				node;
+
+	int					seq;
+	int					mtype;
+	int					cid;		/* channel id */
+	int					size;
+	node_destroy		destroy;
+	unsigned char*		package;
+} nal_node_t;
+
+static void pkt_node_release(void *ctx, void *data)
+{
+	nal_node_t *node = data;
+	if (node) {
+		node->package = NULL;
+		free(node);
+	}
+}
+static nal_node_t* pkt_node_create(void *package, int size, int cid, int seq)
+{
+	nal_node_t* pkt = (nal_node_t*)calloc(1, sizeof(nal_node_t));
+	//return_val_if_fail(pkt && size > 0, -1);
+
+	if (pkt) 
+	{
+		INIT_LIST_HEAD(&pkt->node);
+
+		pkt->seq		= seq;
+		pkt->cid		= cid;
+		pkt->size		= size;
+		pkt->package	= package;
+		pkt->destroy	= pkt_node_release;
+		//pkt->package	= (char*)pkt + sizeof(nal_node_t);
+		//memcpy(pkt->buffer, buf, size);
+	}
+
+	return pkt;
+}
+
 
 static unsigned long get_thread_id(void)
 {
@@ -35,6 +104,7 @@ static unsigned long get_thread_id(void)
 	r.thr = pthread_self();
 	return (unsigned long)r.id;
 }
+#endif
 
 int h264_stream_callback(void* p, int msg, void* arg)
 {
@@ -82,36 +152,182 @@ void stream_socket_eventcb(struct bufferevent* bev, short event, void* arg)
 	thiz->cond = 0;
 }
 
-//static size_t tima_packet_parser();
 
-static void stream_input_handler(struct bufferevent *bev, void* arg)
+static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamChannel *channel)
 {
-	vmp_socket_t *s = (vmp_socket_t*)arg;
-	vmp_node_t* p = (vmp_node_t*)s->priv;
+	size_t pos = 0, len;
+	size_t length = size;
+	const char *data = buf;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	//int i = 0;
+	//for (i = 0; i < 32; i++)
+	//	printf("%02x ", (unsigned char)data[i]);
+	//printf("\n");
+
+	tima_buffer_strdup(&channel->buffer, data, length, 1);
+	data = tima_buffer_data(&channel->buffer, 0);
+	length = tima_buffer_used(&channel->buffer);
+
+	//size_t s = tima_buffer_size(&thiz->buffer);
+	//if (s > 64 << 10)
+	//	printf("buffer total size: %d\n", s);
+
+	if (!channel->started) {
+
+		int i = 0;
+		for (i = 0; i < 32; i++)
+			printf("%02x ", (unsigned char)data[i]);
+		printf("\n");
+
+		pos = h264_metadata_get(data, length, 0, &channel->meta_data);
+		if (pos == 0) {
+			VMP_LOGE("stream parse error at metadata");
+			return -1;
+		}
+		channel->started = 1;
+
+		//void* rtmp_data_pack(void* packager, const char* data, int length)
+		rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
+		//RTMPPacket meta = thiz->packager->meta_pack(chunk_buffer, channel->meta_data.data, thiz->meta_data.size);
+		//tima_rtmp_send(thiz->publisher, &meta, timestamp);
+	}
+
+	do 
+	{
+		h264_nalu_t nalu;
+		len = h264_nalu_read(data, length, pos, &nalu);
+		if (len != 0) {
+			pos += len;
+			TIMA_LOGD("## nalu type(%d) len(%d)", nalu.nalu_type, nalu.nalu_len);
+
+			//send to server
+			if (nalu.nalu_type == 0x05) {
+
+				rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
+				//RTMPPacket meta = thiz->packager->meta_pack(chunk_buffer, thiz->meta_data.data, thiz->meta_data.size);
+				//tima_rtmp_send(thiz->publisher, &meta, timestamp);
+			} else if (nalu.nalu_type == 0x07 || nalu.nalu_type == 0x08 || nalu.nalu_type == 0x06) {
+				continue;
+			}
+			rtmp_data_pack(thiz->packager, nalu.nalu_data, nalu.nalu_len);
+			//RTMPPacket packet = thiz->packager->data_pack(chunk_buffer, nalu.nalu_data, nalu.nalu_len);
+			//tima_rtmp_send(thiz->publisher, &packet, timestamp);
+		}
+	} while (len);
+
+	tima_buffer_align(&channel->buffer, pos);
+
+	return 0;
+}
+
+static int stream_jt1078_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
+{
+	int ret = 0;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	struct evbuffer* input = bufferevent_get_input(bev);
 	size_t len = evbuffer_get_length(input);
 
-	do 	 
+	if (input) {
+		unsigned char *stream = NULL;
+		stream_header_t head = {0};
+		ev_ssize_t clen = evbuffer_copyout(input, thiz->buff, JT1078_STREAM_PACKAGE_SIZE);
+		if (clen > 0) {
+			if (clen > JT1078_STREAM_PACKAGE_SIZE)
+				clen = JT1078_STREAM_PACKAGE_SIZE;
+
+			ret = packet_jt1078_parse(thiz->buff, clen, &head, &stream);
+			if (ret == 0)
+				return 0;
+
+			if (ret < 0)
+				TIMA_LOGE("JT/T 1078-2016 parse failed");
+
+			//int ii = 0;
+			//for (ii = 0; ii < 8; ii++)
+			//{
+			//    printf("%02x ", thiz->buff[16+ii]);
+			//}
+
+			printf("[len=%5ld]#channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
+				len, thiz->buff[14], thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
+
+
+
+			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
+				ret = JT1078_STREAM_PACKAGE_SIZE;
+				TIMA_LOGE("JT/T 1078-2016 parse failed");
+			}
+
+			if (thiz->sim == (unsigned long long)-1) {
+				thiz->sim = head.simno;
+				TIMA_LOGI("sim no. [%lld]", thiz->sim);
+			}
+			
+			if ((head.mtype & 0xf0) != 0x30) {	// audio
+
+			} else if ((head.mtype & 0xf0) != 0x40) {	// transparent
+
+			} else {	// video
+				h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel[head.channel]);
+			}
+
+			//evbuffer_remove(input, thiz->buff, ret);
+
+		} else if (clen < 0) {
+			TIMA_LOGE("buffer copy out failed, maybe closed");
+			ret = -1;
+		}
+	} else {
+		TIMA_LOGE("socket input failed, socket to be closed");
+		ret = -1;
+	}
+	
+	return ret;
+}
+
+static void stream_input_handler(struct bufferevent *bev, void* arg)
+{
+	int ret = 0;
+	vmp_socket_t *s = (vmp_socket_t*)arg;
+	vmp_node_t* p = (vmp_node_t*)s->priv;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	struct evbuffer* input = bufferevent_get_input(bev);
+	size_t len = evbuffer_get_length(input);
+
+	do
 	{
-		size_t copy_len = evbuffer_copyout(input, thiz->buff, 1024);
-		TIMA_LOGD("[%lld] %d recv[fd %d]: %s", 
-			get_thread_id(), thiz->req.flowid, thiz->req.client.fd, thiz->buff);
-		//size_t packet_len = hander_packet(thiz->buff, copy_len);
+		ret = stream_jt1078_proc(p, bev);
 
+		if (ret > 0) {
 
-		//if (packet_len > 980)
-		//{
-		//	packet_len = 980;
-		//	printf("#packet_len > 980\n");
-		//}
+			evbuffer_remove(input, thiz->buff, ret);
+			len -= ret;
+		} else {
+			//sleep(1);
+			break;
+		}
 
-		//if (copy_len < packet_len)
-		//	break;
-
-		evbuffer_remove(input, thiz->buff, copy_len); // clear the buffer
-
-		len -= copy_len;
+// 		size_t copy_len = evbuffer_copyout(input, thiz->buff, JT1078_STREAM_PACKAGE_SIZE);
+// 		TIMA_LOGD("[%lld] %d recv[fd %d]: %s", get_thread_id(), thiz->req.flowid, thiz->req.client.fd, thiz->buff);
+// 		
+// 		char *stream = NULL;
+// 
+// 		size_t packet_len = hander_packet(thiz->buff, copy_len);
+// 
+// 		if (packet_len > 980)
+// 		{
+// 			packet_len = 980;
+// 			printf("#packet_len > 980\n");
+// 		}
+// 
+// 		if (copy_len < packet_len)
+// 			break;
+// 
+// 		evbuffer_remove(input, thiz->buff, copy_len); // clear the buffer
+// 
+// 		len -= copy_len;
 
 	} while (len > 0);
 }
@@ -121,50 +337,47 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	//struct event_base* base = event_base_new();
 	//s->event_base = base;
 	s->bev = bufferevent_socket_new(e->event_base, s->fd, VMP_BUFFEREVENTS_OPTIONS);
-	//debug_ptr_add(s->bev);
 	bufferevent_setcb(s->bev, stream_input_handler, NULL, stream_socket_eventcb, s);
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
 }
-
-static void *h264_stream_thread(void* arg)
-{
-	TIMA_LOGD("h264_stream_thread %lld", get_thread_id());
-
-	vmp_node_t* p = (vmp_node_t*)arg;
-	PrivInfo* thiz = p->private;
-
-	thiz->req.client.priv = p;
-
-	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
-	client_connection_register(thiz->req.e, &thiz->req.client);
-
-	//event_base_dispatch(thiz->req.client.event_base);
-
-	while (1) {
-		thiz->cond = 1;
-
-
-		while (thiz->cond) {
-
-			sleep(1);
-			//thiz->cond = 0;
-		}
-
-		sleep(1);
-
-		if (thiz->cond == 0)
-			break;
-	}
-
-	TIMA_LOGD("========== flowid[%d] client[fd %d] end ==========", thiz->req.flowid, thiz->req.client.fd);
-
-	bll_h264_delete(p);
-
-	return NULL;
-}
+//
+//static void *h264_stream_thread(void* arg)
+//{
+//	TIMA_LOGD("h264_stream_thread %lld", get_thread_id());
+//
+//	vmp_node_t* p = (vmp_node_t*)arg;
+//	PrivInfo* thiz = p->private;
+//
+//	thiz->req.client.priv = p;
+//
+//	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
+//	client_connection_register(thiz->req.e, &thiz->req.client);
+//
+//	while (1) {
+//		thiz->cond = 1;
+//
+//
+//		while (thiz->cond) {
+//
+//			sleep(1);
+//			//thiz->cond = 0;
+//		}
+//
+//		sleep(1);
+//
+//		if (thiz->cond == 0)
+//			break;
+//	}
+//
+//	TIMA_LOGD("========== flowid[%d] client[fd %d] end ==========", thiz->req.flowid, thiz->req.client.fd);
+//
+//	bll_h264_delete(p);
+//
+//	return NULL;
+//}
 
 int bll_h264_get(vmp_node_t* p, int id, void* data, int size)
 {
@@ -184,18 +397,26 @@ void* bll_h264_start(vmp_node_t* p)
 	VMP_LOGD("bll_h264_start");
 
 	PrivInfo* thiz = p->private;
+	thiz->req.client.priv = p;
 
-	context * ctx = context_get();
-	ThreadPoolJob job;
+	int i = 0;
+	for (i = 0; i < 8; i++) {
+		thiz->channel[i].id = i;
+		tima_buffer_init(&thiz->channel[i].buffer, 128<<10);
+	}
+	thiz->sim = (unsigned long long)-1;
 
-	TPJobInit( &job, ( start_routine) h264_stream_thread, p);
-	TPJobSetFreeFunction( &job, ( free_routine ) NULL );
-	TPJobSetStopFunction( &job, ( stop_routine ) NULL );
-	//TPJobSetPriority( &job, MED_PRIORITY );
-	//ThreadPoolAdd( ctx->tp, &job, &job.jobId );
-	TPJobSetPriority( &job, HIGH_PRIORITY );
-	ThreadPoolAddPersistent( ctx->tp, &job, &job.jobId);
-	thiz->id = job.jobId;
+	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
+	client_connection_register(thiz->req.e, &thiz->req.client);
+	//context * ctx = context_get();
+	//ThreadPoolJob job;
+
+	//TPJobInit( &job, ( start_routine) h264_stream_thread, p);
+	//TPJobSetFreeFunction( &job, ( free_routine ) NULL );
+	//TPJobSetStopFunction( &job, ( stop_routine ) NULL );
+	//TPJobSetPriority( &job, HIGH_PRIORITY );
+	//ThreadPoolAddPersistent( ctx->tp, &job, &job.jobId);
+	//thiz->id = job.jobId;
 	
 	return NULL;
 }

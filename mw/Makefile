@@ -4,7 +4,7 @@ endif
 
 include $(TOP)/make.include
 
-DIRS = common support protocol server
+DIRS = common support protocol publish server
 
 .PHONY:	all clean $(DIRS)
 
