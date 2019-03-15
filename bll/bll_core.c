@@ -38,6 +38,7 @@ static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
 
 	H264StreamReq req = {0};
 	req.flowid	= thiz->flowid;
+	req.e		= ss->e;
 	memcpy(&req.client, sock, sizeof(vmp_socket_t));
 	p->parent	= ss->priv;
 	p->pfn_set(p, 0, &req, sizeof(H264StreamReq));
@@ -103,6 +104,7 @@ static void* bll_core_thread(void* arg)
 		//	bll_core_onmsg(thiz, msg);
 		//	free(msg);
 		//}
+		sleep(1);
 	}
 
 	return NULL;

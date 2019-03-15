@@ -89,19 +89,20 @@ void setup_server(vmp_server_t *server)
 static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 				struct sockaddr *address, int socklen, void *arg)
 {
-	struct listener_server *server = (struct listener_server*) arg;
+	struct listener_server *ls = (struct listener_server*) arg;
 	TIMA_LOGD("tcp connected to fd: %d", fd);
 
-	if(!(server->on_connect)) {
+	if(!(ls->on_connect)) {
 		close(fd);
 		return;
 	}
 
-	vpk_bcopy(address, &(server->conn.sock.peer_addr), socklen);
-	server->conn.sock.fd = fd;
-	server->conn.stream_server = server->server;
+	vpk_bcopy(address, &(ls->conn.sock.peer_addr), socklen);
+	ls->conn.sock.fd		= fd;
+	ls->conn.sock.e			= ls->server->e;
+	ls->conn.stream_server	= ls->server;
 
-	int rc = server->on_connect(server->e, &server->conn);
+	int rc = ls->on_connect(ls->e, &ls->conn);
 	if (rc < 0)
 		TIMA_LOGE("Cannot create tcp session");
 }

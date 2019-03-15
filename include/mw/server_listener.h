@@ -18,7 +18,6 @@ TIMA_BEGIN_DELS
 
 #define SERVER_LISTENER_CLASS	FOURCCLE('S','V','R','L')
 
-#define VMP_BUFFEREVENTS_OPTIONS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_THREADSAFE | BEV_OPT_UNLOCK_CALLBACKS)
 
 typedef enum VmpStreamType {
 	VMP_STREAM_UNKNOWN = 0,
@@ -40,11 +39,11 @@ typedef struct stream_server vmp_server_t;
 struct vmp_connection_s;
 typedef struct vmp_connection_s vmp_connection_t;
 
-typedef struct vmp_launcher_s
-{
-	//tima_memory_t			*mem;
-	struct event_base		*event_base;
-} vmp_launcher_t;
+//typedef struct vmp_launcher_s
+//{
+//	//tima_memory_t			*mem;
+//	struct event_base		*event_base;
+//} vmp_launcher_t;
 
 typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t *sm);
 
