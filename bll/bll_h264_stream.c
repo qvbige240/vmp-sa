@@ -305,7 +305,7 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 			evbuffer_remove(input, thiz->buff, ret);
 			len -= ret;
 		} else {
-			sleep(1);
+			//usleep(110000);
 			break;
 		}
 
@@ -356,42 +356,42 @@ static void h264_stream_init(PrivInfo* thiz)
 	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
 	client_connection_register(thiz->req.e, &thiz->req.client);
 }
-
-static void *h264_stream_thread(void* arg)
-{
-	TIMA_LOGD("h264_stream_thread");
-
-	vmp_node_t* p = (vmp_node_t*)arg;
-	PrivInfo* thiz = p->private;
-
-	thiz->req.client.priv = p;
-
-	//TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
-	//client_connection_register(thiz->req.e, &thiz->req.client);
-	h264_stream_init(thiz);
-
-	while (1) {
-		thiz->cond = 1;
-
-
-		while (thiz->cond) {
-
-			sleep(1);
-			//thiz->cond = 0;
-		}
-
-		sleep(1);
-
-		if (thiz->cond == 0)
-			break;
-	}
-
-	TIMA_LOGD("========== flowid[%d] client[fd %d] end ==========", thiz->req.flowid, thiz->req.client.fd);
-
-	bll_h264_delete(p);
-
-	return NULL;
-}
+//
+//static void *h264_stream_thread(void* arg)
+//{
+//	TIMA_LOGD("h264_stream_thread");
+//
+//	vmp_node_t* p = (vmp_node_t*)arg;
+//	PrivInfo* thiz = p->private;
+//
+//	thiz->req.client.priv = p;
+//
+//	//TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
+//	//client_connection_register(thiz->req.e, &thiz->req.client);
+//	h264_stream_init(thiz);
+//
+//	while (1) {
+//		thiz->cond = 1;
+//
+//
+//		while (thiz->cond) {
+//
+//			sleep(1);
+//			//thiz->cond = 0;
+//		}
+//
+//		sleep(1);
+//
+//		if (thiz->cond == 0)
+//			break;
+//	}
+//
+//	TIMA_LOGD("========== flowid[%d] client[fd %d] end ==========", thiz->req.flowid, thiz->req.client.fd);
+//
+//	bll_h264_delete(p);
+//
+//	return NULL;
+//}
 
 int bll_h264_get(vmp_node_t* p, int id, void* data, int size)
 {
@@ -423,9 +423,10 @@ void* bll_h264_start(vmp_node_t* p)
 	//TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
 	//client_connection_register(thiz->req.e, &thiz->req.client);
 
-	
-	//h264_stream_init(thiz);
+#if 1
 
+	h264_stream_init(thiz);
+#else
 	context * ctx = context_get();
 	ThreadPoolJob job;
 
@@ -435,7 +436,8 @@ void* bll_h264_start(vmp_node_t* p)
 	TPJobSetPriority( &job, HIGH_PRIORITY );
 	ThreadPoolAddPersistent( ctx->tp, &job, &job.jobId);
 	thiz->id = job.jobId;
-	
+
+#endif
 	return NULL;
 }
 
