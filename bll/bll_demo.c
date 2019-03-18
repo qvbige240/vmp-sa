@@ -48,7 +48,7 @@ int bll_demo_set(vmp_node_t* p, int id, void* data, int size)
 
 void* bll_demo_start(vmp_node_t* p)
 {
-	VMP_LOGD("bll demo start");
+	VMP_LOGD("bll_demo_start");
 
 	PrivInfo* thiz = p->private;
 
@@ -112,14 +112,14 @@ static const nodedef node_demo =
 
 void bll_demo_init(void)
 {
-	VMP_LOGD("bll_demo_init");
+	VMP_LOGI("bll_demo_init");
 
 	NODE_CLASS_REGISTER(node_demo);
 }
 
 void bll_demo_done(void)
 {
-	VMP_LOGD("bll_demo_done");
+	VMP_LOGI("bll_demo_done");
 
 	NODE_CLASS_UNREGISTER(BLL_DEMO_CLASS);
 }

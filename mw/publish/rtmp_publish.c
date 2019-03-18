@@ -172,7 +172,7 @@ void rtmp_publish_done(void)
 	NODE_CLASS_UNREGISTER(RTMP_PUBLISH_CLASS);
 }
 
-#if 1
+#if 0
 
 void* rtmp_meta_pack(void* packager, const char* data, int length)
 {
@@ -183,106 +183,107 @@ void* rtmp_data_pack(void* packager, const char* data, int length)
 	return NULL;
 }
 #else
-void* rtmp_data_pack(void* packager, const char* data, int length)
+void* rtmp_data_pack(void* p, const char* data, int length)
 {
-	TimaRTMPPackager* p = packager;
-	//TimaRTMPPackager* packager;	//...
-	int size = sizeof(RTMPPacket) + p->body_len(length);
+	TimaRTMPPackager* packager = p;
+	int size = sizeof(RTMPPacket) + packager->body_len(length);
 	RTMPPacket *packet = calloc(1, size);
 	if (!packet) {
 		TIMA_LOGE("malloc failed");
 		return NULL;
 	}
-	data_pack(packet, data, length);
+	packager->data_pack(packet, data, length);
 
 	return packet;
 }
 
-void* data_pack(RTMPPacket *packet, const char* data, int length)
+//void* data_pack(void *p, const char* data, int length)
+//{
+//	//int size = length + 5 + 4 + RTMP_MAX_HEADER_SIZE + sizeof(RTMPPacket);
+//	//RTMPPacket *packet = calloc(1, size);	
+//	RTMPPacket *packet = (RTMPPacket *)p;
+//	char *buf = packet + 1;
+//	char *body = buf + RTMP_MAX_HEADER_SIZE;
+//
+//	packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
+//	packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+//	packet->m_nChannel = 0x04;
+//	packet->m_hasAbsTimestamp = 0;
+//#ifndef USE_H264_RAW
+//	packet->m_nBodySize = length + 5 + 4;
+//#else
+//	packet->m_nBodySize = length + 5;
+//#endif
+//	packet->m_body = body;
+//
+//	*(body++) = (data[4] & 0x1f) == 0x05 ? 0x17 : 0x27;
+//	*(body++) = 0x01;
+//	*(body++) = 0x00;
+//	*(body++) = 0x00;
+//	*(body++) = 0x00;
+//#ifndef USE_H264_RAW
+//	// NALUs
+//	*(body++) = length >> 24 & 0xff;
+//	*(body++) = length >> 16 & 0xff;
+//	*(body++) = length >> 8 & 0xff;
+//	*(body++) = length & 0xff;
+//#endif
+//	memcpy(body, data, length);
+//
+//	return packet;
+//}
+
+
+void* rtmp_meta_pack(void* p, const char* data, int length)
 {
-	//int size = length + 5 + 4 + RTMP_MAX_HEADER_SIZE + sizeof(RTMPPacket);
-	//RTMPPacket *packet = calloc(1, size);	
-	char *buf = packet + 1;
-	char *body = buf + RTMP_MAX_HEADER_SIZE;
-
-	packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
-	packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
-	packet->m_nChannel = 0x04;
-	packet->m_hasAbsTimestamp = 0;
-#ifndef USE_H264_RAW
-	packet->m_nBodySize = length + 5 + 4;
-#else
-	packet->m_nBodySize = length + 5;
-#endif
-	packet->m_body = body;
-
-	*(body++) = (data[4] & 0x1f) == 0x05 ? 0x17 : 0x27;
-	*(body++) = 0x01;
-	*(body++) = 0x00;
-	*(body++) = 0x00;
-	*(body++) = 0x00;
-#ifndef USE_H264_RAW
-	// NALUs
-	*(body++) = length >> 24 & 0xff;
-	*(body++) = length >> 16 & 0xff;
-	*(body++) = length >> 8 & 0xff;
-	*(body++) = length & 0xff;
-#endif
-	memcpy(body, data, length);
-
-	return packet;
-}
-
-
-void* rtmp_meta_pack(void* packager, const char* data, int length)
-{
-	//TimaRTMPPackager* packager;	//...
+	TimaRTMPPackager* packager = p;
 	int size = sizeof(RTMPPacket) + length + 8;
 	RTMPPacket *packet = calloc(1, size);
 	if (!packet) {
 		TIMA_LOGE("malloc failed");
 		return NULL;
 	}
-	meta_pack(packet, data, length);
+	packager->meta_pack(packet, data, length);
 
 	return packet;
 }
-void* meta_pack(RTMPPacket *packet, const char* data, int length)
-{
-	char *buf = packet + 1;
-	char *body = buf + RTMP_MAX_HEADER_SIZE;
-
-	//RTMPPacket packet;
-	packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
-	packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
-	packet->m_nChannel = 0x04;	//StreamID = (ChannelID-4)/5+1
-	packet->m_hasAbsTimestamp = 0;
-	packet->m_nBodySize = 8 + length;
-	packet->m_body = body;
-
-	*(body++) = 0x17; // 1-keyframe, 7-AVC
-	*(body++) = 0x00;
-	*(body++) = 0x00;
-	*(body++) = 0x00;
-	*(body++) = 0x00;
-
-	// AVCDecoderConfigurationRecord
-
-	*(body++) = 0x01;		// configurationVersion
-	*(body++) = data[5];	// AVCProfileIndication
-	*(body++) = data[6];	// profile_compatibility
-	*(body++) = data[7];	// AVCLevelIndication
-	*(body++) = 0xff;		// 111111(reserved) + lengthSizeMinusOne
-
-	int len = (data[2] << 8) | data[3];
-
-	*(body++) = 0xe1;		// 111(reserved) + numOfSequenceParameterSets
-	memcpy(body, data + 2, len + 2);
-
-	body += (len + 2);
-	*(body++) = 0x01;		// numOfPictureParameterSets
-	memcpy(body, data + len + 6, length - len - 6);
-
-	return packet;
-}
+//void* meta_pack(void *p, const char* data, int length)
+//{
+//	RTMPPacket *packet = (RTMPPacket *)p;
+//	char *buf = packet + 1;
+//	char *body = buf + RTMP_MAX_HEADER_SIZE;
+//
+//	//RTMPPacket packet;
+//	packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+//	packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+//	packet->m_nChannel = 0x04;	//StreamID = (ChannelID-4)/5+1
+//	packet->m_hasAbsTimestamp = 0;
+//	packet->m_nBodySize = 8 + length;
+//	packet->m_body = body;
+//
+//	*(body++) = 0x17; // 1-keyframe, 7-AVC
+//	*(body++) = 0x00;
+//	*(body++) = 0x00;
+//	*(body++) = 0x00;
+//	*(body++) = 0x00;
+//
+//	// AVCDecoderConfigurationRecord
+//
+//	*(body++) = 0x01;		// configurationVersion
+//	*(body++) = data[5];	// AVCProfileIndication
+//	*(body++) = data[6];	// profile_compatibility
+//	*(body++) = data[7];	// AVCLevelIndication
+//	*(body++) = 0xff;		// 111111(reserved) + lengthSizeMinusOne
+//
+//	int len = (data[2] << 8) | data[3];
+//
+//	*(body++) = 0xe1;		// 111(reserved) + numOfSequenceParameterSets
+//	memcpy(body, data + 2, len + 2);
+//
+//	body += (len + 2);
+//	*(body++) = 0x01;		// numOfPictureParameterSets
+//	memcpy(body, data + len + 6, length - len - 6);
+//
+//	return packet;
+//}
 #endif
