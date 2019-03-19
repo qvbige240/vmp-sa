@@ -5,6 +5,8 @@
  *
  */
 
+#include "librtmp/rtmp.h"
+
 #include "context.h"
 #include "ThreadPool.h"
 

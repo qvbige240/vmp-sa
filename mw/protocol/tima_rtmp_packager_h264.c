@@ -5,6 +5,8 @@
  *
  */
 
+#include "librtmp/rtmp.h"
+
 #include "tima_rtmp_packager.h"
 
 typedef struct _PrivInfo

@@ -15,6 +15,7 @@
 #include "tp.h"
 
 #include "rtmp_publish.h"
+#include "tima_rtmp_packager.h"
 
 
 static context* g_context = NULL;
@@ -37,6 +38,8 @@ void context_init(void)
 	//p->version = CONTEXT_VERSION;
 	
 	context_set(p);
+
+	p->packager = tima_h264_rtmp_create();
 	
 	node_init((void**)&p->vector_node);
 	tp_init();

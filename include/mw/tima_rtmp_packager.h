@@ -8,7 +8,6 @@
 #define TIMA_RTMP_PACKAGER_H
 
 #include "vmp.h"
-#include "librtmp/rtmp.h"
 
 TIMA_BEGIN_DELS
 

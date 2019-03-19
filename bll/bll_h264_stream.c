@@ -506,7 +506,9 @@ void* bll_h264_start(vmp_node_t* p)
 	VMP_LOGD("bll_h264_start");
 
 	PrivInfo* thiz = p->private;
+	context * ctx = context_get();
 	thiz->req.client.priv = p;
+	thiz->packager = ctx->packager;
 
 	//int i = 0;
 	//for (i = 0; i < 8; i++) {
@@ -522,7 +524,6 @@ void* bll_h264_start(vmp_node_t* p)
 
 	h264_stream_init(thiz);
 #else
-	context * ctx = context_get();
 	ThreadPoolJob job;
 
 	TPJobInit( &job, ( start_routine) h264_stream_thread, p);

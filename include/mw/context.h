@@ -31,6 +31,7 @@ typedef struct context
 	void*		service;
 	void*		bll;
 
+	void*		packager;
 } context;
 
 void context_init(void);
