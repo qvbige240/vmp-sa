@@ -18,20 +18,20 @@
 
 #define JT1078_STREAM_PACKAGE_SIZE		980
 
-
-typedef void* (*pack_callback)(void* ctx, void* data, void* result);
-
 typedef void (*node_destroy)(void* ctx, void* data);
 
 typedef struct nal_node_s {
 	list_t				node;
 
-	int					seq;
-	int					mtype;
-	int					cid;		/* channel id */
-	int					size;
+	stream_object();
+	//int					cid;			/* channel id */			
+	//int					mtype;		/* media type video/audio */	
+	//int					seq;		/* sequence */			
+	//long				size;		/* package size */			
+	//unsigned long long	sim;		/* sim number */
+	//unsigned char*		package;
+
 	node_destroy		destroy;
-	unsigned char*		package;
 } nal_node_t;
 
 typedef struct StreamChannel
@@ -68,12 +68,15 @@ typedef struct _PrivInfo
 } PrivInfo;
 
 static int bll_h264_delete(vmp_node_t* p);
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim);
 
 
 static void pkt_node_release(void *ctx, void *data)
 {
 	nal_node_t *node = data;
 	if (node) {
+		if (node->package)
+			free(node->package);
 		node->package = NULL;
 		free(node);
 	}
@@ -140,6 +143,29 @@ static void* list_del_nalu(void* p)
 	return nalu;
 }
 
+static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
+{
+	int ret = -1;
+	return_val_if_fail(p && proc != NULL && ctx, -1);
+	//PrivInfo* thiz = (PrivInfo*)p->private;
+
+	nal_node_t *nal_node = list_del_nalu(p);
+
+	if (nal_node) {
+		ret = proc(ctx, ((void*)nal_node + sizeof(list_t)), NULL);
+		if (ret < 0) {
+			TIMA_LOGE("nalu process failed");
+			// retry...
+		}
+
+		nal_node->destroy(NULL, nal_node);
+	} else {
+		TIMA_LOGE("nalu node get failed");
+		usleep(20000);
+	}
+
+	return ret;
+}
 
 #if 0
 static unsigned long get_thread_id(void)
@@ -278,7 +304,7 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 
 			pkt = rtmp_data_pack(thiz->packager, nalu.nalu_data, nalu.nalu_len);
 			if (!pkt) {
-				TIMA_LOGE("rtmp_meta_pack failed");
+				TIMA_LOGE("rtmp_data_pack failed");
 				return -1;
 			}
 			nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
@@ -319,8 +345,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			//    printf("%02x ", thiz->buff[16+ii]);
 			//}
 
-			printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
-				len, head.simno, thiz->buff[14], thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
+			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
+			//	len, head.simno, thiz->buff[14], thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
 
 
 
@@ -332,6 +358,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
 				TIMA_LOGI("sim no. [%lld]", thiz->sim);
+
+				rtmp_push_start(p, thiz->sim);
 			}
 			
 			if ((head.mtype & 0xf0) != 0x30) {	// audio
@@ -392,6 +420,22 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
+	return 0;
+}
+
+
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
+{
+	context* ctx = context_get();
+	vmp_node_t* pub = node_create(RTMP_PUBLISH_CLASS, ctx->vector_node);
+
+	RtmpPublishReq req = {0};
+	req.sim			= sim;
+	req.traverse	= list_traverse;
+	pub->parent	= p;
+	pub->pfn_set(pub, 0, &req, sizeof(RtmpPublishReq));
+	pub->pfn_start(pub);
+
 	return 0;
 }
 

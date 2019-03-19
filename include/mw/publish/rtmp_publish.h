@@ -18,9 +18,23 @@ TIMA_BEGIN_DELS
 
 #define RTMP_PUBLISH_CLASS		FOURCCLE('R','T','P','U')
 
+#define stream_object()		\
+	int					cid;		/* channel id */			\
+	int					mtype;		/* media type video/audio */	\
+	int					seq;		/* sequence */			\
+	long				size;		/* package size */			\
+	unsigned long long	sim;		/* sim number */		\
+	unsigned char*		package;
+
+typedef int (*pub_callback)(void* ctx, void* data, void* result);
+
+typedef int (*list_traverse_callback)(vmp_node_t* p, pub_callback proc, void* ctx);
 
 typedef struct
 {
+	unsigned long long		sim;
+
+	list_traverse_callback	traverse;
 
 } RtmpPublishReq;
 

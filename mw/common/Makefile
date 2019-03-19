@@ -20,6 +20,8 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/utils/  \
 	-I$(ROOT_DIR)/include/threadpool/ \
 	-I$(ROOT_DIR)/include/tima/ \
+	-I$(ROOT_DIR)/include/mw/support \
+	-I$(ROOT_DIR)/include/mw/publish \
 	
 	#-I$(ROOT_DIR)/include/libevent/ 
 

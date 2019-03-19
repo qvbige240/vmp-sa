@@ -13,6 +13,16 @@
 #include "tima_rtmp_packager.h"
 #include "tima_rtmp_publisher.h"
 
+typedef struct stream_attribute_s
+{
+	stream_object();
+	//int					cid;		/* channel id */			
+	//int					mtype;		/* media type video/audio */	
+	//int					seq;		/* sequence */			
+	//long					size;		/* package size */			
+	//unsigned long long	sim;		/* sim number */
+	//unsigned char*		package;
+} stream_attribute_t;
 
 
 typedef struct _PrivInfo
@@ -23,13 +33,15 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
+	TimaRTMPPublisher	*publisher[8];
 } PrivInfo;
 
-int rtmp_publish_delete(vmp_node_t* p);
+static int rtmp_publish_delete(vmp_node_t* p);
+static int rtmp_publish_connect(vmp_node_t* p);
 
 
 
-int rtmp_publish_callback(void* p, int msg, void* arg)
+static int rtmp_publish_callback(void* p, int msg, void* arg)
 {
 	vmp_node_t* demo = ((vmp_node_t*)p)->parent;
 	if ( msg != NODE_SUCCESS)
@@ -50,6 +62,8 @@ static void *rtmp_publish_thread(void* arg)
 
 	vmp_node_t* p = (vmp_node_t*)arg;
 	PrivInfo* thiz = p->private;
+
+	rtmp_publish_connect(p);
 
 	while (1) {
 		thiz->cond = 1;
@@ -72,12 +86,12 @@ static void *rtmp_publish_thread(void* arg)
 	return NULL;
 }
 
-int rtmp_publish_get(vmp_node_t* p, int id, void* data, int size)
+static int rtmp_publish_get(vmp_node_t* p, int id, void* data, int size)
 {
 	return 0;
 }
 
-int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
+static int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 {	
 	PrivInfo* thiz = p->private;
 	thiz->req = *((RtmpPublishReq*)data);
@@ -85,7 +99,25 @@ int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 	return 0;
 }
 
-void* rtmp_publish_start(vmp_node_t* p)
+static int rtmp_publish_connect(vmp_node_t* p)
+{
+	int i = 0;
+	char url[256] = {0};
+	PrivInfo* thiz = p->private;
+	const char *uri = "rtmp://172.20.25.47:1935/hls/";
+
+	for (i = 0; i < _countof(thiz->publisher); i++)
+	{
+		//sprintf(url, "%s%d", uri, i+1);
+		snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, i+1);
+		TIMA_LOGI("connect to %s", url);
+		thiz->publisher[i] = tima_rtmp_create(url);
+		tima_rtmp_connect(thiz->publisher[i]);
+	}
+	return 0;
+}
+
+static void* rtmp_publish_start(vmp_node_t* p)
 {
 	VMP_LOGD("rtmp_publish_start");
 
@@ -104,12 +136,12 @@ void* rtmp_publish_start(vmp_node_t* p)
 	return NULL;
 }
 
-int rtmp_publish_stop(vmp_node_t* p)
+static int rtmp_publish_stop(vmp_node_t* p)
 {
 	return 0;
 }
 
-vmp_node_t* rtmp_publish_create(void)
+static vmp_node_t* rtmp_publish_create(void)
 {
 	vmp_node_t* p = NULL;
 
@@ -134,7 +166,7 @@ vmp_node_t* rtmp_publish_create(void)
 	return p;
 }
 
-int rtmp_publish_delete(vmp_node_t* p)
+static int rtmp_publish_delete(vmp_node_t* p)
 {
 	VMP_LOGD("rtmp_publish_delete");
 
