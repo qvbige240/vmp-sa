@@ -78,7 +78,7 @@ static void pkt_node_release(void *ctx, void *data)
 		if (node->package)
 			free(node->package);
 		node->package = NULL;
-		free(node);
+		free((void*)node);
 	}
 }
 static nal_node_t* pkt_node_create(void *package, int size, int cid, int seq)
@@ -137,6 +137,8 @@ static void* list_del_nalu(void* p)
 	nalu = container_of(thiz->nalu_head.next, nal_node_t, node);
 	list_del(thiz->nalu_head.next);
 	thiz->list_size--;
+
+	printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
 
 	pthread_mutex_unlock(&thiz->list_mutex);
 
@@ -272,8 +274,6 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 		}
 		nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
 		list_add_nalu(p, nalu_node);
-		//RTMPPacket meta = thiz->packager->meta_pack(chunk_buffer, channel->meta_data.data, thiz->meta_data.size);
-		//tima_rtmp_send(thiz->publisher, &meta, timestamp);
 	}
 
 	do 
@@ -295,6 +295,7 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 				}
 				nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
 				list_add_nalu(p, nalu_node);
+
 			} else if (nalu.nalu_type == 0x07 || nalu.nalu_type == 0x08 || nalu.nalu_type == 0x06) {
 				continue;
 			}
@@ -336,6 +337,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (ret == 0)
 				return 0;
 
+
 			if (ret < 0)
 				TIMA_LOGE("JT/T 1078-2016 parse failed");
 
@@ -346,8 +348,10 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			//}
 
 			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
-			//	len, head.simno, thiz->buff[14], thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
-
+			//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
+//if (head.channel == 1)
+//			printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
+//				len, head.simno, head.channel, head.mtype, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
 
 
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
@@ -362,12 +366,18 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				rtmp_push_start(p, thiz->sim);
 			}
 			
-			if ((head.mtype & 0xf0) != 0x30) {	// audio
+			if ((head.mtype & 0xf0) == 0x30) {	// audio
 
-			} else if ((head.mtype & 0xf0) != 0x40) {	// transparent
+			} else if ((head.mtype & 0xf0) == 0x40) {	// transparent
 
 			} else {	// video
-				h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel[head.channel]);
+				//if (head.channel != 1)	//...
+				{
+					//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
+					//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
+
+					h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel[head.channel-1]);
+				}
 			}
 
 			//evbuffer_remove(input, thiz->buff, ret);
@@ -426,6 +436,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 
 static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
 {
+	PrivInfo* thiz = p->private;
 	context* ctx = context_get();
 	vmp_node_t* pub = node_create(RTMP_PUBLISH_CLASS, ctx->vector_node);
 
@@ -435,6 +446,8 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
 	pub->parent	= p;
 	pub->pfn_set(pub, 0, &req, sizeof(RtmpPublishReq));
 	pub->pfn_start(pub);
+
+	thiz->publish = pub;
 
 	return 0;
 }
@@ -550,6 +563,13 @@ vmp_node_t* bll_h264_create(void)
 	{
 		PrivInfo* thiz = (PrivInfo*)malloc(sizeof(PrivInfo));
 		memset(thiz, 0, sizeof(PrivInfo));
+
+		pthread_mutex_init(&thiz->list_mutex, NULL);
+		pthread_cond_init(&thiz->cond_empty, NULL);
+
+		thiz->cond	= 1;
+
+		INIT_LIST_HEAD(&thiz->nalu_head);
 		
 		p = (vmp_node_t*)malloc(sizeof(vmp_node_t));
 		memset(p, 0, sizeof(vmp_node_t));

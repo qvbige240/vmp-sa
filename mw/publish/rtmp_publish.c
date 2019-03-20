@@ -26,6 +26,13 @@ typedef struct stream_attribute_s
 	//unsigned char*		package;
 } stream_attribute_t;
 
+typedef struct PublishInfo
+{
+
+	int					connected;
+	TimaRTMPPublisher	*publisher;
+} PublishInfo;
+
 
 typedef struct _PrivInfo
 {
@@ -35,7 +42,8 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
-	TimaRTMPPublisher	*publisher[8];
+	PublishInfo			pub[8];
+	//TimaRTMPPublisher	*publisher[8];
 } PrivInfo;
 
 static int rtmp_publish_delete(vmp_node_t* p);
@@ -57,6 +65,34 @@ static int rtmp_publish_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
+static int rtmp_stream_pub(void* ctx, void* data, void* result)
+{
+	int ret = 0;
+	PrivInfo* thiz = NULL;
+	vmp_node_t* p = (vmp_node_t*)ctx;
+	stream_attribute_t* stream = data;
+	return_val_if_fail(ctx && data, -1);
+
+	thiz = p->private;
+
+	//tima_rtmp_send(thiz->pub[stream->cid-1].publisher, stream->package, timestamp);
+	ret = tima_rtmp_send(thiz->pub[stream->cid].publisher, (RTMPPacket*)stream->package, 0);
+
+	return ret;
+}
+
+static void rtma_publish_proc(vmp_node_t* p)
+{
+	PrivInfo* thiz = p->private;
+	RtmpPublishReq* req = &thiz->req;
+
+	if (req->traverse) {
+		req->traverse(p->parent, rtmp_stream_pub, p);
+	} else {
+		TIMA_LOGE("list_traverse_callback unregister");
+		sleep(2);
+	}
+}
 
 static void *rtmp_publish_thread(void* arg)
 {
@@ -70,10 +106,11 @@ static void *rtmp_publish_thread(void* arg)
 	while (1) {
 		thiz->cond = 1;
 
+		TIMA_LOGD("start rtma_publish_proc");
 
 		while (thiz->cond) {
 
-			sleep(1);
+			rtma_publish_proc(p);
 			//thiz->cond = 0;
 		}
 
@@ -103,18 +140,25 @@ static int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 
 static int rtmp_publish_connect(vmp_node_t* p)
 {
-	int i = 0;
+	int i = 0, ret;
 	char url[256] = {0};
 	PrivInfo* thiz = p->private;
-	const char *uri = "rtmp://172.20.25.47:1935/hls/";
+	//const char *uri = "rtmp://172.20.25.47:1935/hls/";
+	const char *uri = "rtmp://172.20.25.47:1936/live/";
+	//const char *uri = "rtmp://192.168.1.113:1936/live/";
 
-	for (i = 0; i < _countof(thiz->publisher); i++)
+	for (i = 0; i < _countof(thiz->pub); i++)
 	{
 		//sprintf(url, "%s%d", uri, i+1);
 		snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, i+1);
 		TIMA_LOGI("connect to %s", url);
-		thiz->publisher[i] = tima_rtmp_create(url);
-		tima_rtmp_connect(thiz->publisher[i]);
+		thiz->pub[i].publisher = tima_rtmp_create(url);
+		ret = tima_rtmp_connect(thiz->pub[i].publisher);
+		if (ret < 0) {
+			TIMA_LOGW("tima_rtmp_connect failed");
+		} else {
+			thiz->pub[i].connected = 1;
+		}
 	}
 	return 0;
 }
@@ -222,6 +266,10 @@ void* rtmp_data_pack(void* p, const char* data, int length)
 	TimaRTMPPackager* packager = p;
 	int size = sizeof(RTMPPacket) + packager->body_len(length);
 	RTMPPacket *packet = calloc(1, size);
+
+// 	printf("size = %d\n", size);
+// 	RTMPPacket *packet = malloc(size);
+// 	memset((void*)packet, 0x00, size);
 	if (!packet) {
 		TIMA_LOGE("malloc failed");
 		return NULL;
@@ -271,8 +319,11 @@ void* rtmp_data_pack(void* p, const char* data, int length)
 void* rtmp_meta_pack(void* p, const char* data, int length)
 {
 	TimaRTMPPackager* packager = p;
-	int size = sizeof(RTMPPacket) + length + 8;
+	int size = sizeof(RTMPPacket) + length + 8 + RTMP_MAX_HEADER_SIZE;
 	RTMPPacket *packet = calloc(1, size);
+
+	//printf("meta size = %d\n", size);
+	//RTMPPacket *packet = malloc(size);
 	if (!packet) {
 		TIMA_LOGE("malloc failed");
 		return NULL;
