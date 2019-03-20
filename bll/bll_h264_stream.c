@@ -53,7 +53,8 @@ typedef struct _PrivInfo
 	int					cond;
 
 	unsigned long long	sim;
-	StreamChannel		channel[8];
+	//StreamChannel		channel[8];
+	StreamChannel		channel;
 
 	void				*publish;
 	void				*packager;
@@ -63,12 +64,11 @@ typedef struct _PrivInfo
 	list_t				nalu_head;
 	int					list_size;
 	pthread_mutex_t		list_mutex;
-	//pthread_cond_t		cond_full;
 	pthread_cond_t		cond_empty;
 } PrivInfo;
 
 static int bll_h264_delete(vmp_node_t* p);
-static int rtmp_push_start(vmp_node_t* p, unsigned long long sim);
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel);
 
 
 static void pkt_node_release(void *ctx, void *data)
@@ -266,7 +266,6 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 		}
 		channel->started = 1;
 
-		//void* rtmp_data_pack(void* packager, const char* data, int length)
 		pkt = rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
 		if (!pkt) {
 			TIMA_LOGE("rtmp_meta_pack failed");
@@ -349,10 +348,6 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
 			//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
-//if (head.channel == 1)
-//			printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
-//				len, head.simno, head.channel, head.mtype, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
-
 
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
 				ret = JT1078_STREAM_PACKAGE_SIZE;
@@ -361,9 +356,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
-				TIMA_LOGI("sim no. [%lld]", thiz->sim);
+				TIMA_LOGI("sim no. [%lld]: %d", thiz->sim, head.channel);
 
-				rtmp_push_start(p, thiz->sim);
+				rtmp_push_start(p, thiz->sim, head.channel);
 			}
 			
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
@@ -376,7 +371,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 					//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
 					//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
 
-					h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel[head.channel-1]);
+					thiz->channel.id = head.channel;
+					h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel);
 				}
 			}
 
@@ -434,7 +430,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 }
 
 
-static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 {
 	PrivInfo* thiz = p->private;
 	context* ctx = context_get();
@@ -442,6 +438,7 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
 
 	RtmpPublishReq req = {0};
 	req.sim			= sim;
+	req.channel		= channel;
 	req.traverse	= list_traverse;
 	pub->parent	= p;
 	pub->pfn_set(pub, 0, &req, sizeof(RtmpPublishReq));
@@ -454,11 +451,12 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim)
 
 static void h264_stream_init(PrivInfo* thiz)
 {
-	int i = 0;
-	for (i = 0; i < 8; i++) {
-		thiz->channel[i].id = i;
-		tima_buffer_init(&thiz->channel[i].buffer, 128<<10);
-	}
+	//int i = 0;
+	//for (i = 0; i < 8; i++) {
+	//	thiz->channel[i].id = i;
+	//	tima_buffer_init(&thiz->channel[i].buffer, 128<<10);
+	//}
+	tima_buffer_init(&thiz->channel.buffer, 128<<10);
 	thiz->sim = (unsigned long long)-1;
 
 	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);

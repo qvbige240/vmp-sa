@@ -42,7 +42,8 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
-	PublishInfo			pub[8];
+	//PublishInfo			pub[8];
+	PublishInfo			pub;
 	//TimaRTMPPublisher	*publisher[8];
 } PrivInfo;
 
@@ -76,7 +77,7 @@ static int rtmp_stream_pub(void* ctx, void* data, void* result)
 	thiz = p->private;
 
 	//tima_rtmp_send(thiz->pub[stream->cid-1].publisher, stream->package, timestamp);
-	ret = tima_rtmp_send(thiz->pub[stream->cid].publisher, (RTMPPacket*)stream->package, 0);
+	ret = tima_rtmp_send(thiz->pub.publisher, (RTMPPacket*)stream->package, 0);
 
 	return ret;
 }
@@ -140,25 +141,34 @@ static int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 
 static int rtmp_publish_connect(vmp_node_t* p)
 {
-	int i = 0, ret;
+	int ret;
 	char url[256] = {0};
 	PrivInfo* thiz = p->private;
 	//const char *uri = "rtmp://172.20.25.47:1935/hls/";
 	const char *uri = "rtmp://172.20.25.47:1936/live/";
 	//const char *uri = "rtmp://192.168.1.113:1936/live/";
 
-	for (i = 0; i < _countof(thiz->pub); i++)
-	{
-		//sprintf(url, "%s%d", uri, i+1);
-		snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, i+1);
-		TIMA_LOGI("connect to %s", url);
-		thiz->pub[i].publisher = tima_rtmp_create(url);
-		ret = tima_rtmp_connect(thiz->pub[i].publisher);
-		if (ret < 0) {
-			TIMA_LOGW("tima_rtmp_connect failed");
-		} else {
-			thiz->pub[i].connected = 1;
-		}
+	//for (i = 0; i < _countof(thiz->pub); i++)
+	//{
+	//	//sprintf(url, "%s%d", uri, i+1);
+	//	snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, i+1);
+	//	TIMA_LOGI("connect to %s", url);
+	//	thiz->pub[i].publisher = tima_rtmp_create(url);
+	//	ret = tima_rtmp_connect(thiz->pub[i].publisher);
+	//	if (ret < 0) {
+	//		TIMA_LOGW("tima_rtmp_connect failed");
+	//	} else {
+	//		thiz->pub[i].connected = 1;
+	//	}
+	//}
+	snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, thiz->req.channel);
+	TIMA_LOGI("connect to %s", url);
+	thiz->pub.publisher = tima_rtmp_create(url);
+	ret = tima_rtmp_connect(thiz->pub.publisher);
+	if (ret < 0) {
+		TIMA_LOGW("tima_rtmp_connect failed");
+	} else {
+		thiz->pub.connected = 1;
 	}
 	return 0;
 }

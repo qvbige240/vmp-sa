@@ -32,6 +32,7 @@ typedef int (*list_traverse_callback)(vmp_node_t* p, pub_callback proc, void* ct
 
 typedef struct
 {
+	char					channel;
 	unsigned long long		sim;
 
 	list_traverse_callback	traverse;
