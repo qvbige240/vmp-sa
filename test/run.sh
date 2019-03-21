@@ -6,4 +6,5 @@ function current_dir {
 }
 
 #./tvmpss_client -f raw_data.media -s 192.168.1.163 -p 9999 -n 1
-./tvmpss_client -f raw_data.media -s 192.168.1.113 -p 9999 -d 40 -n 1
+#./tvmpss_client -f raw_data.media -s 192.168.1.113 -p 9999 -d 40 -n 1
+./tvmpss_client -f raw_data.video -s 172.20.25.228 -p 9999 -d 8 -n 1
