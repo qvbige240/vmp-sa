@@ -283,10 +283,7 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 			pos += len;
 			TIMA_LOGD("## nalu type(%d) len(%d)", nalu.nalu_type, nalu.nalu_len);
 
-			//send to server
 			if (nalu.nalu_type == 0x05) {
-				//RTMPPacket meta = thiz->packager->meta_pack(chunk_buffer, thiz->meta_data.data, thiz->meta_data.size);
-				//tima_rtmp_send(thiz->publisher, &meta, timestamp);
 				pkt = rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
 				if (!pkt) {
 					TIMA_LOGE("rtmp_meta_pack failed");
@@ -298,9 +295,6 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 			} else if (nalu.nalu_type == 0x07 || nalu.nalu_type == 0x08 || nalu.nalu_type == 0x06) {
 				continue;
 			}
-
-			//RTMPPacket packet = thiz->packager->data_pack(chunk_buffer, nalu.nalu_data, nalu.nalu_len);
-			//tima_rtmp_send(thiz->publisher, &packet, timestamp);
 
 			pkt = rtmp_data_pack(thiz->packager, nalu.nalu_data, nalu.nalu_len);
 			if (!pkt) {
@@ -336,15 +330,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (ret == 0)
 				return 0;
 
-
-			if (ret < 0)
+			if (ret < 0) {
 				TIMA_LOGE("JT/T 1078-2016 parse failed");
-
-			//int ii = 0;
-			//for (ii = 0; ii < 8; ii++)
-			//{
-			//    printf("%02x ", thiz->buff[16+ii]);
-			//}
+			}
 
 			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
 			//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
@@ -366,7 +354,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			} else if ((head.mtype & 0xf0) == 0x40) {	// transparent
 
 			} else {	// video
-				//if (head.channel != 1)	//...
+				//if (head.channel != 1)
 				{
 					//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
 					//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
@@ -375,8 +363,6 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 					h264_stream_proc(p, (const char*)stream, head.bodylen, &thiz->channel);
 				}
 			}
-
-			//evbuffer_remove(input, thiz->buff, ret);
 
 		} else if (clen < 0) {
 			TIMA_LOGE("buffer copy out failed, maybe closed");
@@ -412,7 +398,6 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 			//usleep(110000);
 			break;
 		}
-
 
 	} while (len > 0);
 }

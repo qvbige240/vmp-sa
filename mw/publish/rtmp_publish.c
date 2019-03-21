@@ -91,7 +91,8 @@ static void rtma_publish_proc(vmp_node_t* p)
 		req->traverse(p->parent, rtmp_stream_pub, p);
 	} else {
 		TIMA_LOGE("list_traverse_callback unregister");
-		sleep(2);
+		//sleep(2);
+		thiz->cond = 0;
 	}
 }
 
@@ -169,6 +170,17 @@ static int rtmp_publish_connect(vmp_node_t* p)
 		TIMA_LOGW("tima_rtmp_connect failed");
 	} else {
 		thiz->pub.connected = 1;
+	}
+	return 0;
+}
+
+static int rtmp_publish_disconnect(vmp_node_t* p)
+{
+	PrivInfo* thiz = p->private;
+	if (thiz->pub.connected) {
+		tima_rtmp_destory(thiz->pub.publisher);
+		thiz->pub.publisher = NULL;
+		thiz->pub.connected = 0;
 	}
 	return 0;
 }

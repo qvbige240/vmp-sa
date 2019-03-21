@@ -17,9 +17,9 @@ typedef struct _PrivInfo
 	int					id;
 } PrivInfo;
 
-int bll_demo_delete(vmp_node_t* p);
+static int bll_demo_delete(vmp_node_t* p);
 
-int task_demo_callback(void* p, int msg, void* arg)
+static int task_demo_callback(void* p, int msg, void* arg)
 {
 	vmp_node_t* demo = ((vmp_node_t*)p)->parent;
 	if ( msg != NODE_SUCCESS)
@@ -33,12 +33,12 @@ int task_demo_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
-int bll_demo_get(vmp_node_t* p, int id, void* data, int size)
+static int bll_demo_get(vmp_node_t* p, int id, void* data, int size)
 {
 	return 0;
 }
 
-int bll_demo_set(vmp_node_t* p, int id, void* data, int size)
+static int bll_demo_set(vmp_node_t* p, int id, void* data, int size)
 {	
 	PrivInfo* thiz = p->private;
 	thiz->req = *((DemoDataReq*)data);
@@ -46,7 +46,7 @@ int bll_demo_set(vmp_node_t* p, int id, void* data, int size)
 	return 0;
 }
 
-void* bll_demo_start(vmp_node_t* p)
+static void* bll_demo_start(vmp_node_t* p)
 {
 	VMP_LOGD("bll_demo_start");
 
@@ -56,12 +56,12 @@ void* bll_demo_start(vmp_node_t* p)
 	return NULL;
 }
 
-int bll_demo_stop(vmp_node_t* p)
+static int bll_demo_stop(vmp_node_t* p)
 {
 	return 0;
 }
 
-vmp_node_t* bll_demo_create(void)
+static vmp_node_t* bll_demo_create(void)
 {
 	vmp_node_t* p = NULL;
 
@@ -86,7 +86,7 @@ vmp_node_t* bll_demo_create(void)
 	return p;
 }
 
-int bll_demo_delete(vmp_node_t* p)
+static int bll_demo_delete(vmp_node_t* p)
 {
 	//VMP_LOGD("bll_demo_delete");
 
