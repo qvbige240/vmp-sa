@@ -54,7 +54,7 @@ void* tvmpss_send_thread(void* arg)
 	int flag = 0;
 
 	char sim[13] = {0};
-	sprintf(sim, "%04d%08d", 138, p->jobId);
+	sprintf(sim, "%08s%04d", p->begin, p->jobId);
 
 	while(1)
 	{
