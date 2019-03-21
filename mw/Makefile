@@ -4,7 +4,7 @@ endif
 
 include $(TOP)/make.include
 
-DIRS = common support protocol server trancode
+DIRS = common support protocol server trancode cache http
 
 .PHONY:	all clean $(DIRS)
 

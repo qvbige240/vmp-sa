@@ -28,6 +28,7 @@ typedef struct _StClient
 	void* bev;
 
 	int fd;
+	int delay;
 }StClient;
 
 void* tvmpss_client_thread(void* arg);

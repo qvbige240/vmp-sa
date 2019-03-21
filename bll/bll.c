@@ -20,6 +20,8 @@
 #include "context.h"
 #include "ThreadPool.h"
 #include "tcpserver.h"
+#include "tima.h"
+#include "cache.h"
 
 
 static void PrintThreadPoolStats(void)
@@ -66,14 +68,54 @@ static void PrintThreadPoolStats(void)
 		stats.totalIdleTime);
 }
 
+int do_get_token_callback(void* p, int msg, void* arg)
+{
+	TimaTokenRes* rs = (TimaTokenRes*)arg;
+
+	if ( msg != NODE_SUCCESS)
+	{
+		TIMA_LOGW("do_get_token_callback fail");
+
+		return -1;
+	}
+
+	TIMA_LOGI("do_get_token_callback msg=%d, token=%s", msg, rs->token);
+
+	return 0;
+}
+
+
+static int DoTimaTokenGet(void* ss)
+{
+	node* p = NodeCreate(TIMA_TOKEN_CLASS);
+
+	TimaTokenReq req = {0};
+	strcpy(req.devtype, "TACHOGRAPH");
+	strcpy(req.seriesno, "dfsdfsdfsdfsdf");
+	p->pfnCb	= (nodecb)do_get_token_callback;
+	p->parent	=  NULL;
+	p->pfnSet(p, 0, &req, sizeof(TimaTokenReq));
+	p->pfnStart(p);
+
+	return 0;
+}
+
 
 void bll_init(void)
 {
 	tima_log_init(0);
 	context_init();
+	cache_init();
 	tcpserver_init();
+	tima_init();
+
+	node* cache = NodeCreate(CACHE_CLASS);
+	cache->pfnStart(cache);
+	CacheNetworkConfig cfg = {0};
+	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 
 	bll_demo_init();
+	DoTimaTokenGet(NULL);
 }
 
 int bll_cond(void)
@@ -89,7 +131,9 @@ void bll_idle(void)
 
 void bll_done(void)
 {
+	tima_done();
 	tcpserver_done();
+	cache_done();
 	context_done();
 }
 

@@ -87,6 +87,8 @@ LIB_MW          = $(LIB_DIR)/libmw.a
 LIB_SERVER      = $(LIB_DIR)/libserver.a
 LIB_UTILS       = $(LIB_DIR)/libutils.a
 LIB_TRANCODE	= $(LIB_DIR)/libtrancode.a
+LIB_CACHE		= $(LIB_DIR)/libcache.a
+LIB_HTTP		= $(LIB_DIR)/libhttp.a
 
 STATIC_LIBS     += $(LIB_ZLOG)
 STATIC_LIBS     += $(LIB_EVENT)
@@ -99,5 +101,7 @@ STATIC_LIBS     += $(LIB_MW)
 STATIC_LIBS     += $(LIB_SERVER)
 STATIC_LIBS     += $(LIB_UTILS)
 STATIC_LIBS     += $(LIB_TRANCODE)
+STATIC_LIBS     += $(LIB_CACHE)
+STATIC_LIBS     += $(LIB_HTTP)
 
 DEP_LIBS        += $(LIB_ZLOG)

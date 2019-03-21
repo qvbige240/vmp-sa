@@ -29,6 +29,8 @@ typedef struct context
 	void* tp_transcode;
 	void* tp_push;
 	
+	void* cache;
+	
 	void* bll;
 
 } context;

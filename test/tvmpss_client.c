@@ -110,7 +110,7 @@ void* tvmpss_send_thread(void* arg)
 		end += 3;
 		flag = 0;
 		
-		//usleep(2*1024);  //25 fps
+		usleep(p->delay*1000); 
 	}
 }
 
