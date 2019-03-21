@@ -49,6 +49,7 @@ void help(char *progname)
 		" [-p |  --port ]\tserver port\n" \
 		" [-f |  --file ]\traw video path\n" \
 		" [-n |  --number ]\tclient number\n" \
+		" [-d |  --delay ]\tdelay time\n" \
                   , progname);
   fprintf(stderr, "------------------------------------------------------------------\n");
 }
@@ -135,6 +136,7 @@ int main(int argc, char* argv[])
 	char* strPort = NULL;
 	char* file = NULL;
 	char* number = NULL;
+	char* strDelay = NULL;
 
 	static const struct option long_options[] = {
 		{ "help",			no_argument,			NULL, 'h' },
@@ -142,12 +144,13 @@ int main(int argc, char* argv[])
 		{ "port",			required_argument,		NULL, 'p' },
 		{ "file",			required_argument,		NULL, 'f' },
 		{ "number",		required_argument,		NULL, 'n' },
+		{ "delay",		         required_argument,		NULL, 'd' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	optind = 1;
 	int o;
-	while ((o = getopt_long(argc, argv, "s:p:f:n:h", long_options, NULL)) >= 0) {
+	while ((o = getopt_long(argc, argv, "s:p:f:n:d:h", long_options, NULL)) >= 0) {
 		switch(o) {
 			case 'f':
 				file = strdup(optarg);
@@ -165,13 +168,17 @@ int main(int argc, char* argv[])
 				number= optarg;
 				printf("number=%s\n", number);
 				break;
+			case 'd':
+				strDelay= optarg;
+				printf("delay=%s\n", strDelay);
+				break;
 			default:
 				help(argv[0]);
 				return 0;
 		}
 	}
 
-	if(strIp== NULL || strlen(strIp) <= 0 || strPort == NULL || number == NULL)
+	if(strIp== NULL || strlen(strIp) <= 0 || strPort == NULL || number == NULL || strDelay == NULL)
 	{
 		printf("input params\n");
 		help(argv[0]);
@@ -191,6 +198,7 @@ int main(int argc, char* argv[])
 	char* ip = strIp;
 	int port = atoi(strPort);
 	int num = atoi(number);
+	int delay = atoi(strDelay);
 
 	nRet = 0;
 	ThreadPool* pTP1 = NULL;
@@ -245,6 +253,7 @@ RETRY:
 		c->ip = ip;
 		c->port = port;
 		c->tp = pTP2;
+		c->delay = delay; 
 		
 		ThreadPoolJob job;
 		TPJobInit( &job, ( start_routine) tvmpss_client_thread, c);
