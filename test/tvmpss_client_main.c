@@ -258,6 +258,8 @@ int main(int argc, char* argv[])
 	}
 
 	int i;
+	pthread_mutex_t mutex; 
+	pthread_mutex_init( &mutex, NULL );
 RETRY:	
 	
 	for(i = 0; i<num; i++)
@@ -271,6 +273,8 @@ RETRY:
 		c->delay = delay; 
 		c->begin = strBegin;
 		c->loop = loop;
+		c->mutex = mutex;
+		
 		
 		ThreadPoolJob job;
 		TPJobInit( &job, ( start_routine) tvmpss_client_thread, c);

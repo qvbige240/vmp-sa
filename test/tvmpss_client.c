@@ -42,22 +42,23 @@ void event_cb(struct bufferevent* bev, short event, void* arg)
 
 static int g_index = 0;
 
+
 void* tvmpss_send_thread(void* arg)
 {
 	StClient* p = (StClient*)arg;
 	char* stream_buf  = p->data;
 	int  stream_len = p->len;
 	
-	sleep(1);
-	
 	size_t cur = 0;
 	size_t end = 4;
 	int flag = 0;
 
+	pthread_mutex_lock( &p->mutex );
 	int index = g_index++;
+	pthread_mutex_unlock( &p->mutex );
 
 	char sim[13] = {0};
-	sprintf(sim, "%08s%04d", p->begin, index);
+	sprintf(sim, "%s%04d", p->begin, index);
 
 	while(1)
 	{
@@ -106,7 +107,7 @@ void* tvmpss_send_thread(void* arg)
 			if(!p->loop)
 			{
 				printf("%d-->loop end!\n", index);
-				return;
+				return NULL;
 			}
 			cur = 0;
 			end = 3;
@@ -119,6 +120,8 @@ void* tvmpss_send_thread(void* arg)
 		
 		usleep(p->delay*1000); 
 	}
+
+	return NULL;
 }
 
 

@@ -31,6 +31,7 @@ typedef struct _StClient
 	int delay;
 	char* begin;
 	int loop;
+	pthread_mutex_t mutex;
 }StClient;
 
 void* tvmpss_client_thread(void* arg);
