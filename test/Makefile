@@ -19,7 +19,7 @@ INCLUDE_DIR += \
 
 APP=Y
 
-TARGET = $(TOP)/test/tvmpss_client
+TARGET = $(TOP)/bin/tvmpss_client
 
 include $(TOP)/Makefile.in
 
