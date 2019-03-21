@@ -146,7 +146,7 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	char url[256] = {0};
 	PrivInfo* thiz = p->private;
 	//const char *uri = "rtmp://172.20.25.47:1935/hls/";
-	const char *uri = "rtmp://172.20.25.47:1936/live/";
+	const char *uri = "rtmp://172.20.25.47:1935/live/";
 	//const char *uri = "rtmp://192.168.1.113:1936/live/";
 
 	//for (i = 0; i < _countof(thiz->pub); i++)

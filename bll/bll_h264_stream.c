@@ -311,12 +311,32 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 	return 0;
 }
 
+#if 0
+static int vpk_file_save(const char* filename, void* data, size_t size)
+{
+	FILE* fp = 0;
+	size_t ret = 0;
+	//return_val_if_fail(filename != NULL && data != NULL, -1);
+
+	fp = fopen(filename, "a+");
+	if (fp != NULL && data)
+	{
+		ret = fwrite(data, 1, size, fp);
+		fclose(fp);
+	}
+	if (ret != size)
+		printf("fwrite size(%ld != %ld) incorrect!", ret, size);
+
+	return ret;
+}
+#endif
+
 static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
 {
 	int ret = 0;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	struct evbuffer* input = bufferevent_get_input(bev);
-	size_t len = evbuffer_get_length(input);
+	//size_t len = evbuffer_get_length(input);
 
 	if (input) {
 		unsigned char *stream = NULL;
@@ -393,6 +413,7 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 		if (ret > 0) {
 
 			evbuffer_remove(input, thiz->buff, ret);
+			//vpk_file_save("./one_nalu_raw_data.video", thiz->buff, ret);
 			len -= ret;
 		} else {
 			//usleep(110000);
