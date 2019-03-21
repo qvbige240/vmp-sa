@@ -60,6 +60,9 @@ void* tvmpss_send_thread(void* arg)
 	char sim[13] = {0};
 	sprintf(sim, "%s%04d", p->begin, index);
 
+
+	char tmp[1024] = {0};
+
 	while(1)
 	{
 		while(end < stream_len-4)
@@ -83,8 +86,10 @@ void* tvmpss_send_thread(void* arg)
 		char* data = stream_buf + cur;
 		int len = end - cur;
 
+		memcpy(tmp, data, len);
+
 		//sim
-		char* pSim = data+8;
+		char* pSim = tmp+8;
 		int j;
 		for(j=0; j<6; j++)
 		{
@@ -93,10 +98,10 @@ void* tvmpss_send_thread(void* arg)
 			pSim[j] = c1+c2;
 		}
 
-		printf("%d-->[%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\n", index, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5]);	
+		printf("%d-->[%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\t[%02x] [%02x] [%02x] [%02x]\n", index, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5], tmp[0],tmp[1],tmp[2],tmp[3]);	
 
 		//int bret = bufferevent_write(p->bev, data, len);
-		int bret = send(p->fd, data, len,0);
+		int bret = send(p->fd, tmp, len,0);
 		if(bret < len)
 		{
 			printf("%d-->[%d] \t%s %d\n", index, len, sim, bret);	
