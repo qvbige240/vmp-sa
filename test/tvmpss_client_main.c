@@ -51,6 +51,7 @@ void help(char *progname)
 		" [-n |  --number ]\tclient number\n" \
 		" [-d |  --delay ]\tdelay time\n" \
 		" [-b |  --begin ]\tdelay sim no\n" \
+		" [-l |  --loop flag ]\tloop flag 1=loop\n" \
                   , progname);
   fprintf(stderr, "------------------------------------------------------------------\n");
 }
@@ -139,6 +140,7 @@ int main(int argc, char* argv[])
 	char* number = NULL;
 	char* strDelay = NULL;
 	char* strBegin = NULL;
+	char* strLoop = NULL;
 
 	static const struct option long_options[] = {
 		{ "help",			no_argument,			NULL, 'h' },
@@ -148,12 +150,13 @@ int main(int argc, char* argv[])
 		{ "number",		required_argument,		NULL, 'n' },
 		{ "delay",		         required_argument,		NULL, 'd' },
 		{ "begin",		         required_argument,		NULL, 'b' },
+		{ "loop",		         required_argument,		NULL, 'l' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	optind = 1;
 	int o;
-	while ((o = getopt_long(argc, argv, "s:p:f:n:d:b:h", long_options, NULL)) >= 0) {
+	while ((o = getopt_long(argc, argv, "s:p:f:n:d:b:l:h", long_options, NULL)) >= 0) {
 		switch(o) {
 			case 'f':
 				file = strdup(optarg);
@@ -179,13 +182,17 @@ int main(int argc, char* argv[])
 				strBegin= optarg;
 				printf("begin=%s\n", strBegin);
 				break;
+			case 'l':
+				strLoop= optarg;
+				printf("loop=%s\n", strLoop);
+				break;
 			default:
 				help(argv[0]);
 				return 0;
 		}
 	}
 
-	if(strIp== NULL || strlen(strIp) <= 0 || strPort == NULL || number == NULL || strDelay == NULL ||strBegin == NULL)
+	if(strIp== NULL || strlen(strIp) <= 0 || strPort == NULL || number == NULL || strDelay == NULL ||strBegin == NULL || strLoop == NULL)
 	{
 		printf("input params\n");
 		help(argv[0]);
@@ -206,6 +213,7 @@ int main(int argc, char* argv[])
 	int port = atoi(strPort);
 	int num = atoi(number);
 	int delay = atoi(strDelay);
+	int loop = atoi(strLoop);
 
 	nRet = 0;
 	ThreadPool* pTP1 = NULL;
@@ -262,6 +270,7 @@ RETRY:
 		c->tp = pTP2;
 		c->delay = delay; 
 		c->begin = strBegin;
+		c->loop = loop;
 		
 		ThreadPoolJob job;
 		TPJobInit( &job, ( start_routine) tvmpss_client_thread, c);
