@@ -80,7 +80,14 @@ void* tvmpss_send_thread(void* arg)
 
 		if(0 == flag)
 		{
-			end = stream_len;
+			if(!p->loop)
+			{
+				printf("%d-->loop end!\n", index);
+				return NULL;
+			}
+			cur = 0;
+			end = 3;
+			continue;
 		}
 
 		char* data = stream_buf + cur;
@@ -98,25 +105,13 @@ void* tvmpss_send_thread(void* arg)
 			pSim[j] = c1+c2;
 		}
 
-		printf("%d-->[%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\t[%02x] [%02x] [%02x] [%02x]\n", index, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5], tmp[0],tmp[1],tmp[2],tmp[3]);	
+		printf("%d-->%d [%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\t[%02x] [%02x] [%02x] [%02x]\n", index, len, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5], tmp[0],tmp[1],tmp[2],tmp[3]);	
 
 		//int bret = bufferevent_write(p->bev, data, len);
 		int bret = send(p->fd, tmp, len,0);
 		if(bret < len)
 		{
 			printf("%d-->[%d] \t%s %d\n", index, len, sim, bret);	
-		}
-
-		if(0 == flag)
-		{
-			if(!p->loop)
-			{
-				printf("%d-->loop end!\n", index);
-				return NULL;
-			}
-			cur = 0;
-			end = 3;
-			continue;
 		}
 
 		cur = end;
