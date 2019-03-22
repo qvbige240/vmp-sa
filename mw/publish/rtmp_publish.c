@@ -71,13 +71,19 @@ static int rtmp_publish_release(vmp_node_t* p)
 {
 	PrivInfo* thiz = p->private;
 
+	nodecb	pfn_callback;
+	void*	pfn_ctx;
+
 	if(thiz->req.pfncb) {
-		thiz->req.pfncb(p, NODE_SUCCESS, NULL);
-		//thiz->req.pfncb(p, NODE_FAIL, NULL);
+		pfn_callback = thiz->req.pfncb;
+		pfn_ctx	= p->parent;
 	}
 
 	rtmp_publish_disconnect(p);
 	rtmp_publish_delete(p);
+
+	if (pfn_callback)
+		pfn_callback(pfn_ctx, NODE_SUCCESS, NULL);
 
 	return 0;
 }
@@ -122,8 +128,7 @@ static void *rtmp_publish_thread(void* arg)
 	rtmp_publish_connect(p);
 
 	while (1) {
-		thiz->cond = 1;
-
+		
 		TIMA_LOGD("start rtma_publish_proc");
 
 		while (thiz->cond) {
@@ -131,7 +136,6 @@ static void *rtmp_publish_thread(void* arg)
 			rtma_publish_proc(p);
 			//thiz->cond = 0;
 		}
-
 
 		if (thiz->cond == 0)
 			break;
@@ -246,7 +250,9 @@ static vmp_node_t* rtmp_publish_create(void)
 	{
 		PrivInfo* thiz = (PrivInfo*)malloc(sizeof(PrivInfo));
 		memset(thiz, 0, sizeof(PrivInfo));
-		
+
+		thiz->cond = 1;
+
 		p = (vmp_node_t*)malloc(sizeof(vmp_node_t));
 		memset(p, 0, sizeof(vmp_node_t));
 		p->nclass		= RTMP_PUBLISH_CLASS;

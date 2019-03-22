@@ -234,7 +234,7 @@ static int h264_stream_release(vmp_node_t* p)
 
 static int h264_stream_callback(void* p, int msg, void* arg)
 {
-	vmp_node_t* n = ((vmp_node_t*)p)->parent;
+	vmp_node_t* n = (vmp_node_t*)p;
 	if ( msg != NODE_SUCCESS)
 	{
 		VMP_LOGW("h264_stream_callback fail");
@@ -406,8 +406,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				return 0;
 
 			if (ret < 0) {
-				TIMA_LOGE("JT/T 1078-2016 parse failed");
+				TIMA_LOGE("JT/T 1078-2016 parse failed, ret = %d", ret);
 				TIMA_LOGD("=====flowid[%d] %lld[fd %d]", thiz->req.flowid, thiz->sim, thiz->req.client.fd);
+				goto parse_end;
 			}
 
 			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
@@ -415,8 +416,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
 				TIMA_LOGD("=====flowid[%d] %lld[fd %d], ret = %d", thiz->req.flowid, thiz->sim, thiz->req.client.fd, ret);
+				TIMA_LOGE("JT/T 1078-2016 parse failed, ret = %d", ret);
 				ret = JT1078_STREAM_PACKAGE_SIZE;
-				TIMA_LOGE("JT/T 1078-2016 parse failed");
+				goto parse_end;
 			}
 
 			if (thiz->sim == (unsigned long long)-1) {
@@ -449,7 +451,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 		TIMA_LOGE("socket input failed, socket to be closed");
 		ret = -1;
 	}
-	
+
+parse_end:
 	return ret;
 }
 
@@ -498,7 +501,9 @@ static int rtmp_push_end(vmp_node_t* p, int state)
 	PrivInfo* thiz = p->private;
 	vmp_node_t* pub = thiz->publish;
 
-	pub->pfn_set(pub, state, NULL, 0);
+	if (pub) {
+		pub->pfn_set(pub, state, NULL, 0);
+	}
 
 	//pthread_mutex_lock(&thiz->list_mutex);
 	
