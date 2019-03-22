@@ -49,7 +49,7 @@ typedef struct _PrivInfo
 
 static int rtmp_publish_delete(vmp_node_t* p);
 static int rtmp_publish_connect(vmp_node_t* p);
-
+static int rtmp_publish_disconnect(vmp_node_t* p);
 
 
 static int rtmp_publish_callback(void* p, int msg, void* arg)
@@ -121,6 +121,7 @@ static void *rtmp_publish_thread(void* arg)
 			break;
 	}
 
+	rtmp_publish_disconnect(p);
 
 	rtmp_publish_delete(p);
 
@@ -135,8 +136,20 @@ static int rtmp_publish_get(vmp_node_t* p, int id, void* data, int size)
 static int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 {	
 	PrivInfo* thiz = p->private;
-	thiz->req = *((RtmpPublishReq*)data);
 	
+	thiz->id = id;
+	switch (id)
+	{
+	case RTMP_PUB_STATE_TYPE_START:
+		thiz->req = *((RtmpPublishReq*)data);
+		break;
+	case RTMP_PUB_STATE_TYPE_TIMEOUT:
+	case RTMP_PUB_STATE_TYPE_EOF:
+	case RTMP_PUB_STATE_TYPE_ERROR:
+		thiz->cond = 0;
+		break;
+	}
+
 	return 0;
 }
 
@@ -182,6 +195,7 @@ static int rtmp_publish_disconnect(vmp_node_t* p)
 		thiz->pub.publisher = NULL;
 		thiz->pub.connected = 0;
 	}
+
 	return 0;
 }
 

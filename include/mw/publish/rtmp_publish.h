@@ -18,6 +18,14 @@ TIMA_BEGIN_DELS
 
 #define RTMP_PUBLISH_CLASS		FOURCCLE('R','T','P','U')
 
+typedef enum _RtmpPubStateType
+{
+	RTMP_PUB_STATE_TYPE_START = 1,
+	RTMP_PUB_STATE_TYPE_TIMEOUT,
+	RTMP_PUB_STATE_TYPE_EOF,
+	RTMP_PUB_STATE_TYPE_ERROR,
+} RtmpPubStateType;
+
 #define stream_object()		\
 	int					cid;		/* channel id */			\
 	int					mtype;		/* media type video/audio */	\

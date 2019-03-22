@@ -69,6 +69,7 @@ typedef struct _PrivInfo
 
 static int bll_h264_delete(vmp_node_t* p);
 static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel);
+static int rtmp_push_end(vmp_node_t* p, int state);
 
 
 static void pkt_node_release(void *ctx, void *data)
@@ -132,13 +133,15 @@ static void* list_del_nalu(void* p)
 
 	if (list_empty(&thiz->nalu_head)) {
 		pthread_cond_wait(&thiz->cond_empty, &thiz->list_mutex);
+		printf("=============pthread_cond_wait end======\n");
 	}
 
-	nalu = container_of(thiz->nalu_head.next, nal_node_t, node);
-	list_del(thiz->nalu_head.next);
-	thiz->list_size--;
-
-	printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
+	if (thiz->list_size > 0) {
+		nalu = container_of(thiz->nalu_head.next, nal_node_t, node);
+		list_del(thiz->nalu_head.next);
+		thiz->list_size--;
+		printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
+	}
 
 	pthread_mutex_unlock(&thiz->list_mutex);
 
@@ -162,8 +165,8 @@ static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
 
 		nal_node->destroy(NULL, nal_node);
 	} else {
-		TIMA_LOGE("nalu node get failed");
-		usleep(20000);
+		TIMA_LOGE("nalu node get failed or end");
+		//usleep(20000);
 	}
 
 	return ret;
@@ -180,6 +183,7 @@ static unsigned long get_thread_id(void)
 	r.thr = pthread_self();
 	return (unsigned long)r.id;
 }
+#endif
 
 static int h264_stream_callback(void* p, int msg, void* arg)
 {
@@ -195,7 +199,6 @@ static int h264_stream_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
-#endif
 
 static void stream_socket_eventcb(struct bufferevent* bev, short event, void* arg)
 {
@@ -226,6 +229,7 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 
 	//bll_h264_delete(p);
 	thiz->cond = 0;
+	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
 }
 
 
@@ -341,6 +345,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 	if (input) {
 		unsigned char *stream = NULL;
 		stream_header_t head = {0};
+		memset(thiz->buff, 0x00, sizeof(thiz->buff));
 		ev_ssize_t clen = evbuffer_copyout(input, thiz->buff, JT1078_STREAM_PACKAGE_SIZE);
 		if (clen > 0) {
 			if (clen > JT1078_STREAM_PACKAGE_SIZE)
@@ -352,12 +357,14 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			if (ret < 0) {
 				TIMA_LOGE("JT/T 1078-2016 parse failed");
+				TIMA_LOGD("=====flowid[%d] %lld[fd %d]", thiz->req.flowid, thiz->sim, thiz->req.client.fd);
 			}
 
 			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
 			//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
 
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
+				TIMA_LOGD("=====flowid[%d] %lld[fd %d], ret = %d", thiz->req.flowid, thiz->sim, thiz->req.client.fd, ret);
 				ret = JT1078_STREAM_PACKAGE_SIZE;
 				TIMA_LOGE("JT/T 1078-2016 parse failed");
 			}
@@ -420,7 +427,7 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 			break;
 		}
 
-	} while (len > 0);
+	} while (len > 950);	//...
 }
 
 int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
@@ -436,6 +443,22 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 }
 
 
+static int rtmp_push_end(vmp_node_t* p, int state)
+{
+	PrivInfo* thiz = p->private;
+	vmp_node_t* pub = thiz->publish;
+
+	pub->pfn_set(pub, state, NULL, 0);
+
+	//pthread_mutex_lock(&thiz->list_mutex);
+	
+	pthread_cond_broadcast(&thiz->cond_empty);
+
+	//pthread_mutex_unlock(&thiz->list_mutex);
+
+	return 0;
+}
+
 static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 {
 	PrivInfo* thiz = p->private;
@@ -447,7 +470,7 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 	req.channel		= channel;
 	req.traverse	= list_traverse;
 	pub->parent	= p;
-	pub->pfn_set(pub, 0, &req, sizeof(RtmpPublishReq));
+	pub->pfn_set(pub, RTMP_PUB_STATE_TYPE_START, &req, sizeof(RtmpPublishReq));
 	pub->pfn_start(pub);
 
 	thiz->publish = pub;
