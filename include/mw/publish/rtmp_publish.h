@@ -43,6 +43,7 @@ typedef struct
 	char					channel;
 	unsigned long long		sim;
 
+	nodecb					pfncb;
 	list_traverse_callback	traverse;
 
 } RtmpPublishReq;

@@ -104,6 +104,29 @@ static nal_node_t* pkt_node_create(void *package, int size, int cid, int seq)
 	return pkt;
 }
 
+static int list_clear_out(void* p)
+{
+	nal_node_t* nalu = NULL;
+	PrivInfo* thiz = ((vmp_node_t*)p)->private;
+
+	pthread_mutex_lock(&thiz->list_mutex);
+
+	list_t *pos, *n;
+	list_for_each_safe(pos, n, &thiz->nalu_head)
+	{
+		nalu = container_of(pos, nal_node_t, node);
+		if (nalu) {
+			list_del(pos);
+			nalu->destroy(NULL, nalu);
+			thiz->list_size--;
+		}
+	}
+
+	pthread_mutex_unlock(&thiz->list_mutex);
+
+	return 0;
+}
+
 static int list_add_nalu(void* p, void* data)
 {
 	PrivInfo* thiz = NULL;
@@ -133,14 +156,18 @@ static void* list_del_nalu(void* p)
 
 	if (list_empty(&thiz->nalu_head)) {
 		pthread_cond_wait(&thiz->cond_empty, &thiz->list_mutex);
-		printf("=============pthread_cond_wait end======\n");
 	}
 
 	if (thiz->list_size > 0) {
 		nalu = container_of(thiz->nalu_head.next, nal_node_t, node);
 		list_del(thiz->nalu_head.next);
 		thiz->list_size--;
-		printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
+		if (!nalu)
+			TIMA_LOGE("nalu node get failed, null");
+		else
+			printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
+	} else {
+		TIMA_LOGD("pthread_cond_wait end");
 	}
 
 	pthread_mutex_unlock(&thiz->list_mutex);
@@ -165,7 +192,6 @@ static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
 
 		nal_node->destroy(NULL, nal_node);
 	} else {
-		TIMA_LOGE("nalu node get failed or end");
 		//usleep(20000);
 	}
 
@@ -185,17 +211,40 @@ static unsigned long get_thread_id(void)
 }
 #endif
 
+
+static int h264_stream_release(vmp_node_t* p)
+{
+	if (p) 
+	{
+		PrivInfo* thiz = (PrivInfo*)p->private;
+
+		tima_buffer_clean(&thiz->channel.buffer);
+		if (thiz->channel.meta_data.data) {
+			free(thiz->channel.meta_data.data);
+			thiz->channel.meta_data.data = NULL;
+		}
+
+		list_clear_out(p);
+
+		bll_h264_delete(p);
+	}
+
+	return 0;
+}
+
 static int h264_stream_callback(void* p, int msg, void* arg)
 {
-	vmp_node_t* demo = ((vmp_node_t*)p)->parent;
+	vmp_node_t* n = ((vmp_node_t*)p)->parent;
 	if ( msg != NODE_SUCCESS)
 	{
 		VMP_LOGW("h264_stream_callback fail");
-		bll_h264_delete(demo);
+		h264_stream_release(n);
+		//bll_h264_delete(n);
 		return -1;
 	}
 
-	bll_h264_delete(demo);
+	h264_stream_release(n);
+	//bll_h264_delete(n);
 	return 0;
 }
 
@@ -207,25 +256,26 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	//printf("stream_socket_eventcb\n");
 
-	if( event & (BEV_EVENT_EOF))
-	{
-		TIMA_LOGW("[%ld]Connection closed %d. EOF", thiz->req.flowid, thiz->req.client.fd);
+	if( event & (BEV_EVENT_EOF)) {
+		TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d) EOF (0x%2x)", 
+			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
 	}
-	else if( event & BEV_EVENT_ERROR)
-	{
-		TIMA_LOGW("stream_socket_eventcb ERROR\n");
+	else if( event & BEV_EVENT_ERROR) {
+		TIMA_LOGW("stream_socket_eventcb ERROR (0x%2x)\n", event);
 	}
-	else if( event & BEV_EVENT_TIMEOUT)
-	{
-		TIMA_LOGW("stream_socket_eventcb TIMEOUT\n");
+	else if( event & BEV_EVENT_TIMEOUT) {
+		TIMA_LOGW("stream_socket_eventcb TIMEOUT (0x%2x)\n", event);
 	}
-	else if (event & BEV_EVENT_CONNECTED)
-	{
-		TIMA_LOGI("stream_socket_eventcb CONNECTED\n");
+	else if (event & BEV_EVENT_CONNECTED) {
+		TIMA_LOGI("stream_socket_eventcb CONNECTED (0x%2x)\n", event);
 		return;
+	} else {
+		TIMA_LOGW("stream_socket_eventcb event = 0x%2x\n", event);
 	}
 
-	TIMA_LOGW("stream_socket_eventcb event = 0x%2x\n", event);
+	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
+	bufferevent_disable(bev, EV_READ|EV_WRITE); 
+	bufferevent_free(bev);
 
 	//bll_h264_delete(p);
 	thiz->cond = 0;
@@ -427,7 +477,7 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 			break;
 		}
 
-	} while (len > 950);	//...
+	} while (len > 30);
 }
 
 int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
@@ -469,7 +519,9 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 	req.sim			= sim;
 	req.channel		= channel;
 	req.traverse	= list_traverse;
-	pub->parent	= p;
+	req.pfncb		= h264_stream_callback;
+	pub->parent			= p;
+	//pub->pfn_callback	= h264_stream_callback;
 	pub->pfn_set(pub, RTMP_PUB_STATE_TYPE_START, &req, sizeof(RtmpPublishReq));
 	pub->pfn_start(pub);
 
@@ -616,11 +668,13 @@ vmp_node_t* bll_h264_create(void)
 
 int bll_h264_delete(vmp_node_t* p)
 {
-	VMP_LOGD("bll_h264_delete");
+	VMP_LOGI("bll_h264_delete");
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)
 	{
+		pthread_mutex_destroy(&thiz->list_mutex);
+		pthread_cond_destroy(&thiz->cond_empty);
 		free(thiz);
 		p->private = NULL;
 	}

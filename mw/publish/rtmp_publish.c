@@ -51,7 +51,7 @@ static int rtmp_publish_delete(vmp_node_t* p);
 static int rtmp_publish_connect(vmp_node_t* p);
 static int rtmp_publish_disconnect(vmp_node_t* p);
 
-
+#if 0
 static int rtmp_publish_callback(void* p, int msg, void* arg)
 {
 	vmp_node_t* demo = ((vmp_node_t*)p)->parent;
@@ -63,6 +63,22 @@ static int rtmp_publish_callback(void* p, int msg, void* arg)
 	}
 
 	rtmp_publish_delete(demo);
+	return 0;
+}
+#endif
+
+static int rtmp_publish_release(vmp_node_t* p)
+{
+	PrivInfo* thiz = p->private;
+
+	if(thiz->req.pfncb) {
+		thiz->req.pfncb(p, NODE_SUCCESS, NULL);
+		//thiz->req.pfncb(p, NODE_FAIL, NULL);
+	}
+
+	rtmp_publish_disconnect(p);
+	rtmp_publish_delete(p);
+
 	return 0;
 }
 
@@ -121,9 +137,8 @@ static void *rtmp_publish_thread(void* arg)
 			break;
 	}
 
-	rtmp_publish_disconnect(p);
-
-	rtmp_publish_delete(p);
+	rtmp_publish_release(p);
+	//rtmp_publish_delete(p);
 
 	return NULL;
 }
