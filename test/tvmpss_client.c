@@ -40,6 +40,8 @@ void event_cb(struct bufferevent* bev, short event, void* arg)
 	bufferevent_free(bev);
 }
 
+static int g_index = 0;
+
 
 void* tvmpss_send_thread(void* arg)
 {
@@ -47,14 +49,19 @@ void* tvmpss_send_thread(void* arg)
 	char* stream_buf  = p->data;
 	int  stream_len = p->len;
 	
-	sleep(1);
-	
 	size_t cur = 0;
 	size_t end = 4;
 	int flag = 0;
 
+	pthread_mutex_lock( &p->mutex );
+	int index = g_index++;
+	pthread_mutex_unlock( &p->mutex );
+
 	char sim[13] = {0};
-	sprintf(sim, "%04d%08d", 138, p->jobId);
+	sprintf(sim, "%s%04d", p->begin, index);
+
+
+	char tmp[1024] = {0};
 
 	while(1)
 	{
@@ -79,8 +86,10 @@ void* tvmpss_send_thread(void* arg)
 		char* data = stream_buf + cur;
 		int len = end - cur;
 
+		memcpy(tmp, data, len);
+
 		//sim
-		char* pSim = data+8;
+		char* pSim = tmp+8;
 		int j;
 		for(j=0; j<6; j++)
 		{
@@ -88,19 +97,23 @@ void* tvmpss_send_thread(void* arg)
 			char c2 = (sim[j*2+1]-48);
 			pSim[j] = c1+c2;
 		}
-		//memset(data+8, '0', 6);
-		//memcpy(data+8+6-nSim, str, nSim); 
-		printf("%d-->[%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\n", p->jobId, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5]);	
+
+		printf("%d-->[%02x] [%02x] [%02x] [%02x] [%02x] [%02x]\t[%02x] [%02x] [%02x] [%02x]\n", index, pSim[0],pSim[1],pSim[2],pSim[3],pSim[4],pSim[5], tmp[0],tmp[1],tmp[2],tmp[3]);	
 
 		//int bret = bufferevent_write(p->bev, data, len);
-		int bret = send(p->fd, data, len,0);
+		int bret = send(p->fd, tmp, len,0);
 		if(bret < len)
 		{
-			printf("%d-->[%d] \t%s %d\n", p->jobId, len, sim, bret);	
+			printf("%d-->[%d] \t%s %d\n", index, len, sim, bret);	
 		}
 
 		if(0 == flag)
 		{
+			if(!p->loop)
+			{
+				printf("%d-->loop end!\n", index);
+				return NULL;
+			}
 			cur = 0;
 			end = 3;
 			continue;
@@ -112,6 +125,8 @@ void* tvmpss_send_thread(void* arg)
 		
 		usleep(p->delay*1000); 
 	}
+
+	return NULL;
 }
 
 
