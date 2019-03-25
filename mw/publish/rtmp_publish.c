@@ -42,6 +42,9 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
+	//test...
+	int					released;
+
 	//PublishInfo			pub[8];
 	PublishInfo			pub;
 	//TimaRTMPPublisher	*publisher[8];
@@ -99,7 +102,11 @@ static int rtmp_stream_pub(void* ctx, void* data, void* result)
 	thiz = p->private;
 
 	//tima_rtmp_send(thiz->pub[stream->cid-1].publisher, stream->package, timestamp);
+	if (!thiz->released)
 	ret = tima_rtmp_send(thiz->pub.publisher, (RTMPPacket*)stream->package, 0);
+
+	if (ret < 0)
+		thiz->released = 1;
 
 	return ret;
 }
@@ -178,8 +185,11 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	char url[256] = {0};
 	PrivInfo* thiz = p->private;
 	//const char *uri = "rtmp://172.20.25.47:1935/hls/";
-	const char *uri = "rtmp://172.20.25.47:1935/live/";
-	//const char *uri = "rtmp://192.168.1.113:1936/live/";
+	//const char *uri = "rtmp://172.20.25.47:1935/live/";
+	//const char *uri = "rtmp://192.168.1.113:1935/live/";
+	//const char *uri = "rtmp://192.168.1.118:1935/live/";
+	//const char *uri = "rtmp://172.20.25.228:1935/live/";
+	const char *uri = "rtmp://127.0.0.1:1935/live/";
 
 	//for (i = 0; i < _countof(thiz->pub); i++)
 	//{

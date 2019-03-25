@@ -98,7 +98,8 @@ static int tima_zlog_conf(void)
 	//char* log_path = tima_default_config()->log_path;
 	//char* conf_path = tima_default_config()->data_path;
 	int mode = 3;
-	int level = 4;
+	//int level = 4;	// debug
+	int level = 3;		// info
 	char* log_path = "./log/";
 	char* conf_path = "./tima/";
 
@@ -144,7 +145,7 @@ static int tima_zlog_conf(void)
 	if (mode & 0x01)
 		fprintf(fp,"*.%s         >stdout;default\n", get_log_level_value(level));
 	if (mode & 0x02)
-		fprintf(fp,"*.%s       \"%s%s.log\",1MB * 15 ~ \"%s%s.log.#2r\";\n",
+		fprintf(fp,"*.%s       \"%s%s.log\",10MB * 15 ~ \"%s%s.log.#2r\";\n",
 			get_log_level_value(level), log_path, "tima", log_path, "tima");
 	//fwrite(buffer, 1, strlen(buffer), fp);
 	fflush(fp);
