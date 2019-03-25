@@ -52,6 +52,10 @@ typedef struct _PrivInfo
 	int					id;
 	int					cond;
 
+	int					wmark;
+	int					wm_time;
+	size_t				wm_count;
+
 	unsigned long long	sim;
 	//StreamChannel		channel[8];
 	StreamChannel		channel;
@@ -71,6 +75,30 @@ static int bll_h264_delete(vmp_node_t* p);
 static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel);
 static int rtmp_push_end(vmp_node_t* p, int state);
 
+
+static int stream_nalu_wmcnt(vmp_node_t* p, size_t size)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	if (thiz->wmark)
+		return 0;
+
+	if (thiz->wm_time++ < 4) {
+		thiz->wm_count += size;
+	} else {
+		thiz->wmark = (thiz->wm_count/thiz->wm_time) > (8 << 10) ? 1 : -1;
+	}
+
+	return 0;
+}
+static inline void stream_set_wartermark(vmp_node_t* p, struct bufferevent *bev)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	if (thiz->wmark == 1) {
+		bufferevent_setwatermark(bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, 0);
+		thiz->wmark = 2;
+	}
+}
 
 static void pkt_node_release(void *ctx, void *data)
 {
@@ -337,6 +365,9 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 			pos += len;
 			TIMA_LOGD("## nalu type(%d) len(%d)", nalu.nalu_type, nalu.nalu_len);
 
+			if (!thiz->wmark)
+				stream_nalu_wmcnt(p, nalu.nalu_len);
+
 			if (nalu.nalu_type == 0x05) {
 				pkt = rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
 				if (!pkt) {
@@ -466,6 +497,8 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 	struct evbuffer* input = bufferevent_get_input(bev);
 	size_t len = evbuffer_get_length(input);
 
+	stream_set_wartermark(p, bev);
+
 	do
 	{
 		ret = media_stream_proc(p, bev);
@@ -491,6 +524,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	bufferevent_setcb(s->bev, stream_input_handler, NULL, stream_socket_eventcb, s);
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
+	//bufferevent_setwatermark(s->bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, 0);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
 }

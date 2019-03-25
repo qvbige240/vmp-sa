@@ -17,6 +17,7 @@ TIMA_BEGIN_DELS
 
 #define BLL_H264STREAM_CLASS		FOURCCLE('B','L','H','S')
 
+#define BUFFEREVENT_LOW_WATERMARK	(2 << 10)
 
 typedef struct
 {
