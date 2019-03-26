@@ -65,7 +65,7 @@ INCLUDE_DIR	+= -I/usr/include
 #---------------------------------------------------------------------------
 # Linker options
 #---------------------------------------------------------------------------
-LIBS = -lrtmp -lm  -ldl -lstdc++ -lpthread -lz
+LIBS = -lm  -ldl -lstdc++ -lpthread -lz
 
 #LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 
@@ -79,6 +79,7 @@ LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
 LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
 LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
 #LIB_EVENT       = $(LIB_DIR)/libevent.a
+LIB_RTMP        = $(DEPEND_DIR)/lib/librtmp.a
 LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
 
 LIB_VMP         = $(LIB_DIR)/libvmp.a
@@ -91,6 +92,7 @@ LIB_SERVER      = $(LIB_DIR)/libserver.a
 
 
 STATIC_LIBS     += $(LIB_ZLOG)
+STATIC_LIBS     += $(LIB_RTMP)
 STATIC_LIBS     += $(LIB_EVENT)
 STATIC_LIBS     += $(LIB_THREADPOOL)
 STATIC_LIBS     += $(LIB_VMP)
