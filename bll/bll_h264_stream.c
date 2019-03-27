@@ -51,6 +51,7 @@ typedef struct _PrivInfo
 
 	int					id;
 	int					cond;
+	int					running;
 
 	int					wmark;
 	int					wm_time;
@@ -71,6 +72,7 @@ typedef struct _PrivInfo
 	pthread_cond_t		cond_empty;
 } PrivInfo;
 
+static int bll_h264_stream_close(vmp_node_t* p);
 static int bll_h264_delete(vmp_node_t* p);
 static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel);
 static int rtmp_push_end(vmp_node_t* p, int state);
@@ -192,8 +194,9 @@ static void* list_del_nalu(void* p)
 		thiz->list_size--;
 		if (!nalu)
 			TIMA_LOGE("nalu node get failed, null");
-		else
-			printf("=====[%d] list_size: %d\n", nalu->cid, thiz->list_size);
+		//else
+		if (thiz->list_size > 100)
+			TIMA_LOGI("=====[%d] list_size: %d", nalu->cid, thiz->list_size);
 	} else {
 		TIMA_LOGD("pthread_cond_wait end");
 	}
@@ -216,6 +219,7 @@ static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
 		if (ret < 0) {
 			TIMA_LOGE("nalu process failed");
 			// retry...
+			bll_h264_stream_close(p);
 		}
 
 		nal_node->destroy(NULL, nal_node);
@@ -226,8 +230,8 @@ static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
 	return ret;
 }
 
-#if 0
-static unsigned long get_thread_id(void)
+#if 1
+static unsigned long long get_thread_id(void)
 {
 	union {
 		pthread_t thr;
@@ -235,7 +239,7 @@ static unsigned long get_thread_id(void)
 	} r;
 	memset(&r, 0, sizeof(r));
 	r.thr = pthread_self();
-	return (unsigned long)r.id;
+	return (unsigned long long)r.id;
 }
 #endif
 
@@ -276,6 +280,34 @@ static int h264_stream_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
+static int client_connection_close(vmp_socket_t *s)
+{
+	vmp_node_t* p = (vmp_node_t*)s->priv;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	struct bufferevent *bev = s->bev;
+
+	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
+		thiz->req.flowid, thiz->sim, thiz->channel.id, s->fd);
+
+	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
+	bufferevent_disable(bev, EV_READ|EV_WRITE); 
+	bufferevent_free(bev);
+
+	thiz->cond = 0;
+	if (!thiz->running)
+		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+
+	return 0;
+}
+
+static int bll_h264_stream_close(vmp_node_t* p)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	client_connection_close(&thiz->req.client);
+
+	return 0;
+}
 
 static void stream_socket_eventcb(struct bufferevent* bev, short event, void* arg)
 {
@@ -363,7 +395,7 @@ static int h264_stream_proc(vmp_node_t* p, const char* buf, size_t size, StreamC
 		len = h264_nalu_read(data, length, pos, &nalu);
 		if (len != 0) {
 			pos += len;
-			TIMA_LOGD("## nalu type(%d) len(%d)", nalu.nalu_type, nalu.nalu_len);
+			TIMA_LOGD("## %lld nalu type(%d) len(%d)", thiz->sim, nalu.nalu_type, nalu.nalu_len);
 
 			if (!thiz->wmark)
 				stream_nalu_wmcnt(p, nalu.nalu_len);
@@ -494,8 +526,16 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 	vmp_node_t* p = (vmp_node_t*)s->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
+	if (!thiz->cond)
+		return;
+
+	thiz->running = 1;
+
 	struct evbuffer* input = bufferevent_get_input(bev);
 	size_t len = evbuffer_get_length(input);
+
+	//evbuffer_drain(input, len);
+	//return;
 
 	stream_set_wartermark(p, bev);
 
@@ -506,14 +546,18 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 		if (ret > 0) {
 
 			evbuffer_remove(input, thiz->buff, ret);
-			//vpk_file_save("./one_nalu_raw_data.video", thiz->buff, ret);
+			//vpk_file_save("./cif_raw_data.video", thiz->buff, ret);
 			len -= ret;
 		} else {
 			//usleep(110000);
 			break;
 		}
 
-	} while (len > 30);
+	} while (len > 30 && thiz->cond);
+
+	thiz->running = 0;
+	if (!thiz->cond)
+		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
 }
 
 int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
@@ -707,7 +751,7 @@ vmp_node_t* bll_h264_create(void)
 
 int bll_h264_delete(vmp_node_t* p)
 {
-	VMP_LOGI("bll_h264_delete");
+	VMP_LOGI("bll_h264_delete %p\n", get_thread_id());
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)

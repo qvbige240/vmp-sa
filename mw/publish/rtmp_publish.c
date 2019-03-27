@@ -5,6 +5,8 @@
  *
  */
 
+#include <pthread.h>
+
 #include "librtmp/rtmp.h"
 
 #include "context.h"
@@ -43,7 +45,7 @@ typedef struct _PrivInfo
 	int					cond;
 
 	//test...
-	int					released;
+	//int					released;
 
 	//PublishInfo			pub[8];
 	PublishInfo			pub;
@@ -67,6 +69,19 @@ static int rtmp_publish_callback(void* p, int msg, void* arg)
 
 	rtmp_publish_delete(demo);
 	return 0;
+}
+#endif
+
+#if 1
+static unsigned long long get_thread_id(void)
+{
+	union {
+		pthread_t thr;
+		unsigned long long id;
+	} r;
+	memset(&r, 0, sizeof(r));
+	r.thr = pthread_self();
+	return (unsigned long long)r.id;
 }
 #endif
 
@@ -102,11 +117,13 @@ static int rtmp_stream_pub(void* ctx, void* data, void* result)
 	thiz = p->private;
 
 	//tima_rtmp_send(thiz->pub[stream->cid-1].publisher, stream->package, timestamp);
-	if (!thiz->released)
+	//if (!thiz->released)
 	ret = tima_rtmp_send(thiz->pub.publisher, (RTMPPacket*)stream->package, 0);
-
 	if (ret < 0)
-		thiz->released = 1;
+		TIMA_LOGW("Thread %p %lld tima_rtmp_send, ret = %d", get_thread_id(), thiz->req.sim, ret);
+
+	//if (ret < 0)
+	//	thiz->released = 1;
 
 	return ret;
 }
@@ -188,8 +205,8 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	//const char *uri = "rtmp://172.20.25.47:1935/live/";
 	//const char *uri = "rtmp://192.168.1.113:1935/live/";
 	//const char *uri = "rtmp://192.168.1.118:1935/live/";
-	//const char *uri = "rtmp://172.20.25.228:1935/live/";
-	const char *uri = "rtmp://127.0.0.1:1935/live/";
+	const char *uri = "rtmp://172.20.25.228:1935/live/";
+	//const char *uri = "rtmp://127.0.0.1:1935/live/";
 
 	//for (i = 0; i < _countof(thiz->pub); i++)
 	//{
@@ -205,7 +222,7 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	//	}
 	//}
 	snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, thiz->req.channel);
-	TIMA_LOGI("connect to %s", url);
+	TIMA_LOGI("%p connect to %s", get_thread_id(), url);
 	thiz->pub.publisher = tima_rtmp_create(url);
 	ret = tima_rtmp_connect(thiz->pub.publisher);
 	if (ret < 0) {
@@ -281,7 +298,7 @@ static vmp_node_t* rtmp_publish_create(void)
 
 static int rtmp_publish_delete(vmp_node_t* p)
 {
-	VMP_LOGD("rtmp_publish_delete");
+	VMP_LOGD("rtmp_publish_delete %p", get_thread_id());
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)
