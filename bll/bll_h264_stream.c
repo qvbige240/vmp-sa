@@ -51,7 +51,7 @@ typedef struct _PrivInfo
 
 	int					id;
 	int					cond;
-	int					running;
+	volatile int		running;
 
 	int					wmark;
 	int					wm_time;
@@ -196,7 +196,7 @@ static void* list_del_nalu(void* p)
 			TIMA_LOGE("nalu node get failed, null");
 		//else
 		if (thiz->list_size > 100)
-			TIMA_LOGI("=====[%d] list_size: %d", nalu->cid, thiz->list_size);
+			TIMA_LOGI("%lld [%d] list_size: %d", thiz->sim, nalu->cid, thiz->list_size);
 	} else {
 		TIMA_LOGD("pthread_cond_wait end");
 	}
