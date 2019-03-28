@@ -250,6 +250,11 @@ static int h264_stream_release(vmp_node_t* p)
 	{
 		PrivInfo* thiz = (PrivInfo*)p->private;
 
+		if (thiz->req.client.bev) {
+			bufferevent_free(thiz->req.client.bev);
+			thiz->req.client.bev = NULL;
+		}
+
 		tima_buffer_clean(&thiz->channel.buffer);
 		if (thiz->channel.meta_data.data) {
 			free(thiz->channel.meta_data.data);
@@ -286,16 +291,22 @@ static int client_connection_close(vmp_socket_t *s)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	struct bufferevent *bev = s->bev;
 
+	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
+	bufferevent_disable(bev, EV_READ|EV_WRITE); 
+	//bufferevent_free(bev);
+
+	thiz->cond = 0;
+	usleep(10000);
+
+	while(thiz->running) {
+		usleep(100000);
+	}
+
 	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
 		thiz->req.flowid, thiz->sim, thiz->channel.id, s->fd);
 
-	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
-	bufferevent_disable(bev, EV_READ|EV_WRITE); 
-	bufferevent_free(bev);
-
-	thiz->cond = 0;
-	if (!thiz->running)
-		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+	TIMA_LOGD("================ closed fd %d ================", s->fd);
+	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
 
 	return 0;
 }
@@ -335,7 +346,7 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 
 	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
 	bufferevent_disable(bev, EV_READ|EV_WRITE); 
-	bufferevent_free(bev);
+	//bufferevent_free(bev);
 
 	//bll_h264_delete(p);
 	thiz->cond = 0;
@@ -556,8 +567,6 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 	} while (len > 30 && thiz->cond);
 
 	thiz->running = 0;
-	if (!thiz->cond)
-		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
 }
 
 int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
@@ -581,6 +590,7 @@ static int rtmp_push_end(vmp_node_t* p, int state)
 
 	if (pub) {
 		pub->pfn_set(pub, state, NULL, 0);
+		thiz->publish = NULL;
 	}
 
 	//pthread_mutex_lock(&thiz->list_mutex);

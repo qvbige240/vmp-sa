@@ -57,7 +57,7 @@ int tima_rtmp_connect(TimaRTMPPublisher *publisher)
 	VMP_LOGI("connected[%d]: %s", thiz->id, thiz->url);
 	return 0;
 ret_error:
-	VMP_LOGE("rtmp[%s] connect error.", thiz->url);
+	VMP_LOGE("rtmp[%s] connect rtmp error.", thiz->url);
 	return -1;
 }
 
