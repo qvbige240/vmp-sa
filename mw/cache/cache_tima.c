@@ -3,6 +3,7 @@
 #include "context.h"
 #include "cache_tima.h"
 #include "node.h"
+#include "dictionary.h"
 
 typedef struct _PrivInfo
 {
@@ -45,17 +46,93 @@ static int cache_tima_set(void* p, int id, const void* data, int size)
 	return 0;
 }
 
+static int _cache_tima_load_conf(void* p)
+{
+	PrivInfo* thiz = (PrivInfo*)((node*)p)->private;
+	char* conf = Context()->conf;
+	dictionary*   ini = NULL ;
+
+    	const char  *   s ;
+
+    	ini = iniparser_load(conf);
+    	if (ini==NULL) {
+        		TIMA_LOGE("---------------------cannot parse file: %s", conf);
+        		return -1 ;
+    	}
+    	iniparser_dump(ini, NULL);
+
+    	/* Get network attributes */
+    	s = iniparser_getstring(ini, "network:http_ip", NULL);
+	if(s != NULL && strlen(s) >0)
+	{
+		strcpy(thiz->cfg.http_ip, s);
+		TIMA_LOGD("http_ip: [%s]", s ? s : "UNDEF");
+	}
+	else
+	{
+		TIMA_LOGE("http_ip: [%s]", s ? s : "UNDEF");
+	}
+	
+	s = iniparser_getstring(ini, "network:http_port", NULL);
+	if(s != NULL && strlen(s) >0)
+	{
+		strcpy(thiz->cfg.http_port, s);
+		TIMA_LOGD("http_port: [%s]", s ? s : "UNDEF");
+	}
+	else
+	{
+		TIMA_LOGE("http_port: [%s]", s ? s : "UNDEF");
+	}
+	
+	s = iniparser_getstring(ini, "network:ss_ip", NULL);
+	if(s != NULL && strlen(s) >0)
+	{
+		strcpy(thiz->cfg.ss_ip, s);
+		TIMA_LOGD("ss_ip: [%s]", s ? s : "UNDEF");
+	}
+	else
+	{
+		TIMA_LOGE("ss_ip: [%s]", s ? s : "UNDEF");
+	}
+
+	s = iniparser_getstring(ini, "network:ss_rtmp_port", NULL);
+	if(s != NULL && strlen(s) >0)
+	{
+		strcpy(thiz->cfg.ss_rtmp_port, s);
+		TIMA_LOGD("ss_rtmp_port: [%s]", s ? s : "UNDEF");
+	}
+	else
+	{
+		TIMA_LOGE("ss_rtmp_port: [%s]", s ? s : "UNDEF");
+	}
+
+	s = iniparser_getstring(ini, "network:ss_http_port", NULL);
+	if(s != NULL && strlen(s) >0)
+	{
+		strcpy(thiz->cfg.ss_http_port, s);
+		TIMA_LOGD("ss_http_port: [%s]", s ? s : "UNDEF");
+	}
+	else
+	{
+		TIMA_LOGE("ss_http_port: [%s]", s ? s : "UNDEF");
+	}
+
+    	iniparser_freedict(ini);
+}
+
 static int cache_tima_start(void* p)
 {
 	PrivInfo* thiz = (PrivInfo*)((node*)p)->private;
 	
-	strcpy(thiz->cfg.socket_ip, "115.182.105.71");
-	thiz->cfg.socket_port = 8888;
 	strcpy(thiz->cfg.http_ip, "tg.test.timanetwork.cn");
 	strcpy(thiz->cfg.http_port, "8114");
-	strcpy(thiz->cfg.bda_ip, "bdatest.91carnet.com");
-	strcpy(thiz->cfg.bda_port, "80");
 
+	strcpy(thiz->cfg.ss_ip, "127.0.0.1");
+	strcpy(thiz->cfg.ss_rtmp_port, "1935");
+	strcpy(thiz->cfg.ss_http_port, "8090");
+
+	_cache_tima_load_conf(p);
+	
 	return 0;
 }
 

@@ -27,12 +27,13 @@ context* Context(void)
 	return g_context;
 }
 
-void context_init(void)
+void context_init(char* pConf)
 {
 	context* p = malloc(sizeof(context));
 	if(!p) return;
 	
 	memset(p, 0, sizeof(context));
+	p->conf = pConf;
 	
 	Context_SetContext(p);
 	

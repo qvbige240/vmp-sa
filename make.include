@@ -89,9 +89,10 @@ LIB_UTILS       = $(LIB_DIR)/libutils.a
 LIB_TRANCODE	= $(LIB_DIR)/libtrancode.a
 LIB_CACHE		= $(LIB_DIR)/libcache.a
 LIB_HTTP		= $(LIB_DIR)/libhttp.a
+LIB_JANSSON		= $(LIB_DIR)/libjansson.a
 
 STATIC_LIBS     += $(LIB_ZLOG)
-STATIC_LIBS     += $(LIB_EVENT)
+STATIC_LIBS     += $(LIB_JANSSON)
 STATIC_LIBS     += $(LIB_THREADPOOL)
 STATIC_LIBS     += $(LIB_VMP)
 STATIC_LIBS     += $(LIB_SUPPORT)
@@ -103,5 +104,8 @@ STATIC_LIBS     += $(LIB_UTILS)
 STATIC_LIBS     += $(LIB_TRANCODE)
 STATIC_LIBS     += $(LIB_CACHE)
 STATIC_LIBS     += $(LIB_HTTP)
+STATIC_LIBS     += $(LIB_EVENT)
+STATIC_LIBS     += $(LIB_JANSSON)
 
 DEP_LIBS        += $(LIB_ZLOG)
+

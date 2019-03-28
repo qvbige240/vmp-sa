@@ -14,24 +14,30 @@ LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
 	-I$(ROOT_DIR)/include/	\
-	-I$(ROOT_DIR)/include/utils
+	-I$(ROOT_DIR)/include/jansson
 
 CFLAGS += $(LOCAL_INCLUDE) 
 
 DEFS = -DHAVE_CONFIG_H
 CFLAGS += $(DEFS)  
 
-TARGET		= $(LIB_DIR)/libutils.a
+TARGET		= $(LIB_DIR)/libjansson.a
 
 LDFLAGS = -L$(LIB_DIR)/ -nostartfiles -L$(INSTALL_DIR)/lib -Ttarget.ld 
 
 SOURCES =
 
-SOURCES += 	\
-	tmQueue.c \
-	tmVector.c \
-	dictionary.c \
-	iniparser.c
+SOURCES += 	dump.c \
+	error.c \
+	hashtable.c \
+	hashtable_seed.c \
+	load.c \
+	memory.c \
+	pack_unpack.c \
+	strbuffer.c \
+	strconv.c \
+	utf.c \
+	value.c
 
 OBJS_NAME = $(basename $(SOURCES))
 

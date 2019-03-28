@@ -8,7 +8,7 @@
 #ifndef TM_TIMA_H
 #define TM_TIMA_H
 
-#include "tima_token.h"
+#include "tima_get_property.h"
 
 #pragma pack(1)
 

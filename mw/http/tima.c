@@ -14,9 +14,11 @@
 void tima_init(void)
 {
 	tima_token_init();
+	tima_get_property_init();
 }
 
 void tima_done(void)
 {
 	tima_token_done();
+	tima_get_property_done();
 }

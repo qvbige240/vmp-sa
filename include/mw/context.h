@@ -23,6 +23,7 @@ extern "C"
 typedef struct context
 {
 	tmVector vecNodeDef;
+	char* conf;
 	
 	void* tp;
 	void* tp_connect;
@@ -35,7 +36,7 @@ typedef struct context
 
 } context;
 
-void context_init(void);
+void context_init(char* pConf);
 void context_done(void);
 context* Context(void);
 

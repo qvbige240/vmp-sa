@@ -68,43 +68,45 @@ static void PrintThreadPoolStats(void)
 		stats.totalIdleTime);
 }
 
-int do_get_token_callback(void* p, int msg, void* arg)
+int on_tima_get_property_callback(void* p, int msg, void* arg)
 {
-	TimaTokenRes* rs = (TimaTokenRes*)arg;
+	TimaGetPropertyRsp* res = (TimaGetPropertyRsp*)arg;
 
 	if ( msg != NODE_SUCCESS)
 	{
-		TIMA_LOGW("do_get_token_callback fail");
+		TIMA_LOGW("do_get_property_callback fail");
 
 		return -1;
 	}
 
-	TIMA_LOGI("do_get_token_callback msg=%d, token=%s", msg, rs->token);
+	TIMA_LOGI("do_get_property_callback msg=%d, url=%s, property=%s", msg, res->url, res->property);
 
 	return 0;
 }
 
 
-static int DoTimaTokenGet(void* ss)
+static int do_tima_get_property(void* ss)
 {
-	node* p = NodeCreate(TIMA_TOKEN_CLASS);
+	node* p = NodeCreate(TIMA_GET_PROPERTY_CLASS);
 
-	TimaTokenReq req = {0};
-	strcpy(req.devtype, "TACHOGRAPH");
-	strcpy(req.seriesno, "dfsdfsdfsdfsdf");
-	p->pfnCb	= (nodecb)do_get_token_callback;
+	TimaGetPropertyReq req = {0};
+	strcpy(req.simNo, "013800000000");
+	req.chNo= 1;
+	strcpy(req.url, "192.168.1.118:1935");
+	p->pfnCb	= (nodecb)on_tima_get_property_callback;
 	p->parent	=  NULL;
-	p->pfnSet(p, 0, &req, sizeof(TimaTokenReq));
+	p->pfnSet(p, 0, &req, sizeof(TimaGetPropertyReq));
 	p->pfnStart(p);
 
 	return 0;
 }
 
 
-void bll_init(void)
+
+void bll_init(char* pConf)
 {
 	tima_log_init(0);
-	context_init();
+	context_init(pConf);
 	cache_init();
 	tcpserver_init();
 	tima_init();
@@ -115,7 +117,7 @@ void bll_init(void)
 	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 
 	bll_demo_init();
-	DoTimaTokenGet(NULL);
+	do_tima_get_property(NULL);
 }
 
 int bll_cond(void)

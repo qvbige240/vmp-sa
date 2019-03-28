@@ -20,7 +20,9 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/utils/  \
 	-I$(ROOT_DIR)/include/threadpool/ \
 	-I$(ROOT_DIR)/include/libevent/ \
-	-I$(ROOT_DIR)/include/cache/
+	-I$(ROOT_DIR)/include/cache/ \
+	-I$(ROOT_DIR)/include/jansson/ \
+	-I$(ROOT_DIR)/include/mw/support
 	
 
 CFLAGS += $(LOCAL_INCLUDE) 
@@ -36,6 +38,7 @@ SOURCES +=  \
 	tmHttp.c \
 	tima.c \
 	tima_token.c \
+	tima_get_property.c
 	
 
 OBJS_NAME = $(basename $(SOURCES))
