@@ -12,6 +12,8 @@
 
 #include "bll_h264_stream.h"
 
+#include "event2/bufferevent_compat.h"
+
 #include "tima_jt1078_parser.h"
 #include "tima_h264.h"
 #include "rtmp_publish.h"
@@ -325,30 +327,28 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	vmp_socket_t *s = (vmp_socket_t*)arg;
 	vmp_node_t* p = (vmp_node_t*)s->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
-	//printf("stream_socket_eventcb\n");
 
 	if( event & (BEV_EVENT_EOF)) {
 		TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d) EOF (0x%2x)", 
 			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
-	}
-	else if( event & BEV_EVENT_ERROR) {
-		TIMA_LOGW("stream_socket_eventcb ERROR (0x%2x)\n", event);
-	}
-	else if( event & BEV_EVENT_TIMEOUT) {
-		TIMA_LOGW("stream_socket_eventcb TIMEOUT (0x%2x)\n", event);
-	}
-	else if (event & BEV_EVENT_CONNECTED) {
+	} else if( event & BEV_EVENT_ERROR) {
+		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket ERROR (0x%2x)\n", 
+			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+	} else if( event & BEV_EVENT_TIMEOUT) {
+		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket TIMEOUT (0x%2x)\n", 
+			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+	} else if (event & BEV_EVENT_CONNECTED) {
 		TIMA_LOGI("stream_socket_eventcb CONNECTED (0x%2x)\n", event);
 		return;
 	} else {
-		TIMA_LOGW("stream_socket_eventcb event = 0x%2x\n", event);
+		TIMA_LOGW("[%ld] (%lld_%d fd %d) stream_socket_eventcb event = 0x%2x\n", 
+			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
 	}
 
 	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
 	bufferevent_disable(bev, EV_READ|EV_WRITE); 
 	//bufferevent_free(bev);
 
-	//bll_h264_delete(p);
 	thiz->cond = 0;
 	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
 }
@@ -578,6 +578,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, 0);
+	bufferevent_settimeout(s->bev, 60, 0);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
 }
@@ -694,16 +695,6 @@ void* bll_h264_start(vmp_node_t* p)
 	context * ctx = context_get();
 	thiz->req.client.priv = p;
 	thiz->packager = ctx->packager;
-
-	//int i = 0;
-	//for (i = 0; i < 8; i++) {
-	//	thiz->channel[i].id = i;
-	//	tima_buffer_init(&thiz->channel[i].buffer, 128<<10);
-	//}
-	//thiz->sim = (unsigned long long)-1;
-
-	//TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
-	//client_connection_register(thiz->req.e, &thiz->req.client);
 
 #if 1
 
