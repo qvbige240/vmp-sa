@@ -44,13 +44,13 @@ static void _tima_get_property_json_create(node* p)
 	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 
 	char rtmpUrl[MAX_LEN] = {0};
-	sprintf(rtmpUrl, "rtmp://%s:%s/live/", cfg.ss_ip, cfg.ss_rtmp_port);
+	sprintf(rtmpUrl, "rtmp://%s:%s/live", cfg.ss_ip, cfg.ss_rtmp_port);
 	
 	char hlsUrl[MAX_LEN] = {0};
-	sprintf(hlsUrl, "http://%s:%s/live/", cfg.ss_ip, cfg.ss_http_port);
+	sprintf(hlsUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
 
 	char flvUrl[MAX_LEN] = {0};
-	sprintf(flvUrl, "http://%s:%s/live/", cfg.ss_ip, cfg.ss_http_port);
+	sprintf(flvUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
 
 	char chNo[8] = {0};
 	sprintf(chNo, "%d", req->chNo);
