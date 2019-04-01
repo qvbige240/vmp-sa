@@ -39,42 +39,49 @@ static void _tima_get_property_json_create(node* p)
 	PrivInfo* thiz = p->private;
 	TimaGetPropertyReq* req = &thiz->req;
 
-	unsigned int data_len = 0, len = 0;
+	CacheNetworkConfig cfg;
+	node* cache = Context()->cache;
+	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
+
+	char rtmpUrl[MAX_LEN] = {0};
+	sprintf(rtmpUrl, "rtmp://%s:%s/live/", cfg.ss_ip, cfg.ss_rtmp_port);
+	
+	char hlsUrl[MAX_LEN] = {0};
+	sprintf(hlsUrl, "http://%s:%s/live/", cfg.ss_ip, cfg.ss_http_port);
+
+	char flvUrl[MAX_LEN] = {0};
+	sprintf(flvUrl, "http://%s:%s/live/", cfg.ss_ip, cfg.ss_http_port);
+
 	char chNo[8] = {0};
 	sprintf(chNo, "%d", req->chNo);
 
-	data_len += strlen("?simNo=");
-	data_len += strlen(req->simNo);
-	data_len += strlen("&number=");
-	data_len += strlen(chNo);
-	data_len += strlen("&url=");
-	data_len += strlen(req->url);
+	json_t* json_root = NULL;
+	json_root = json_object();
+	
+	json_object_set_new(json_root, "simNo", json_string(req->simNo));
+	json_object_set_new(json_root, "number", json_string(chNo));
+	json_object_set_new(json_root, "rtmpUrl", json_string(rtmpUrl));
+	json_object_set_new(json_root, "hlsUrl", json_string(hlsUrl));
+	json_object_set_new(json_root, "flvUrl", json_string(flvUrl));
+	
+	char* data_dump = NULL;
+	data_dump = json_dumps(json_root, 0);
 
-	tima_buffer_init(&thiz->buffer, data_len << 1);
-	size_t total = tima_buffer_size(&thiz->buffer);
+	thiz->post_data = malloc(strlen(data_dump) + 1);
+	if (thiz->post_data)
+		strcpy(thiz->post_data, data_dump);
+	else
+		TIMA_LOGE("_tima_get_property_json_create thiz->post_data==NULL.");
 
-	param = "?simNo=";
-	tima_buffer_strdup(&thiz->buffer, param, strlen(param), 1);
-	tima_buffer_strdup(&thiz->buffer, req->simNo, strlen(req->simNo), 1);
+	free(data_dump);
+	json_decref(json_root);
 
-	param = "&number=";
-	tima_buffer_strdup(&thiz->buffer, param, strlen(param), 1);
-	tima_buffer_strdup(&thiz->buffer, chNo, strlen(chNo), 1);
-
-	param = "&url=";
-	tima_buffer_strdup(&thiz->buffer, param, strlen(param), 1);
-	tima_buffer_strdup(&thiz->buffer, req->url, strlen(req->url), 1);
-
-	thiz->post_data = tima_buffer_data(&thiz->buffer, 0);
-	len = tima_buffer_used(&thiz->buffer);
-	total = tima_buffer_size(&thiz->buffer);
-
-	TIMA_LOGD("get property param(len=%d/%d): %s\n", len, total, thiz->post_data);
+	TIMA_LOGD("get property [%d]: %s\n", strlen(thiz->post_data), thiz->post_data);
 }
 
 static bool _tima_get_property_json_parse(node* p, char* data, int len)
 {
-#if 1
+#if 0
 	data = "{  \
     		\"playAddress\": \"playAddress/1/2\",  \
     		\"property\": \"12343423432432\", \
@@ -104,12 +111,11 @@ static bool _tima_get_property_json_parse(node* p, char* data, int len)
 		jobject = json_object_get(json_root, "property");
 		if (!jobject) goto json_parse_end;
 		char* property = (char*)json_string_value(jobject);
-		if (!property || strlen(property) < 2)
+		if (property)
 		{
-			goto json_parse_end;
+			strcpy(rsp->property, property);				
 		}
-		strcpy(rsp->property, property);
-
+		
 		json_decref(json_root);
 		return true;
 
@@ -200,7 +206,7 @@ static void* tima_get_property_start(node* p)
 	
 	PrivInfo* thiz = p->private;
 	HttpUri uri = {0};
-	uri.type	= HTTP_REQ_GET;
+	uri.type	= HTTP_REQ_POST;
 	uri.ip	= cfg.http_ip;
 	uri.port	= cfg.http_port;
 	uri.path	= TIMA_GETPROPERTY_URL;

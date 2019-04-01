@@ -22,7 +22,7 @@ extern "C"
 
 // tg
 #define TIMA_GETOKEN_URL			"/carNet/sc/tg/token"
-#define TIMA_GETPROPERTY_URL		"/sp-device/v1/realtime/video/videoUrlAndProperty"
+#define TIMA_GETPROPERTY_URL		"/sp-device/v1/realtime/video/video-url-and-property"
 
 
 
