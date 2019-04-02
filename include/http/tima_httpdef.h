@@ -16,53 +16,48 @@
 
 #pragma pack(1)
 
-#ifdef __cplusplus
-extern "C"
+TIMA_BEGIN_DELS
+
+typedef enum _HttpReqType 
 {
-#endif
+	HTTP_REQ_POST = 0,
+	HTTP_REQ_GET,
+	HTTP_REQ_PUT,
+} HttpReqType;
 
-	typedef enum _HttpReqType 
-	{
-		HTTP_REQ_POST = 0,
-		HTTP_REQ_GET,
-		HTTP_REQ_PUT,
-	} HttpReqType;
+typedef struct _TimaUri
+{
+	HttpReqType		type;
+	char*			ip;
+	unsigned int	port;
+	char*			path;
+} TimaUri;
 
-	typedef struct _TimaUri
-	{
-		HttpReqType		type;
-		char*			ip;
-		unsigned int	port;
-		char*			path;
-	} TimaUri;
+typedef struct _TimaHttpReq
+{
+	int				id;
+	HttpReqType		reqtype;
+	char			host[32];
+	unsigned int	port;
+	char*			url;		// utf-8
+	char*			data;		// post data utf-8
+	void*			priv;
 
-	typedef struct _TimaHttpReq
-	{
-		int				id;
-		HttpReqType		reqtype;
-		char			host[32];
-		unsigned int	port;
-		char*			url;		// utf-8
-		char*			data;		// post data utf-8
-		void*			priv;
-	} TimaHttpReq;
+	int				retry;
+} TimaHttpReq;
 
-	typedef struct _TimaHttpRsp
-	{
-		int				id;
-		int				status;
-		char			reason[128]; // unicode
-		char*			data;
-		int				size;
-		void*			priv;
-	} TimaHttpRsp;
-
-
+typedef struct _TimaHttpRsp
+{
+	int				id;
+	int				status;
+	char			reason[128]; // unicode
+	char*			data;
+	int				size;
+	void*			priv;
+} TimaHttpRsp;
 
 #pragma pack()
 
-#ifdef __cplusplus
-}
-#endif
+TIMA_END_DELS
 
 #endif // TIMA_HTTPDEF_H

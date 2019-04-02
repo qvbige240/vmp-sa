@@ -57,9 +57,10 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 		strcpy(http->req.url, tima_uri->path);
 	}
 	strncpy(http->req.host, tima_uri->ip, sizeof(http->req.host));
-	http->req.port = tima_uri->port;
-	http->req.priv = node;
-	http->rsp.priv = node;
+	http->req.port	= tima_uri->port;
+	http->req.retry = retry;
+	http->req.priv	= node;
+	http->rsp.priv	= node;
 
 	//context* ctx = context_get();
 	//struct event_base *base = ctx->http_base;
@@ -67,4 +68,3 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 
 	return 0;
 }
-

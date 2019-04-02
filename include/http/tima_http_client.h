@@ -11,36 +11,31 @@
 
 #pragma pack(1)
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+TIMA_BEGIN_DELS
 
 #define HTTP_REQUEST_RETRYTIMES				(3)
 #define HTTP_REQUEST_NONBLOCK_TIMEOUT		(21)
 
-	typedef struct _HttpClient
-	{
-		int							id;
+typedef struct _HttpClient
+{
+	int							id;
 
-		struct event_base			*base;
-		struct evhttp_connection	*evcon;
-		struct evhttp_request		*req;
-		struct bufferevent			*bev;
-		struct evbuffer				*input_buffer;
-		struct evhttp_uri			*uri;
+	struct event_base			*base;
+	struct evhttp_connection	*evcon;
+	struct evhttp_request		*req;
+	struct bufferevent			*bev;
+	struct evbuffer				*input_buffer;
+	struct evhttp_uri			*uri;
 
-		int							retries;
+	int							retries;
 
-		int							status;
-	} HttpClient;
+	int							status;
+} HttpClient;
 
 int tima_http_handle(void *client, TimaHttpReq *req, void *base);
 
 #pragma pack()
 
-#ifdef __cplusplus
-}
-#endif
+TIMA_END_DELS
 
 #endif // TIMA_HTTP_CLIENT_H

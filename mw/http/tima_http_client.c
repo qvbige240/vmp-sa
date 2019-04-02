@@ -17,6 +17,54 @@
 
 static void http_handle_200(void* ctx, HttpClient* client);
 
+static void http_request_free(HttpClient *client)
+{
+	if (client) 
+	{
+		if (client->evcon)
+			evhttp_connection_free(client->evcon);
+
+		if (client->input_buffer)
+			evbuffer_free(client->input_buffer);
+	}
+}
+
+static void http_data_printf(int id, char* data)
+{
+	TIMA_LOGI("[%d]RESPONSE DUMP: %s", id, data);
+}
+
+static void http_handle_200(void* ctx, HttpClient* client)
+{
+	struct evbuffer* input = client->input_buffer;
+	if (input)
+	{
+		int len = evbuffer_get_length(input);
+		if (len > 0)
+		{
+			//pHttp->rsp.data = (char*)malloc(len+1);
+			//pHttp->rsp.size = evbuffer_remove(input, pHttp->rsp.data, len);
+			//pHttp->rsp.data[len] = '\0';
+			char tmp[1024] = {0};
+			evbuffer_remove(input, tmp, len);
+			TIMA_LOGI("====== respone: %s \n", tmp);
+
+		}
+	}
+
+	//http_data_printf(client->id, pHttp->rsp.data);
+
+	//pHttp->cbHttp(&pHttp->rsp);
+
+	//if (pHttp->rsp.data)
+	//{
+	//	free(pHttp->rsp.data);
+	//	pHttp->rsp.data = NULL;
+	//}
+
+	http_request_free(client);
+}
+
 static void http_request_done(struct evhttp_request *req, void *ctx)
 {
 	HttpClient *client = (HttpClient*)ctx;
@@ -29,6 +77,7 @@ static void http_request_done(struct evhttp_request *req, void *ctx)
 		TIMA_LOGE("[%d]http_request_done, req null, arg: %p, retry = %d\n", client->id, ctx, client->retries);
 		//retry++;
 		//event_base_loopexit(base, 0);
+		//http_request_free(client);
 		return;
 	}
 
@@ -68,56 +117,13 @@ static void http_error_callback(enum evhttp_request_error e, void *arg)
 }
 
 
-static void http_data_printf(int id, char* data)
-{
-	TIMA_LOGI("[%d]RESPONSE DUMP: %s", id, data);
-}
-
-static void http_handle_200(void* ctx, HttpClient* client)
-{
-	struct evbuffer* input = client->input_buffer;
-	if (input)
-	{
-		int len = evbuffer_get_length(input);
-		if (len > 0)
-		{
-			//pHttp->rsp.data = (char*)malloc(len+1);
-			//pHttp->rsp.size = evbuffer_remove(input, pHttp->rsp.data, len);
-			//pHttp->rsp.data[len] = '\0';
-			char tmp[1024] = {0};
-			evbuffer_remove(input, tmp, len);
-			printf("\n====== respone: %s ", tmp);
-
-		}
-	}
-
-	//http_data_printf(client->id, pHttp->rsp.data);
-
-	//pHttp->cbHttp(&pHttp->rsp);
-
-	//if (pHttp->rsp.data)
-	//{
-	//	free(pHttp->rsp.data);
-	//	pHttp->rsp.data = NULL;
-	//}
-
-	if (client->evcon)
-		evhttp_connection_free(client->evcon);
-
-	if (client->input_buffer)
-		evbuffer_free(client->input_buffer);
-
-	//if (client->base)
-	//	event_base_free(client->base);
-}
-
 
 //void* tima_http_handle(void *arg)
 //int tima_http_handle(HttpClient *thiz, TimaHttpReq *req, struct event_base *base)
 int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 {
 	int ret = 0;
-	int retries = 0;
+	int retries = 1;//HTTP_REQUEST_RETRYTIMES;
 	int timeout = HTTP_REQUEST_NONBLOCK_TIMEOUT;
 
 	struct evkeyvalq *output_headers;
@@ -140,6 +146,7 @@ int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 		default: break;
 	}
 
+	retries = req->retry > retries ? req->retry : retries;
 	if (req->port == 0) {
 		req->port = (type == REQUEST_TYPE_HTTP) ? 80 : 443;
 	}
@@ -162,6 +169,7 @@ int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 	//		BEV_OPT_CLOSE_ON_FREE|BEV_OPT_DEFER_CALLBACKS);
 	//evcon = evhttp_connection_base_bufferevent_new(thiz->base, NULL, bthiz->ev, host, port);
 	thiz->id = req->id;
+	thiz->retries = retries;
 	thiz->input_buffer = evbuffer_new();
 	if (thiz->input_buffer == NULL) {
 		TIMA_LOGE("[%d]evbuffer_new() NULL", thiz->id);
@@ -210,7 +218,7 @@ int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 
 error:
 	ret = -1;
-cleanup:
+//cleanup:
 	if (thiz->evcon)
 		evhttp_connection_free(thiz->evcon);
 

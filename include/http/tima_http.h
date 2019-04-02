@@ -11,12 +11,7 @@
 
 #pragma pack(1)
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-
+TIMA_BEGIN_DELS
 
 typedef void (*TimaHttpCB)(TimaHttpRsp* rsp);
 
@@ -25,8 +20,6 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 
 #pragma pack()
 
-#ifdef __cplusplus
-}
-#endif
+TIMA_END_DELS
 
 #endif // TIMA_HTTP_H
