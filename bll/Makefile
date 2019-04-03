@@ -19,6 +19,7 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/threadpool/  \
 	-I$(ROOT_DIR)/include/mw/support/ \
 	-I$(ROOT_DIR)/include/mw/publish \
+	-I$(ROOT_DIR)/include/http/ \
 	-I$(ROOT_DIR)/include/bll/	\
 	-I$(ROOT_DIR)/include/mw/ 	\
 

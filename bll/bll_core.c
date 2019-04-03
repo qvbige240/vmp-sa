@@ -87,7 +87,37 @@ static int task_server_listener(PrivInfo* thiz)
 	return 0;
 }
 
+#if 1
+#include "http_token.h"
+#include <event2/event.h>
+#include <event2/event_struct.h>
+static int DoTimaTokenGet(void)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(HTTP_TOKEN_CLASS, ctx->vector_node);
 
+	HttpTokenReq req = {0};
+	strcpy(req.devtype, "TACHOGRAPH");
+	strcpy(req.seriesno, "123456789012345");
+	//p->parent	= thiz;
+	p->pfn_set(p, 0, &req, sizeof(HttpTokenReq));
+	p->pfn_start(p);
+
+	return 0;
+}
+struct event_base* http_base;
+static void timeout_cb(evutil_socket_t fd, short event, void *arg)
+{
+	struct event *timeout = arg;
+	struct timeval tv;
+	evutil_timerclear(&tv);
+	tv.tv_sec = 500;
+	event_add(timeout, &tv);
+
+	printf("================= start get token test =================\n");
+	DoTimaTokenGet();
+}
+#endif
 
 static void* bll_core_thread(void* arg)
 {
@@ -95,6 +125,8 @@ static void* bll_core_thread(void* arg)
 
 	//test...
 	task_server_listener(thiz);
+
+	http_base = event_base_new();
 
 	while(thiz->cond)
 	{
@@ -104,7 +136,23 @@ static void* bll_core_thread(void* arg)
 		//	bll_core_onmsg(thiz, msg);
 		//	free(msg);
 		//}
-		sleep(1);
+		//sleep(1);
+
+
+		struct event timeout;
+		struct timeval tv;
+		//int flags = EV_PERSIST;
+		int flags = 0;
+		/* Initalize one event */
+		event_assign(&timeout, http_base, -1, flags, timeout_cb, (void*) &timeout);
+
+		evutil_timerclear(&tv);
+		tv.tv_sec = 2;
+		event_add(&timeout, &tv);
+
+		event_base_dispatch(http_base);
+		event_base_free(http_base);
+		printf("================= end ===================\n");
 	}
 
 	return NULL;

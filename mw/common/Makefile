@@ -22,6 +22,7 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/tima/ \
 	-I$(ROOT_DIR)/include/mw/support \
 	-I$(ROOT_DIR)/include/mw/publish \
+	-I$(ROOT_DIR)/include/http \
 	
 	#-I$(ROOT_DIR)/include/libevent/ 
 

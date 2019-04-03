@@ -17,6 +17,8 @@
 #include "rtmp_publish.h"
 #include "tima_rtmp_packager.h"
 
+#include "http_token.h"
+
 
 static context* g_context = NULL;
 
@@ -44,6 +46,8 @@ void context_init(void)
 	node_init((void**)&p->vector_node);
 	tp_init();
 	rtmp_publish_init();
+
+	http_token_init();
 }
 
 void context_done(void)
