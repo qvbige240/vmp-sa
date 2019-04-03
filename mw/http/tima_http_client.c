@@ -15,8 +15,6 @@
 #include "event2/http.h"
 
 
-static void http_handle_200(void* ctx, HttpClient* client);
-
 static void http_request_free(HttpClient *client)
 {
 	if (client) 
@@ -26,6 +24,9 @@ static void http_request_free(HttpClient *client)
 
 		if (client->input_buffer)
 			evbuffer_free(client->input_buffer);
+
+		if (client->ops.free)
+			client->ops.free(client);
 	}
 }
 
@@ -34,6 +35,16 @@ static void http_data_printf(int id, char* data)
 	TIMA_LOGI("[%d]RESPONSE DUMP: %s", id, data);
 }
 
+static void http_handle_failed(int errcode, HttpClient* client)
+{
+	client->rsp->status = errcode;
+
+	if (client->ops.write) {
+		client->ops.write(client, client->rsp);
+	}
+
+	http_request_free(client);
+}
 static void http_handle_200(void* ctx, HttpClient* client)
 {
 	struct evbuffer* input = client->input_buffer;
@@ -42,25 +53,22 @@ static void http_handle_200(void* ctx, HttpClient* client)
 		int len = evbuffer_get_length(input);
 		if (len > 0)
 		{
-			//pHttp->rsp.data = (char*)malloc(len+1);
-			//pHttp->rsp.size = evbuffer_remove(input, pHttp->rsp.data, len);
-			//pHttp->rsp.data[len] = '\0';
-			char tmp[1024] = {0};
-			evbuffer_remove(input, tmp, len);
-			TIMA_LOGI("====== respone: %s \n", tmp);
+			//char tmp[1024] = {0};
+			//evbuffer_remove(input, tmp, len);
+			//TIMA_LOGI("====== respone: %s \n", tmp);
 
+			client->rsp->data = calloc(1, len+1);
+			client->rsp->size = evbuffer_remove(input, client->rsp->data, len);
 		}
 	}
 
-	//http_data_printf(client->id, pHttp->rsp.data);
-
-	//pHttp->cbHttp(&pHttp->rsp);
-
-	//if (pHttp->rsp.data)
-	//{
-	//	free(pHttp->rsp.data);
-	//	pHttp->rsp.data = NULL;
-	//}
+	client->rsp->status = 200;
+	http_data_printf(client->id, client->rsp->data);
+	client->ops.write(client, client->rsp);
+	if (client->rsp->data) {
+		free(client->rsp->data);
+		client->rsp->data = NULL;
+	}
 
 	http_request_free(client);
 }
@@ -71,17 +79,17 @@ static void http_request_done(struct evhttp_request *req, void *ctx)
 
 	if (req == NULL) {
 		/* If the OpenSSL error queue was empty, maybe it was a
-		* socket error; let's try printing that. */
+		 * socket error; let's try printing that. */
 		int errcode = EVUTIL_SOCKET_ERROR();
 		TIMA_LOGE("[%d]socket error = %s (%d)", client->id, evutil_socket_error_to_string(errcode), errcode);
 		TIMA_LOGE("[%d]http_request_done, req null, arg: %p, retry = %d\n", client->id, ctx, client->retries);
 		//retry++;
 		//event_base_loopexit(base, 0);
 		//http_request_free(client);
+		http_handle_failed(errcode, client);
 		return;
 	}
 
-	//fprintf(stderr, "Response line: %d %s\n", req->response_code, req->response_code_line);
 	int response_code = evhttp_request_get_response_code(req);
 	const char* response_code_line = evhttp_request_get_response_code_line(req);
 	fprintf(stderr, "Response line: %d %s\n", response_code, response_code_line);
@@ -97,18 +105,12 @@ static void http_request_done(struct evhttp_request *req, void *ctx)
 		break;
 	default:
 		/*  FAILURE */
-		TIMA_LOGW("[%d]http_request_done, response_code = %d, retry = %d\n", client->id, response_code, client->retries);
+		TIMA_LOGE("[%d]http_request_done, response_code = %d, retry = %d\n", client->id, response_code, client->retries);
 		//event_base_loopexit(client->base, 0);
+
+		http_handle_failed(response_code, client);
 		return;
 	}
-
-	//while ((nread = evbuffer_remove(evhttp_request_get_input_buffer(req),
-	//	    buffer, sizeof(buffer)))
-	//       > 0) {
-	//	/* These are just arbitrary chunks of 256 bytes.
-	//	 * They are not lines, so we can't treat them as such. */
-	//	fwrite(buffer, nread, 1, stdout);
-	//}
 }
 
 static void http_error_callback(enum evhttp_request_error e, void *arg)
@@ -116,10 +118,6 @@ static void http_error_callback(enum evhttp_request_error e, void *arg)
 	TIMA_LOGE("request error type = %d\n\n", e);
 }
 
-
-
-//void* tima_http_handle(void *arg)
-//int tima_http_handle(HttpClient *thiz, TimaHttpReq *req, struct event_base *base)
 int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 {
 	int ret = 0;

@@ -8,16 +8,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stddef.h>
 
 #include "tima_http.h"
 #include "tima_http_client.h"
+
 
 typedef struct tima_http_s
 {
 	TimaHttpReq			req;
 	TimaHttpRsp			rsp;
 
-	TimaHttpCB			http_callback;
+	TimaHttpCB			callback;
 
 	int					retry;
 
@@ -27,6 +29,24 @@ typedef struct tima_http_s
 
 static int t_id = 0;
 extern struct event_base* http_base;
+
+static int tima_http_feed(void *ctx, void *data)
+{
+	tima_http_t *http = container_of(ctx, tima_http_t, client);
+
+	if (http->callback)
+		http->callback(data);
+
+	return 0;
+}
+static int tima_http_free(void *ctx)
+{
+	//tima_http_t *http = container_of(ctx, tima_http_t, client);
+	
+	
+	
+	return 0;
+}
 
 int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, int retry, int *task_id)
 {
@@ -38,7 +58,7 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 
 	TimaUri* tima_uri = (TimaUri*)uri;
 
-	http->http_callback = callback;
+	http->callback		= callback;
 	http->req.id		= t_id++;
 	http->req.reqtype	= tima_uri->type;
 	if (tima_uri->type == HTTP_REQ_GET)
@@ -61,9 +81,15 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 	http->req.retry = retry;
 	http->req.priv	= node;
 	http->rsp.priv	= node;
+	http->rsp.id	= t_id;
 
 	//context* ctx = context_get();
 	//struct event_base *base = ctx->http_base;
+
+	HttpClient *client = (HttpClient*)http->client;
+	client->ops.write	= tima_http_feed;
+	client->ops.free	= tima_http_free;
+	client->rsp			= &http->rsp;
 	tima_http_handle(http->client, &http->req, http_base);
 
 	return 0;

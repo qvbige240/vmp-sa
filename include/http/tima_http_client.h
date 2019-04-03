@@ -16,8 +16,17 @@ TIMA_BEGIN_DELS
 #define HTTP_REQUEST_RETRYTIMES				(3)
 #define HTTP_REQUEST_NONBLOCK_TIMEOUT		(21)
 
+typedef struct http_ops
+{
+	int				(*write)(void *ctx, void *data);
+	int				(*free)(void *ctx);
+} http_ops;
+
 typedef struct _HttpClient
 {
+	http_ops					ops;
+	TimaHttpRsp					*rsp;
+
 	int							id;
 
 	struct event_base			*base;
