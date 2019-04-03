@@ -34,6 +34,7 @@ SOURCES +=  \
 	tima_rtmp_packager_h264.c \
 	tima_rtmp_publisher.c \
 	tima_jt1078_parser.c \
+	tima_rtmp_packager_aac.c\
 
 
 OBJS_NAME = $(basename $(SOURCES))
