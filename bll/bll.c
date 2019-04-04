@@ -20,6 +20,7 @@
 #include "server_listener.h"
 #include "bll_core.h"
 #include "bll_h264_stream.h"
+#include "bll_http_base.h"
 
 static void PrintThreadPoolStats(void)
 {
@@ -51,9 +52,10 @@ void bll_init(void)
 	tima_log_init(0);
 	context_init();
 	server_listener_init();
-	bll_core_init();
 	bll_h264_init();
+	bll_hbase_init();
 
+	bll_core_init();	// start
 }
 
 int bll_cond(void)

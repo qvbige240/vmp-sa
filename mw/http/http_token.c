@@ -5,6 +5,10 @@
  *
  */
 
+#include <stdbool.h>
+
+#include "jansson.h"
+
 #include "context.h"
 #include "tima_http.h"
 #include "tima_support.h"
@@ -71,19 +75,90 @@ static void token_json_free(vmp_node_t* p)
 	}
 }
 
-//static int task_demo_callback(void* p, int msg, void* arg)
-//{
-//	vmp_node_t* demo = ((vmp_node_t*)p)->parent;
-//	if ( msg != NODE_SUCCESS)
-//	{
-//		VMP_LOGW("task_demo_callback fail");
-//		http_token_delete(demo);
-//		return -1;
-//	}
-//
-//	http_token_delete(demo);
-//	return 0;
-//}
+static bool token_json_parse(vmp_node_t* p, char* data, int len)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	HttpTokenRep* rep = &thiz->rep;
+	char* emsg = NULL;
+	char* ecode = NULL;
+	json_t* json_root = json_loads(data, 0, NULL);
+	if (json_root)
+	{
+		//json_t *jobject, *jresult;
+		//jresult = json_object_get(json_root, "returnSuccess");
+		//if (!jresult)  goto json_parse_end;
+		//bool result = json_boolean_value(jresult);
+		//strcpy(thiz->res.result, result ? "true" : "false");
+		//TIMA_LOGI("returnSuccess: %s", result ? "true" : "false");
+		//if (!result) goto json_parse_end;
+
+		json_t *jobject;
+		jobject = json_object_get(json_root, "token");
+		if (!jobject) goto json_parse_end;
+		char* token = (char*)json_string_value(jobject);
+		if (!token || strlen(token) < 2)
+		{
+			TIMA_LOGE("ERROR:\n ======= get token error!!!! =======\n");
+			goto json_parse_end;
+		}
+		strcpy(rep->token, token);
+
+		json_decref(json_root);
+		return true;
+
+json_parse_end:
+		TIMA_LOGE("\n ======= get token error!!!! =======\n");
+		jobject = json_object_get(json_root, "returnErrCode");
+		if (jobject) {
+			ecode = (char*)json_string_value(jobject);
+			if (ecode) {
+				TIMA_LOGE("ERROR: return error at %s", ecode);
+			}
+		}
+		jobject = json_object_get(json_root, "returnErrMsg");
+		if (jobject) {
+			emsg = (char*)json_string_value(jobject);
+			if (emsg) {
+				TIMA_LOGE("ERROR: return error msg %s", emsg);
+			}
+		}
+		json_decref(json_root);
+	}
+
+	return false;
+}
+
+void http_token_callback(TimaHttpRsp* rsp)
+{
+	TIMA_LOGI("http_token_callback %d %s %d %d %s", rsp->id, rsp->reason, rsp->size, rsp->status, rsp->data);
+
+	bool ret = false;
+	vmp_node_t* p = (vmp_node_t*)rsp->priv;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	if (rsp->status == 200) {
+		ret = token_json_parse(p, rsp->data, rsp->size);
+	}
+
+	if(ret == true)
+	{
+		if(p->pfn_callback) 
+		{
+			HttpTokenRep* rep = &thiz->rep;
+			p->pfn_callback(p, NODE_SUCCESS, rep);
+		}
+	}
+	else
+	{
+		TIMA_LOGE("get_token failed!");
+		if(p->pfn_callback) 
+		{
+			p->pfn_callback(p, NODE_FAIL, NULL);
+		}
+	}
+
+	http_token_delete(p);
+}
+
 
 static int http_token_get(vmp_node_t* p, int id, void* data, int size)
 {
@@ -112,7 +187,7 @@ static void* http_token_start(vmp_node_t* p)
 
 	token_json_create(p);
 	//tmHttpPost(&tima_uri, thiz->post_data, p, tima_token_callback, 3, NULL, &thiz->id);
-	tima_http_post(&tima_uri, thiz->post_data, p, NULL, 3, &thiz->id);
+	tima_http_post(&tima_uri, thiz->post_data, p, http_token_callback, 3, &thiz->id);
 	token_json_free(p);
 
 	return NULL;

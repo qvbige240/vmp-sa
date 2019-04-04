@@ -70,12 +70,14 @@ LIBS = -lm  -ldl -lstdc++ -lpthread -lz
 #LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 
 DEPEND_DIR      = $(TOP)/depends/x86/install
+#DEPEND_DIR      = $(TOP)/../premake/ubuntu/install
 
 
 INCLUDE_DIR     += -I$(DEPEND_DIR)/include
 
 
 LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
+LIB_JANSSON     = $(DEPEND_DIR)/lib/libjansson.a
 LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
 LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
 #LIB_EVENT       = $(LIB_DIR)/libevent.a
@@ -93,6 +95,7 @@ LIB_SERVER      = $(LIB_DIR)/libserver.a
 
 
 STATIC_LIBS     += $(LIB_ZLOG)
+STATIC_LIBS     += $(LIB_JANSSON)
 STATIC_LIBS     += $(LIB_RTMP)
 STATIC_LIBS     += $(LIB_EVENT)
 STATIC_LIBS     += $(LIB_THREADPOOL)

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stddef.h>
 
+#include "context.h"
 #include "tima_http.h"
 #include "tima_http_client.h"
 
@@ -28,7 +29,7 @@ typedef struct tima_http_s
 } tima_http_t;
 
 static int t_id = 0;
-extern struct event_base* http_base;
+//extern struct event_base* http_base;
 
 static int tima_http_feed(void *ctx, void *data)
 {
@@ -50,7 +51,7 @@ static int tima_http_free(void *ctx)
 
 int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, int retry, int *task_id)
 {
-	tima_http_t *http = malloc(sizeof(tima_http_t) + sizeof(HttpClient));
+	tima_http_t *http = calloc(1, (sizeof(tima_http_t) + sizeof(HttpClient)));
 	if (!http) {
 		TIMA_LOGE("tima_http_post failed, malloc null.");
 		return -1;
@@ -83,14 +84,18 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 	http->rsp.priv	= node;
 	http->rsp.id	= t_id;
 
-	//context* ctx = context_get();
-	//struct event_base *base = ctx->http_base;
+	context* ctx = context_get();
+	struct event_base *hbase = ctx->hbase;
+	if (hbase == NULL) {
+		TIMA_LOGE("hbase is NULL");
+		return -1;
+	}
 
 	HttpClient *client = (HttpClient*)http->client;
 	client->ops.write	= tima_http_feed;
 	client->ops.free	= tima_http_free;
 	client->rsp			= &http->rsp;
-	tima_http_handle(http->client, &http->req, http_base);
+	tima_http_handle(http->client, &http->req, hbase);
 
 	return 0;
 }

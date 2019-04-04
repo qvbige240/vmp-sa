@@ -174,7 +174,7 @@ int tima_http_handle(void *client, TimaHttpReq *req, void *base)
 		goto error;
 	}
 
-	TIMA_LOGD("[%d]HOST: %s:%s", req->id, req->host, req->port);
+	TIMA_LOGD("[%d]HOST: %s:%d", req->id, req->host, req->port);
 	//thiz->evcon = evhttp_connection_new(req->host, req->port);
 	thiz->evcon = evhttp_connection_base_new(base, NULL, req->host, req->port);
 	if (thiz->evcon == NULL) {

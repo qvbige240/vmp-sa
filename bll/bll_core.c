@@ -11,6 +11,7 @@
 #include "bll_core.h"
 #include "server_listener.h"
 #include "bll_h264_stream.h"
+#include "bll_http_base.h"
 
 typedef struct _PrivInfo
 {
@@ -25,7 +26,6 @@ typedef struct _PrivInfo
 
 	vmp_server_t	*server;
 } PrivInfo;
-
 
 
 static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
@@ -87,7 +87,32 @@ static int task_server_listener(PrivInfo* thiz)
 	return 0;
 }
 
-#if 1
+static void task_hbase_start(PrivInfo* thiz)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(BLL_HTTPBASE_CLASS, ctx->vector_node);
+
+	p->parent = thiz;
+	p->pfn_start(p);
+}
+
+#include "http_token.h"
+static int DoTimaTokenGetTest(unsigned long long seriesno)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(HTTP_TOKEN_CLASS, ctx->vector_node);
+
+	HttpTokenReq req = {0};
+	strcpy(req.devtype, "TACHOGRAPH");
+	//strcpy(req.seriesno, "123456789012345");
+	sprintf(req.seriesno, "%lld", seriesno);
+	//p->parent	= thiz;
+	p->pfn_set(p, 0, &req, sizeof(HttpTokenReq));
+	p->pfn_start(p);
+
+	return 0;
+}
+#if 0
 #include "http_token.h"
 #include <event2/event.h>
 #include <event2/event_struct.h>
@@ -122,11 +147,10 @@ static void timeout_cb(evutil_socket_t fd, short event, void *arg)
 static void* bll_core_thread(void* arg)
 {
 	PrivInfo* thiz = (PrivInfo*)arg;
-
-	//test...
+	
+	task_hbase_start(thiz);
 	task_server_listener(thiz);
 
-	http_base = event_base_new();
 
 	while(thiz->cond)
 	{
@@ -136,9 +160,21 @@ static void* bll_core_thread(void* arg)
 		//	bll_core_onmsg(thiz, msg);
 		//	free(msg);
 		//}
-		//sleep(1);
+		sleep(1);
 
+#if 1
+		int test = 1000;
+		unsigned long long sn = 123456789012345;
+		while(test--) {
+			DoTimaTokenGetTest(sn++);
+		}
+		
+		while(1) {
+			sleep(10);
+		}
+#else
 
+		http_base = event_base_new();
 		struct event timeout;
 		struct timeval tv;
 		//int flags = EV_PERSIST;
@@ -153,6 +189,7 @@ static void* bll_core_thread(void* arg)
 		event_base_dispatch(http_base);
 		event_base_free(http_base);
 		printf("================= end ===================\n");
+#endif
 	}
 
 	return NULL;
