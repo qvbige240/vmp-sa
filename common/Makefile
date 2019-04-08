@@ -4,7 +4,7 @@ endif
 
 include $(TOP)/make.include
 
-DIRS = threadpool
+DIRS = utils threadpool
 
 .PHONY:	all clean $(DIRS)
 
