@@ -8,7 +8,7 @@
 #ifndef TM_TIMA_GET_PROPERTY_H
 #define TM_TIMA_GET_PROPERTY_H
 
-#include "node.h"
+//#include "node.h"
 
 #pragma pack(1)
 

@@ -14,12 +14,14 @@ extern "C"
 
 typedef struct _TimaNetworkConfig
 {
-	char	http_ip[64];
-	char	http_port[16];
+	char			http_ip[64];
+	unsigned int	http_port;
 
-	char ss_ip[64];
-	char ss_rtmp_port[16];
-	char ss_http_port[16];
+	char			rtmp_server_ip[64];
+	unsigned int	rtmp_server_port;
+	//char ss_ip[64];
+	//char ss_rtmp_port[16];
+	//char ss_http_port[16];
 } CacheNetworkConfig;
 
 

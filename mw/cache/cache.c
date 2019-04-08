@@ -1,25 +1,27 @@
+
+#include "tima_support.h"
+
 #include "context.h"
-#include "node.h"
 #include "cache.h"
 
 
 typedef struct _PrivInfo
 {
-	node*			tima;
+	vmp_node_t*			tima;
 
 } PrivInfo;
 
 
 static int cache_get(void* p, int id, void* data, int size)
 {
-	node* cache = (node*)p;
+	vmp_node_t* cache = (vmp_node_t*)p;
 	PrivInfo* thiz = cache->private;
 	
 	//tima
 	if(id > CACHE_TIMA_BEGIN && id < CACHE_TIMA_END)
 	{
-		node* tima = thiz->tima;
-		tima->pfnGet(tima, id, data, size);
+		vmp_node_t* tima = thiz->tima;
+		tima->pfn_get(tima, id, data, size);
 	}
 	
 	return 0;
@@ -27,14 +29,14 @@ static int cache_get(void* p, int id, void* data, int size)
 
 static int cache_set(void* p, int id, const void* data, int size)
 {
-	node* cache = (node*)p;
+	vmp_node_t* cache = (vmp_node_t*)p;
 	PrivInfo* thiz = cache->private;
 	
 	//tima
 	if(id > CACHE_TIMA_BEGIN && id < CACHE_TIMA_END)
 	{
-		node* tima = thiz->tima;
-		tima->pfnSet(tima, id, data, size);
+		vmp_node_t* tima = thiz->tima;
+		tima->pfn_set(tima, id, data, size);
 	}
 
 	return 0;
@@ -42,12 +44,13 @@ static int cache_set(void* p, int id, const void* data, int size)
 
 static int cache_start(void* p)
 {
-	PrivInfo* thiz = (PrivInfo*)((node*)p)->private;
+	PrivInfo* thiz = (PrivInfo*)((vmp_node_t*)p)->private;
 
 	if (thiz->tima == NULL)
 	{
-		node* tima = NodeCreate(CACHE_TIMA_CLASS);
-		tima->pfnStart(tima);
+		context* ctx = context_get();
+		vmp_node_t* tima = node_create(CACHE_TIMA_CLASS, ctx->vector_node);
+		tima->pfn_start(tima);
 		thiz->tima = tima;
 	}
 
@@ -56,20 +59,20 @@ static int cache_start(void* p)
 
 static int cache_stop(void* p)
 {
-	PrivInfo* thiz = (PrivInfo*)((node*)p)->private;
+	PrivInfo* thiz = (PrivInfo*)((vmp_node_t*)p)->private;
 
 	if (thiz->tima != NULL)
 	{
-		node* tima = thiz->tima;
-		tima->pfnStop(tima);
+		vmp_node_t* tima = thiz->tima;
+		tima->pfn_stop(tima);
 	}
 
 	return 0;
 }
 
-static node* cache_create(void)
+static vmp_node_t* cache_create(void)
 {
-	node* p = NULL;
+	vmp_node_t* p = NULL;
 	TIMA_LOGI("cache_create");
 
 	do 
@@ -78,24 +81,24 @@ static node* cache_create(void)
 		
 		memset(thiz, 0x00, sizeof(PrivInfo));
 
-		p = (node*)malloc(sizeof(node));
-		memset(p, 0, sizeof(node));
-		p->nClass	= CACHE_CLASS;
-		p->pfnGet	= (nodeget)cache_get;
-		p->pfnSet	= (nodeset)cache_set;
-		p->pfnStart	= (nodestart)cache_start;
-		p->pfnStop	= (nodestop)cache_stop;
-		p->pfnCb	= NULL;
-		p->private	= thiz;
+		p = (vmp_node_t*)malloc(sizeof(vmp_node_t));
+		memset(p, 0, sizeof(vmp_node_t));
+		p->nclass		= CACHE_CLASS;
+		p->pfn_get		= (nodeget)cache_get;
+		p->pfn_set		= (nodeset)cache_set;
+		p->pfn_start	= (nodestart)cache_start;
+		p->pfn_stop		= (nodestop)cache_stop;
+		p->pfn_callback	= NULL;
+		p->private		= thiz;
 
-		Context()->cache = p;
+		context_get()->cache = p;
 
 	} while (0);
 
 	return p;
 }
 
-static int cache_delete(node* p)
+static int cache_delete(vmp_node_t* p)
 {
 	TIMA_LOGD("cache_delete");
 
@@ -122,7 +125,8 @@ static const nodedef NODE_CACHE =
 void cache_init()
 {
 	TIMA_LOGD("cache_init");
-	NodeRegisterClass(&NODE_CACHE);
+
+	NODE_CLASS_REGISTER(NODE_CACHE);
 	
 	cache_tima_init();
 }
@@ -130,7 +134,8 @@ void cache_init()
 void cache_done()
 {
 	TIMA_LOGD("cache_done");
-	NodeUnregisterClass(CACHE_CLASS);
+
+	NODE_CLASS_UNREGISTER(CACHE_CLASS);
 
 	cache_tima_done();
 }

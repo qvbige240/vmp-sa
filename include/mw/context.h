@@ -33,6 +33,9 @@ typedef struct context
 
 	void*		hbase;
 
+	void*		cache;
+	void*		conf;
+
 	void*		packager;
 } context;
 

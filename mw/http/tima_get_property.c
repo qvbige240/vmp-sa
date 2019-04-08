@@ -5,21 +5,19 @@
  *
  */
 	 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+
 #include <stdbool.h>
 
-#include "node.h"
-#include "http_define.h"
-#include "tmHttp.h"
-#include "context.h"
 #include "jansson.h"
+
 #include "cache.h"
 
+#include "context.h"
+#include "tima_http.h"
+#include "tima_support.h"
+
+#include "http_network.h"
 #include "tima_get_property.h"
-#include "tima_buffer.h"
 
 typedef struct _PrivInfo
 {
@@ -33,24 +31,23 @@ typedef struct _PrivInfo
 } PrivInfo;
 
 
-static void _tima_get_property_json_create(node* p)
+static void _tima_get_property_json_create(vmp_node_t* p)
 {
-	char *param = NULL;
 	PrivInfo* thiz = p->private;
 	TimaGetPropertyReq* req = &thiz->req;
 
 	CacheNetworkConfig cfg;
-	node* cache = Context()->cache;
-	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
+	vmp_node_t* cache = context_get()->cache;
+	cache->pfn_get(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 
-	char rtmpUrl[MAX_LEN] = {0};
-	sprintf(rtmpUrl, "rtmp://%s:%s/live", cfg.ss_ip, cfg.ss_rtmp_port);
-	
-	char hlsUrl[MAX_LEN] = {0};
-	sprintf(hlsUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
+	//char rtmpUrl[MAX_LEN] = {0};
+	//sprintf(rtmpUrl, "rtmp://%s:%s/live", cfg.ss_ip, cfg.ss_rtmp_port);
+	//
+	//char hlsUrl[MAX_LEN] = {0};
+	//sprintf(hlsUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
 
-	char flvUrl[MAX_LEN] = {0};
-	sprintf(flvUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
+	//char flvUrl[MAX_LEN] = {0};
+	//sprintf(flvUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
 
 	char chNo[8] = {0};
 	sprintf(chNo, "%d", req->chNo);
@@ -60,12 +57,11 @@ static void _tima_get_property_json_create(node* p)
 	
 	json_object_set_new(json_root, "simNo", json_string(req->simNo));
 	json_object_set_new(json_root, "number", json_string(chNo));
-	json_object_set_new(json_root, "rtmpUrl", json_string(rtmpUrl));
-	json_object_set_new(json_root, "hlsUrl", json_string(hlsUrl));
-	json_object_set_new(json_root, "flvUrl", json_string(flvUrl));
+	//json_object_set_new(json_root, "rtmpUrl", json_string(rtmpUrl));
+	//json_object_set_new(json_root, "hlsUrl", json_string(hlsUrl));
+	//json_object_set_new(json_root, "flvUrl", json_string(flvUrl));
 	
-	char* data_dump = NULL;
-	data_dump = json_dumps(json_root, 0);
+	char* data_dump = json_dumps(json_root, 0);
 
 	thiz->post_data = malloc(strlen(data_dump) + 1);
 	if (thiz->post_data)
@@ -79,7 +75,7 @@ static void _tima_get_property_json_create(node* p)
 	TIMA_LOGD("get property [%d]: %s\n", strlen(thiz->post_data), thiz->post_data);
 }
 
-static bool _tima_get_property_json_parse(node* p, char* data, int len)
+static bool _tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 {
 #if 0
 	data = "{  \
@@ -141,54 +137,59 @@ json_parse_end:
 	return false;
 }
 
-static void _tima_get_property_json_free(node* p)
+static void _tima_get_property_json_free(vmp_node_t* p)
 {
 	PrivInfo* thiz = p->private;
 
 	if (thiz && thiz->post_data)
 	{
-		tima_buffer_clean(&thiz->buffer);
+		//tima_buffer_clean(&thiz->buffer);
+		free(thiz->post_data);
 		thiz->post_data = NULL;
 	}
 }
 
 
-static int tima_get_property_delete(node* p);
+static int tima_get_property_delete(vmp_node_t* p);
 
-void tima_get_property_callback(HttpRsp* rsp)
+void tima_get_property_callback(TimaHttpRsp* rsp)
 {
-	TIMA_LOGI("tima_get_property_callback %d %s %d %d %s", rsp->id, rsp->reason, rsp->size, rsp->status, rsp->data);
+	TIMA_LOGI("http_token_callback %d %s %d %d %s", rsp->id, rsp->reason, rsp->size, rsp->status, rsp->data);
 
-	node* p = (node*)rsp->pPriv;
+	bool ret = false;
+	vmp_node_t* p = (vmp_node_t*)rsp->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
+	if (rsp->status == 200) {
+		ret = _tima_get_property_json_parse(p, rsp->data, rsp->size);
+	}
 
-	bool ret = _tima_get_property_json_parse(p, rsp->data, rsp->size);
 	if(ret == true)
 	{
-		if(p->pfnCb) 
+		if(p->pfn_callback) 
 		{
 			TimaGetPropertyRsp* rsp = &thiz->rsp;
-			p->pfnCb(p, NODE_SUCCESS, rsp);
+			p->pfn_callback(p, NODE_SUCCESS, rsp);
 		}
 	}
 	else
 	{
-		TIMA_LOGE("videoUrlAndProperty failed!");
-		if(p->pfnCb) 
+		TIMA_LOGE("video url failed!");
+		if(p->pfn_callback) 
 		{
-			p->pfnCb(p, NODE_FAIL, NULL);
+			p->pfn_callback(p, NODE_FAIL, NULL);
 		}
 	}
 
 	tima_get_property_delete(p);
 }
 
-static int tima_get_property_get(node* p, int id, void* data, int size)
+
+static int tima_get_property_get(vmp_node_t* p, int id, void* data, int size)
 {
 	return 0;
 }
 
-static int tima_get_property_set(node* p, int id, void* data, int size)
+static int tima_get_property_set(vmp_node_t* p, int id, void* data, int size)
 {
 	PrivInfo* thiz = p->private;
 	thiz->req = *((TimaGetPropertyReq*)data);
@@ -196,41 +197,41 @@ static int tima_get_property_set(node* p, int id, void* data, int size)
 	return 0;
 }
 
-static void* tima_get_property_start(node* p)
+static void* tima_get_property_start(vmp_node_t* p)
 {
 	TIMA_LOGD("tima_get_property_start");
 	
 	CacheNetworkConfig cfg;
-	node* cache = Context()->cache;
-	cache->pfnGet(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
+	vmp_node_t* cache = context_get()->cache;
+	cache->pfn_get(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 	
 	PrivInfo* thiz = p->private;
-	HttpUri uri = {0};
+	TimaUri uri = {0};
 	uri.type	= HTTP_REQ_POST;
-	uri.ip	= cfg.http_ip;
+	uri.ip		= cfg.http_ip;
 	uri.port	= cfg.http_port;
 	uri.path	= TIMA_GETPROPERTY_URL;
 
 	_tima_get_property_json_create(p);
-	tmHttpPost(&uri, thiz->post_data, p, tima_get_property_callback, 3, NULL, &thiz->id);
+	tima_http_post(&uri, thiz->post_data, p, tima_get_property_callback, 3, &thiz->id);
 	_tima_get_property_json_free(p);
 
 	return NULL;
 }
 
-static int tima_get_property_stop(node* p)
+static int tima_get_property_stop(vmp_node_t* p)
 {
 	TIMA_LOGD("tima_get_property_stop");
 
-	PrivInfo* thiz = p->private;
-	tmHttpCancel(thiz->id);
+	//PrivInfo* thiz = p->private;
+	//tmHttpCancel(thiz->id);
 
 	return 0;
 }
 
-static node* tima_get_property_create(void)
+static vmp_node_t* tima_get_property_create(void)
 {
-	node* p = NULL;
+	vmp_node_t* p = NULL;
 
 	TIMA_LOGD("tima_get_property_create");
 
@@ -239,23 +240,22 @@ static node* tima_get_property_create(void)
 		PrivInfo* thiz = (PrivInfo*)malloc(sizeof(PrivInfo));
 		memset(thiz, 0, sizeof(PrivInfo));
 		thiz->post_data = "";
-		p = (node*)malloc(sizeof(node));
-		memset(p, 0, sizeof(node));
-		p->nClass	= TIMA_GET_PROPERTY_CLASS;
-		p->pfnGet	= (nodeget)tima_get_property_get;
-		p->pfnSet	= (nodeset)tima_get_property_set;
-		p->pfnStart = (nodestart)tima_get_property_start;
-		p->pfnStop	= (nodestop)tima_get_property_stop;
-		p->pfnCb	= NULL;
-		p->private	= thiz;
+		p = (vmp_node_t*)malloc(sizeof(vmp_node_t));
+		memset(p, 0, sizeof(vmp_node_t));
+		p->nclass		= TIMA_GET_PROPERTY_CLASS;
+		p->pfn_get		= (nodeget)tima_get_property_get;
+		p->pfn_set		= (nodeset)tima_get_property_set;
+		p->pfn_start	= (nodestart)tima_get_property_start;
+		p->pfn_stop		= (nodestop)tima_get_property_stop;
+		p->pfn_callback	= NULL;
+		p->private		= thiz;
 
 	} while(0);
 
-	TIMA_LOGD("tima_token_create end");
 	return p;
 }
 
-static int tima_get_property_delete(node* p)
+static int tima_get_property_delete(vmp_node_t* p)
 {
 	//TIMA_LOGD("tima_get_property_delete");
 
@@ -284,12 +284,12 @@ void tima_get_property_init(void)
 {
 	TIMA_LOGD("tima_get_property_init");
 
-	NodeRegisterClass(&node_get_property);
+	NODE_CLASS_REGISTER(node_get_property);
 }
 
 void tima_get_property_done(void)
 {
 	TIMA_LOGD("tima_get_property_done");
 
-	NodeUnregisterClass(TIMA_GET_PROPERTY_CLASS);
+	NODE_CLASS_UNREGISTER(TIMA_GET_PROPERTY_CLASS);
 }

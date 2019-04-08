@@ -13,11 +13,13 @@ LOCAL_INCLUDE += $(LOCAL_INCLUDE_DIR:%=-I$(ROOT_DIR)/%)
 LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
-	-I$(ROOT_DIR)/include/mw/ \
 	-I$(ROOT_DIR)/include/	\
+	-I$(ROOT_DIR)/include/vmp/	\
+	-I$(ROOT_DIR)/include/mw/ \
 	-I$(ROOT_DIR)/include/common/  \
 	-I$(ROOT_DIR)/include/utils/  \
 	-I$(ROOT_DIR)/include/cache \
+	-I$(ROOT_DIR)/include/mw/support \
 	
 
 CFLAGS += $(LOCAL_INCLUDE) 
