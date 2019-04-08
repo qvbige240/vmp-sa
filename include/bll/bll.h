@@ -23,7 +23,7 @@ extern "C"
 {
 #endif
 
-void bll_init(char* strConf);
+void bll_init(const char *conf);
 int bll_cond(void);
 void bll_idle(void);
 void bll_done(void);

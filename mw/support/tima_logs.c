@@ -11,8 +11,10 @@
 #include "vmp_log.h"
 
 #include "tima_logs.h"
-//#include "tima_util.h"
-//#include "tima_globals.h"
+#include "tima_config.h"
+
+#include "iniparser.h"
+#include "dictionary.h"
 
 
 enum {
@@ -90,17 +92,23 @@ const char*  get_log_level_value(int level)
 	return LOG_LEVELS[i-1];
 }
 
-static int tima_zlog_conf(void)
+static int tima_zlog_conf(TimaLogConfig *config)
 {
 	FILE *fp = NULL;
 	//int mode = tima_default_config()->log_mode;
 	//int level = tima_default_config()->log_level;
 	//char* log_path = tima_default_config()->log_path;
 	//char* conf_path = tima_default_config()->data_path;
-	int mode = 3;
-	int level = 4;
-	char* log_path = "./log/";
-	char* conf_path = "./tima/";
+	//int level = 3;		// info
+	//char* log_path = "./log/";
+	//char* conf_path = "./tima/";
+	int mode = config->log_mode;
+	int level = config->log_level;
+	char* log_path = config->log_path;
+	char* conf_path = config->data_path;
+
+	int file_len = config->file_len;
+	int file_cnt = config->file_cnt;
 
 	if (!vpk_exists(conf_path)) {
 		int ret = 0;
@@ -135,7 +143,7 @@ static int tima_zlog_conf(void)
 	fprintf(fp,"buffer min = 1024\n");
 	fprintf(fp,"buffer max = 2MB\n");
 	fprintf(fp,"rotate lock file = /tmp/zlog.lock\n");
-	fprintf(fp,"default format = \"%%d(%%F %%T) %%-6V - %%m%%n\"\n");
+	fprintf(fp,"default format = \"%%d(%%F %%T) %%-6V (%%F:%%L) - %%m%%n\"\n");
 	fprintf(fp,"[formats]\n");
 	//fprintf(fp,"simple	= \"%%d (%%4p:%%15F:%%4L) %%-5V - %%m\"\n");
 	//fprintf(fp,"default	= \"%%d(%%F %%T) %%-6V - %%m%%n\"\n");
@@ -144,16 +152,19 @@ static int tima_zlog_conf(void)
 	if (mode & 0x01)
 		fprintf(fp,"*.%s         >stdout;default\n", get_log_level_value(level));
 	if (mode & 0x02)
-		fprintf(fp,"*.%s       \"%s%s.log\",1MB * 15 ~ \"%s%s.log.#2r\";\n",
-			get_log_level_value(level), log_path, "tima", log_path, "tima");
+		fprintf(fp, "*.%s       \"%s%s.log\",%dMB * %d ~ \"%s%s.log.#2r\";\n",
+			get_log_level_value(level), log_path, "tima", file_len, file_cnt, log_path, "tima");
 	//fwrite(buffer, 1, strlen(buffer), fp);
 	fflush(fp);
 	fclose(fp);
 
 	if (!vpk_exists(log_path)) {
+		int ret = 0;
 		char tmp[256] = {0};
 		vpk_pathname_get(log_path, tmp);
-		vpk_mkdir_mult(log_path);
+		printf("log_path full: %s, pathname: %s\n", log_path, tmp);
+		ret = vpk_mkdir_mult(log_path);
+		printf("vpk_mkdir_mult \'%s\' ret = %d\n", log_path, ret);
 	}
 
 	int rc = dzlog_init(file, "vmp");
@@ -167,11 +178,65 @@ static int tima_zlog_conf(void)
 	return 0;
 }
 
-int tima_log_init(int procname)
+
+static int load_log_conf(const char *conf, TimaLogConfig *l)
 {
+	dictionary	*ini = NULL;
+	int i;
+	const char  *s ;
+
+	ini = iniparser_load(conf);
+	if (ini == NULL) {
+		fprintf(stderr, "---------------------cannot parse file: %s\n", conf);
+		return -1 ;
+	}
+	iniparser_dump(ini, stderr);
+
+	/* Get log attributes */
+	s = iniparser_getstring(ini, "log:conf_path", NULL);
+	if (s != NULL && strlen(s) > 0) {
+		strncpy(l->data_path, s, sizeof(l->data_path));
+	} else {
+		strcpy(l->data_path, "./tima/");
+		fprintf(stderr, "cannot parse [log:conf_path] from file: %s\n", conf);
+	}
+
+	i = iniparser_getint(ini, "log:log_mode", 3);
+	l->log_mode = i;
+
+	i = iniparser_getint(ini, "log:log_level", 4);
+	l->log_level = i;
+
+	s = iniparser_getstring(ini, "log:log_path", "./log/");
+	if (s != NULL && strlen(s) > 0) {
+		strncpy(l->log_path, s, sizeof(l->log_path));
+	} else {
+		strcpy(l->log_path, "./log/");
+		fprintf(stderr, "cannot parse [log:log_path] from file: %s\n", conf);
+	}
+
+	i = iniparser_getint(ini, "log:log_file_len", 10);
+	l->file_len = i;
+
+	i = iniparser_getint(ini, "log:log_file_cnt", 15);
+	l->file_cnt = i;
+
+	iniparser_freedict(ini);
+
+	return 0;
+}
+
+int tima_log_init(int procname, const char *conf)
+{
+
 #ifdef USE_ZLOG
+
+	TimaLogConfig config = {0};
+
+	load_log_conf(conf, &config);
+
 	//return tima_zlog_init(procname);
-	return tima_zlog_conf();
+	return tima_zlog_conf(&config);
 #else
 	return 0;
 #endif

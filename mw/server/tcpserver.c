@@ -237,12 +237,18 @@ static void server_on_read(struct bufferevent* bev,void* arg)
 			printf("#packet_len > 980\n");
 		}
 
-		if (copy_len < packet_len) break;
+		if (copy_len < packet_len)
+			break;
+
 		evbuffer_remove(input, pre_buf, packet_len); // clear the buffer
+
 		if (pre_buf[14] == 1)
 			bll_demo_proc(pre_buf+30, packet_len-30, timestamp);
+
 		len -= packet_len;
+
 	} while (len > 0);
+
 	return;
 }
 #else
@@ -351,7 +357,7 @@ void tcpserver_init(void)
 {
 	printf("tcpserver_init\n");
 
-	context* ctx = Context();
+	context* ctx = context_get();
 
 	ThreadPoolJob job;
 	TPJobInit( &job, ( start_routine) tcpserver_thread, NULL);

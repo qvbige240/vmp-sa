@@ -13,8 +13,6 @@ INCLUDE_DIR += \
 	-I.\
 	-I$(TOP)/include  \
 	-I$(TOP)/include/common \
-	-I$(TOP)/include/libevent \
-	-I$(TOP)/include/libevent/internal \
 	-I$(TOP)/include/threadpool \
 	-I$(TOP)/include/bll/ \
 

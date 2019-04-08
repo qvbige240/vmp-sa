@@ -20,7 +20,7 @@
 #define TIMA_END_DELS
 #endif
 
-#define MAX_PATH_SIZE				256
+#define MAX_PATH_SIZE				260
 #define MAX_ACTION_RECEIVE_SIZE		256
 
 #define ZERO_LEN_ARRAY	1
@@ -96,6 +96,9 @@ typedef enum _ret
 #define	VPK_MEMSET		memset
 #define	VPK_MEMCPY		memcpy
 #define	VPK_REALLOC		realloc
+
+
+#define vpk_bcopy(src,dst,sz)	bcopy((src),(dst),(sz))
 
 #define VPKAPI			extern	
 

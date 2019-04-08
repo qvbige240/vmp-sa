@@ -10,8 +10,7 @@
 #ifndef TM_CONTEXT_H
 #define TM_CONTEXT_H
 
-#include "tmVector.h"
-
+#include "vmp.h"
 
 #pragma pack(1)
 
@@ -20,25 +19,26 @@ extern "C"
 {
 #endif
 
+#define CONTEXT_VERSION		0x100
+
 typedef struct context
 {
-	tmVector vecNodeDef;
-	char* conf;
-	
-	void* tp;
-	void* tp_connect;
-	void* tp_transcode;
-	void* tp_push;
-	
-	void* cache;
-	
-	void* bll;
+	//int nVersion;
 
+	VmpVector	vector_node;
+
+	void*		tp;
+	void*		service;
+	void*		bll;
+
+	void*		hbase;
+
+	void*		packager;
 } context;
 
-void context_init(char* pConf);
+void context_init(void);
 void context_done(void);
-context* Context(void);
+context* context_get(void);
 
 #pragma pack()
 
@@ -47,4 +47,3 @@ context* Context(void);
 #endif
 
 #endif // TM_CONTEXT_H
-

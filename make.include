@@ -65,47 +65,49 @@ INCLUDE_DIR	+= -I/usr/include
 #---------------------------------------------------------------------------
 # Linker options
 #---------------------------------------------------------------------------
-LIBS = -lrtmp -lm  -ldl -lstdc++ -lpthread -lz -lfaac
+LIBS = -lm  -ldl -lstdc++ -lpthread -lz
 
 #LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 
 DEPEND_DIR      = $(TOP)/depends/x86/install
+#DEPEND_DIR      = $(TOP)/../premake/ubuntu/install
 
 
 INCLUDE_DIR     += -I$(DEPEND_DIR)/include
 
 
 LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
-LIB_EVENT       = $(LIB_DIR)/libevent.a
+LIB_JANSSON     = $(DEPEND_DIR)/lib/libjansson.a
+LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
+LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
+#LIB_EVENT       = $(LIB_DIR)/libevent.a
+LIB_RTMP        = $(DEPEND_DIR)/lib/librtmp.a
 LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
 
 LIB_VMP         = $(LIB_DIR)/libvmp.a
+LIB_UTILS       = $(LIB_DIR)/libutils.a
 LIB_SUPPORT     = $(LIB_DIR)/libsupport.a
 LIB_PROTOCOL    = $(LIB_DIR)/libprotocol.a
+LIB_PUBLISH     = $(LIB_DIR)/libpublish.a
+LIB_HTTP        = $(LIB_DIR)/libhttp.a
 LIB_BLL         = $(LIB_DIR)/libbll.a
 LIB_MW          = $(LIB_DIR)/libmw.a
 LIB_SERVER      = $(LIB_DIR)/libserver.a
-LIB_UTILS       = $(LIB_DIR)/libutils.a
-LIB_TRANCODE	= $(LIB_DIR)/libtrancode.a
-LIB_CACHE		= $(LIB_DIR)/libcache.a
-LIB_HTTP		= $(LIB_DIR)/libhttp.a
-LIB_JANSSON		= $(LIB_DIR)/libjansson.a
+
 
 STATIC_LIBS     += $(LIB_ZLOG)
 STATIC_LIBS     += $(LIB_JANSSON)
+STATIC_LIBS     += $(LIB_RTMP)
+STATIC_LIBS     += $(LIB_EVENT)
 STATIC_LIBS     += $(LIB_THREADPOOL)
+STATIC_LIBS     += $(LIB_UTILS)
 STATIC_LIBS     += $(LIB_VMP)
 STATIC_LIBS     += $(LIB_SUPPORT)
+STATIC_LIBS     += $(LIB_PUBLISH)
 STATIC_LIBS     += $(LIB_PROTOCOL)
+STATIC_LIBS     += $(LIB_HTTP)
 STATIC_LIBS     += $(LIB_BLL)
 STATIC_LIBS     += $(LIB_MW)
 STATIC_LIBS     += $(LIB_SERVER)
-STATIC_LIBS     += $(LIB_UTILS)
-STATIC_LIBS     += $(LIB_TRANCODE)
-STATIC_LIBS     += $(LIB_CACHE)
-STATIC_LIBS     += $(LIB_HTTP)
-STATIC_LIBS     += $(LIB_EVENT)
-STATIC_LIBS     += $(LIB_JANSSON)
 
 DEP_LIBS        += $(LIB_ZLOG)
-

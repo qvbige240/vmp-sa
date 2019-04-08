@@ -13,38 +13,50 @@
 #include <unistd.h>
 #include "context.h"
 #include "tp.h"
-#include "node.h"
+
+#include "rtmp_publish.h"
+#include "tima_rtmp_packager.h"
+
+#include "http_token.h"
+
 
 static context* g_context = NULL;
 
-void Context_SetContext(context* p)
+context* context_get(void)
+{
+	return g_context;
+}
+void context_set(context* p)
 {
 	g_context = p;
 }
 
-context* Context(void)
-{
-	return g_context;
-}
-
-void context_init(char* pConf)
+void context_init(void)
 {
 	context* p = malloc(sizeof(context));
 	if(!p) return;
 	
 	memset(p, 0, sizeof(context));
-	p->conf = pConf;
+	//p->version = CONTEXT_VERSION;
 	
-	Context_SetContext(p);
+	context_set(p);
+
+	p->packager = tima_h264_rtmp_create();
 	
-	node_init();
+	node_init((void**)&p->vector_node);
 	tp_init();
+	rtmp_publish_init();
+
+	http_token_init();
 }
 
 void context_done(void)
 {
+	context* p = g_context;
+
+	rtmp_publish_done();
 	tp_done();
-	node_done();
+	node_done((void**)&p->vector_node);
 
 	if(g_context != NULL)
 	{
@@ -53,4 +65,3 @@ void context_done(void)
 	}	
 		
 }
-

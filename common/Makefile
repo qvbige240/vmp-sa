@@ -4,7 +4,7 @@ endif
 
 include $(TOP)/make.include
 
-DIRS = libevent threadpool jansson utils
+DIRS = utils threadpool
 
 .PHONY:	all clean $(DIRS)
 

@@ -13,16 +13,15 @@ LOCAL_INCLUDE += $(LOCAL_INCLUDE_DIR:%=-I$(ROOT_DIR)/%)
 LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
-	-I$(ROOT_DIR)/include/http/ \
-	-I$(ROOT_DIR)/include/mw/ \
 	-I$(ROOT_DIR)/include/	\
-	-I$(ROOT_DIR)/include/common/  \
+	-I$(ROOT_DIR)/include/vmp/ \
 	-I$(ROOT_DIR)/include/utils/  \
-	-I$(ROOT_DIR)/include/threadpool/ \
-	-I$(ROOT_DIR)/include/libevent/ \
+	-I$(ROOT_DIR)/include/http/ \
+	-I$(ROOT_DIR)/include/mw/	\
+	-I$(ROOT_DIR)/include/mw/support \
 	-I$(ROOT_DIR)/include/cache/ \
-	-I$(ROOT_DIR)/include/jansson/ \
-	-I$(ROOT_DIR)/include/mw/support
+
+	#-I$(DEPEND_DIR)/include/vpk/ \
 	
 
 CFLAGS += $(LOCAL_INCLUDE) 
@@ -31,15 +30,13 @@ TARGET		= $(LIB_DIR)/libhttp.a
 
 LDFLAGS = -L$(LIB_DIR)/ -nostartfiles -L$(INSTALL_DIR)/lib -Ttarget.ld 
 
-SOURCES = 
+SOURCES =
 
 SOURCES +=  \
-	Libevent_Http.c \
-	tmHttp.c \
-	tima.c \
-	tima_token.c \
+	tima_http_client.c \
+	tima_http.c \
+	http_token.c \
 	tima_get_property.c
-	
 
 OBJS_NAME = $(basename $(SOURCES))
 

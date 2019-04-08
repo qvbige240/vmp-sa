@@ -15,6 +15,7 @@ LOCAL_INCLUDE += \
 	-I./include/ 	\
 	-I$(ROOT_DIR)/include/	\
 	-I$(ROOT_DIR)/include/vmp/ \
+	-I$(ROOT_DIR)/include/utils/ \
 	-I$(ROOT_DIR)/include/mw/support \
 
 	#-I$(DEPEND_DIR)/include/vpk/ \

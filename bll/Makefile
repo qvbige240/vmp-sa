@@ -18,6 +18,8 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/common/  \
 	-I$(ROOT_DIR)/include/threadpool/  \
 	-I$(ROOT_DIR)/include/mw/support/ \
+	-I$(ROOT_DIR)/include/mw/publish \
+	-I$(ROOT_DIR)/include/http/ \
 	-I$(ROOT_DIR)/include/bll/	\
 	-I$(ROOT_DIR)/include/mw/ 	\
 	-I$(ROOT_DIR)/include/utils/ \
@@ -34,7 +36,9 @@ SOURCES =
 
 SOURCES +=  \
 	bll.c \
-	bll_rtmp_stream_demo.c
+	bll_core.c \
+	bll_h264_stream.c \
+	bll_http_base.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 
