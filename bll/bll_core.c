@@ -163,7 +163,7 @@ static void* bll_core_thread(void* arg)
 		sleep(1);
 
 #if 1
-		int test = 1000;
+		int test = 1;
 		unsigned long long sn = 123456789012345;
 		while(test--) {
 			DoTimaTokenGetTest(sn++);

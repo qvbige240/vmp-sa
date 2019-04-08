@@ -18,7 +18,6 @@ void ignore_sigpipe(void)
 	}
 }
 
-
 int main(void)
 {
 #if 0
@@ -37,7 +36,8 @@ int main(void)
 	//sigaction(SIGFPE,  &action, NULL);
 #endif
 
-	bll_init();
+
+	bll_init("./tima/tvmpssd.conf");
 	
 	while (bll_cond())
 	{

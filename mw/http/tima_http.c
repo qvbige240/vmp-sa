@@ -42,15 +42,30 @@ static int tima_http_feed(void *ctx, void *data)
 }
 static int tima_http_free(void *ctx)
 {
-	//tima_http_t *http = container_of(ctx, tima_http_t, client);
+	tima_http_t *http = container_of(ctx, tima_http_t, client);
 	
-	
+	if (http) {
+		if (http->req.url)
+			free(http->req.url);
+
+		if (http->req.data)
+			free(http->req.data);
+
+		free(http);
+	}
 	
 	return 0;
 }
 
 int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, int retry, int *task_id)
 {
+	context* ctx = context_get();
+	struct event_base *hbase = ctx->hbase;
+	if (hbase == NULL) {
+		TIMA_LOGE("hbase is NULL");
+		return -1;
+	}
+
 	tima_http_t *http = calloc(1, (sizeof(tima_http_t) + sizeof(HttpClient)));
 	if (!http) {
 		TIMA_LOGE("tima_http_post failed, malloc null.");
@@ -83,13 +98,6 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 	http->req.priv	= node;
 	http->rsp.priv	= node;
 	http->rsp.id	= t_id;
-
-	context* ctx = context_get();
-	struct event_base *hbase = ctx->hbase;
-	if (hbase == NULL) {
-		TIMA_LOGE("hbase is NULL");
-		return -1;
-	}
 
 	HttpClient *client = (HttpClient*)http->client;
 	client->ops.write	= tima_http_feed;

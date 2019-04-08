@@ -80,17 +80,18 @@ TIMA_BEGIN_DELS
 #define TIMA_DATA_FIELD_LON				"longitude"
 #define TIMA_DATA_FIELD_LAT				"latitude"
 
-typedef struct _TimaConfig
+typedef struct _TimaLogConfig
 {
 	char	data_path[MAX_PATH_SIZE+1];
 	char	log_path[MAX_PATH_SIZE+1];
 	int		log_mode;
 	int		log_level;  /* @level  All level: "FATAL", "ERROR", "WARN", "INFO", "DEBUG". */
 
-	int		p2p_enable;
+	int		file_len;
+	int		file_cnt;
 
-	char	network_file[MAX_PATH_SIZE+1];
-} TimaConfig;
+	//char	network_file[MAX_PATH_SIZE+1];
+} TimaLogConfig;
 
 TIMA_END_DELS
 

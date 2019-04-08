@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-int tima_log_init(int procname);
+int tima_log_init(int procname, const char *conf);
 
 #ifdef __cplusplus
 }

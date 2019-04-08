@@ -180,13 +180,20 @@ static void* http_token_start(vmp_node_t* p)
 
 	PrivInfo* thiz = p->private;
 	TimaUri tima_uri = {0};
+#if 1
 	tima_uri.type	= HTTP_REQ_GET;
 	tima_uri.ip		= "tg.test.timanetwork.cn";	//HTTP_IP;
 	tima_uri.port	= 8114;		//PORT_TG;
 	tima_uri.path	= TIMA_GETOKEN_URL;
+#else
+	// libevent server sample
+	tima_uri.type	= HTTP_REQ_GET;
+	tima_uri.ip		= "127.0.0.1";
+	tima_uri.port	= 8110;
+	tima_uri.path	= "/dump";
+#endif
 
 	token_json_create(p);
-	//tmHttpPost(&tima_uri, thiz->post_data, p, tima_token_callback, 3, NULL, &thiz->id);
 	tima_http_post(&tima_uri, thiz->post_data, p, http_token_callback, 3, &thiz->id);
 	token_json_free(p);
 

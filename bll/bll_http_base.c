@@ -49,6 +49,8 @@ static void *bll_hbase_thread(void* arg)
 	PrivInfo* thiz = NULL;
 	return_val_if_fail(p != NULL, NULL);
 
+	evthread_use_pthreads();
+
 	thiz = (PrivInfo*)p->private;
 
 	context* ctx = context_get();

@@ -47,9 +47,9 @@ static void PrintThreadPoolStats(void)
 		stats.totalIdleTime);
 }
 
-void bll_init(void)
+void bll_init(const char *conf)
 {
-	tima_log_init(0);
+	tima_log_init(0, conf);
 	context_init();
 	server_listener_init();
 	bll_h264_init();
