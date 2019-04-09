@@ -39,7 +39,7 @@ typedef struct context
 	void*		packager;
 } context;
 
-void context_init(void);
+void context_init(void *conf);
 void context_done(void);
 context* context_get(void);
 

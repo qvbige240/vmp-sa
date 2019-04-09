@@ -116,7 +116,7 @@ static bool _tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 		return true;
 
 json_parse_end:
-		TIMA_LOGE("\n ======= videoUrlAndProperty error!!!! =======\n");
+		TIMA_LOGE("\n ======= stream url parse error!!!! =======\n");
 		jobject = json_object_get(json_root, "returnErrCode");
 		if (jobject) {
 			err_code = (char*)json_string_value(jobject);
@@ -167,8 +167,8 @@ void tima_get_property_callback(TimaHttpRsp* rsp)
 	{
 		if(p->pfn_callback) 
 		{
-			TimaGetPropertyRsp* rsp = &thiz->rsp;
-			p->pfn_callback(p, NODE_SUCCESS, rsp);
+			TimaGetPropertyRsp* rep = &thiz->rsp;
+			p->pfn_callback(p, NODE_SUCCESS, rep);
 		}
 	}
 	else

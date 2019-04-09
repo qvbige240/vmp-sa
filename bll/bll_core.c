@@ -7,6 +7,7 @@
 
 #include "context.h"
 #include "ThreadPool.h"
+#include "cache.h"
 
 #include "bll_core.h"
 #include "server_listener.h"
@@ -239,6 +240,10 @@ void bll_core_init(void)
 	//thiz->queue			= cque;
 	thiz->cond			= 1;
 	context_get()->bll	= thiz;
+
+	context* ctx = context_get();
+	vmp_node_t* cache = node_create(CACHE_CLASS, ctx->vector_node);
+	cache->pfn_start(cache);
 
 	bll_core_start(thiz);
 

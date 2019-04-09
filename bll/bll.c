@@ -15,6 +15,7 @@
 
 #include "context.h"
 #include "ThreadPool.h"
+#include "cache.h"
 
 #include "bll.h"
 #include "server_listener.h"
@@ -50,7 +51,8 @@ static void PrintThreadPoolStats(void)
 void bll_init(const char *conf)
 {
 	tima_log_init(0, conf);
-	context_init();
+	context_init(conf);
+	cache_init();
 	server_listener_init();
 	bll_h264_init();
 	bll_hbase_init();

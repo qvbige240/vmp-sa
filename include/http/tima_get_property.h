@@ -23,15 +23,17 @@ extern "C"
 
 typedef struct _TimaGetPropertyReq
 {
-	char	simNo[TIMA_SIM_NO_LEN];
-	int chNo;
-	char url[MAX_LEN]; //ip:port or domain
+	char		simNo[TIMA_SIM_NO_LEN];
+	int			chNo;
+	//char url[MAX_LEN]; //ip:port or domain
+
+	nodecb		pfncb;
 } TimaGetPropertyReq;
 
 typedef struct _TimaGetPropertyRsp
 {
-	char url[MAX_LEN];
-	char property[MAX_LEN];
+	char		url[MAX_LEN];
+	char		property[MAX_LEN];
 } TimaGetPropertyRsp;
 
 void tima_get_property_init(void);

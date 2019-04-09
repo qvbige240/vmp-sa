@@ -459,6 +459,7 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 }
 #endif
 
+static int media_stream_url(vmp_node_t* p, unsigned long long sim, char channel);
 static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
 {
 	int ret = 0;
@@ -497,9 +498,11 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
+				thiz->channel.id = head.channel;
 				TIMA_LOGI("sim no. [%lld]: %d", thiz->sim, head.channel);
 
-				rtmp_push_start(p, thiz->sim, head.channel);
+				media_stream_url(p, thiz->sim, head.channel);
+				//rtmp_push_start(p, thiz->sim, head.channel);
 			}
 			
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
@@ -623,6 +626,48 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 
 	return 0;
 }
+
+#if 1
+#include "tima_get_property.h"
+static int media_stream_url_callback(void* p, int msg, void* arg)
+{
+	vmp_node_t* n = (vmp_node_t*)p;
+	PrivInfo* thiz = n->private;
+	if ( msg != NODE_SUCCESS)
+	{
+		VMP_LOGW("h264_stream_callback fail");
+		//h264_stream_release(n);
+		//bll_h264_delete(n);
+		return -1;
+	}
+	TimaGetPropertyRsp *rsp = arg; 
+	TIMA_LOGD("stream uri: %s", rsp->url);
+
+	rtmp_push_start(n, thiz->sim, thiz->channel.id);
+
+	//h264_stream_release(n);
+	//bll_h264_delete(n);
+	return 0;
+}
+
+static int media_stream_url(vmp_node_t* p, unsigned long long sim, char channel)
+{
+	//PrivInfo* thiz = p->private;
+	context* ctx = context_get();
+	vmp_node_t* n = node_create(TIMA_GET_PROPERTY_CLASS, ctx->vector_node);
+
+	TimaGetPropertyReq req = {0};
+	sprintf(req.simNo, "%011lld", sim);
+	req.chNo		= channel;
+	req.pfncb		= media_stream_url_callback;
+	n->parent		= p;
+	//n->pfn_callback	= media_stream_url_callback;
+	n->pfn_set(n, 0, &req, sizeof(TimaGetPropertyReq));
+	n->pfn_start(n);
+
+	return 0;
+}
+#endif
 
 static void h264_stream_init(PrivInfo* thiz)
 {
