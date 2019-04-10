@@ -75,6 +75,17 @@ static int cache_tima_load_conf(void* p)
 	thiz->cfg.http_port = iniparser_getint(ini, "network:http_port", 8114);
 
 
+	s = iniparser_getstring(ini, "network:rtmp_ip", NULL);
+	if (s != NULL && strlen(s) > 0) {
+		strncpy(thiz->cfg.rtmp_ip, s, sizeof(thiz->cfg.rtmp_ip));
+		TIMA_LOGD("rtmp_ip: [%s]", s ? s : "UNDEF");
+	} else {
+		strcpy(thiz->cfg.rtmp_ip, "127.0.0.1");
+		TIMA_LOGE("cannot parse [network:rtmp_ip] from file: %s\n", conf);
+	}
+
+	thiz->cfg.rtmp_port = iniparser_getint(ini, "network:rtmp_port", 1935);
+
 #if 0
 	/* Get network attributes */
 	s = iniparser_getstring(ini, "network:http_ip", NULL);
@@ -134,6 +145,7 @@ static int cache_tima_load_conf(void* p)
 #endif
 
 	iniparser_freedict(ini);
+
 	return 0;
 }
 
@@ -144,7 +156,8 @@ static int cache_tima_start(void* p)
 	strcpy(thiz->cfg.http_ip, "tg.test.timanetwork.cn");
 	thiz->cfg.http_port = 8114;
 
-	//strcpy(thiz->cfg.http_port, "8114");
+	strcpy(thiz->cfg.rtmp_ip, "127.0.0.1");
+	thiz->cfg.rtmp_port = 1935;
 
 	//strcpy(thiz->cfg.ss_ip, "127.0.0.1");
 	//strcpy(thiz->cfg.ss_rtmp_port, "1935");

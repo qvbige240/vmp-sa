@@ -51,7 +51,7 @@ static void PrintThreadPoolStats(void)
 void bll_init(const char *conf)
 {
 	tima_log_init(0, conf);
-	context_init(conf);
+	context_init((void*)conf);
 	cache_init();
 	server_listener_init();
 	bll_h264_init();

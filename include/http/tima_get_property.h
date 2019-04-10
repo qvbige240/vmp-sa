@@ -17,22 +17,21 @@ extern "C"
 {
 #endif
 
-#define TIMA_SIM_NO_LEN	(16)
-#define TIMA_GET_PROPERTY_CLASS	FOURCCLE('T','M','G','P')
+#define TIMA_SIM_NO_LEN		(16)
+#define TIMA_GET_PROPERTY_CLASS		FOURCCLE('T','M','G','P')
 
 
 typedef struct _TimaGetPropertyReq
 {
-	char		simNo[TIMA_SIM_NO_LEN];
-	int			chNo;
-	//char url[MAX_LEN]; //ip:port or domain
+	char		sim[TIMA_SIM_NO_LEN];
+	int			ch;
 
 	nodecb		pfncb;
 } TimaGetPropertyReq;
 
 typedef struct _TimaGetPropertyRsp
 {
-	char		url[MAX_LEN];
+	char		uri[MAX_LEN];
 	char		property[MAX_LEN];
 } TimaGetPropertyRsp;
 

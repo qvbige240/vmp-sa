@@ -43,6 +43,8 @@ typedef struct
 	char					channel;
 	unsigned long long		sim;
 
+	char					uri[MAX_PATH_SIZE+1];
+
 	nodecb					pfncb;
 	list_traverse_callback	traverse;
 

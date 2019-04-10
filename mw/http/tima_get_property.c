@@ -31,7 +31,7 @@ typedef struct _PrivInfo
 } PrivInfo;
 
 
-static void _tima_get_property_json_create(vmp_node_t* p)
+static void tima_get_property_json_create(vmp_node_t* p)
 {
 	PrivInfo* thiz = p->private;
 	TimaGetPropertyReq* req = &thiz->req;
@@ -49,14 +49,14 @@ static void _tima_get_property_json_create(vmp_node_t* p)
 	//char flvUrl[MAX_LEN] = {0};
 	//sprintf(flvUrl, "http://%s:%s/live", cfg.ss_ip, cfg.ss_http_port);
 
-	char chNo[8] = {0};
-	sprintf(chNo, "%d", req->chNo);
+	char ch[8] = {0};
+	sprintf(ch, "%d", req->ch);
 
 	json_t* json_root = NULL;
 	json_root = json_object();
 	
-	json_object_set_new(json_root, "simNo", json_string(req->simNo));
-	json_object_set_new(json_root, "number", json_string(chNo));
+	json_object_set_new(json_root, "simNo", json_string(req->sim));
+	json_object_set_new(json_root, "number", json_string(ch));
 	//json_object_set_new(json_root, "rtmpUrl", json_string(rtmpUrl));
 	//json_object_set_new(json_root, "hlsUrl", json_string(hlsUrl));
 	//json_object_set_new(json_root, "flvUrl", json_string(flvUrl));
@@ -67,7 +67,7 @@ static void _tima_get_property_json_create(vmp_node_t* p)
 	if (thiz->post_data)
 		strcpy(thiz->post_data, data_dump);
 	else
-		TIMA_LOGE("_tima_get_property_json_create thiz->post_data==NULL.");
+		TIMA_LOGE("tima_get_property_json_create thiz->post_data==NULL.");
 
 	free(data_dump);
 	json_decref(json_root);
@@ -75,7 +75,7 @@ static void _tima_get_property_json_create(vmp_node_t* p)
 	TIMA_LOGD("get property [%d]: %s\n", strlen(thiz->post_data), thiz->post_data);
 }
 
-static bool _tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
+static bool tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 {
 #if 0
 	data = "{  \
@@ -102,7 +102,7 @@ static bool _tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 		{
 			goto json_parse_end;
 		}
-		strcpy(rsp->url, playAddress);
+		strcpy(rsp->uri, playAddress);
 
 		jobject = json_object_get(json_root, "property");
 		if (!jobject) goto json_parse_end;
@@ -116,7 +116,7 @@ static bool _tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 		return true;
 
 json_parse_end:
-		TIMA_LOGE("\n ======= stream url parse error!!!! =======\n");
+		TIMA_LOGE("\n ======= stream uri parse error!!!! =======\n");
 		jobject = json_object_get(json_root, "returnErrCode");
 		if (jobject) {
 			err_code = (char*)json_string_value(jobject);
@@ -137,7 +137,7 @@ json_parse_end:
 	return false;
 }
 
-static void _tima_get_property_json_free(vmp_node_t* p)
+static void tima_get_property_json_free(vmp_node_t* p)
 {
 	PrivInfo* thiz = p->private;
 
@@ -160,29 +160,28 @@ void tima_get_property_callback(TimaHttpRsp* rsp)
 	vmp_node_t* p = (vmp_node_t*)rsp->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if (rsp->status == 200) {
-		ret = _tima_get_property_json_parse(p, rsp->data, rsp->size);
+		ret = tima_get_property_json_parse(p, rsp->data, rsp->size);
 	}
 
 	if(ret == true)
 	{
-		if(p->pfn_callback) 
+		if (thiz->req.pfncb)
 		{
 			TimaGetPropertyRsp* rep = &thiz->rsp;
-			p->pfn_callback(p, NODE_SUCCESS, rep);
+			thiz->req.pfncb(p->parent, NODE_SUCCESS, rep);
 		}
 	}
 	else
 	{
-		TIMA_LOGE("video url failed!");
-		if(p->pfn_callback) 
+		TIMA_LOGE("get stream uri failed!");
+		if (thiz->req.pfncb)
 		{
-			p->pfn_callback(p, NODE_FAIL, NULL);
+			thiz->req.pfncb(p->parent, NODE_FAIL, NULL);
 		}
 	}
 
 	tima_get_property_delete(p);
 }
-
 
 static int tima_get_property_get(vmp_node_t* p, int id, void* data, int size)
 {
@@ -212,9 +211,9 @@ static void* tima_get_property_start(vmp_node_t* p)
 	uri.port	= cfg.http_port;
 	uri.path	= TIMA_GETPROPERTY_URL;
 
-	_tima_get_property_json_create(p);
+	tima_get_property_json_create(p);
 	tima_http_post(&uri, thiz->post_data, p, tima_get_property_callback, 3, &thiz->id);
-	_tima_get_property_json_free(p);
+	tima_get_property_json_free(p);
 
 	return NULL;
 }

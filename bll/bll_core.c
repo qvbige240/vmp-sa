@@ -245,6 +245,8 @@ void bll_core_init(void)
 	vmp_node_t* cache = node_create(CACHE_CLASS, ctx->vector_node);
 	cache->pfn_start(cache);
 
+	ctx->cache = cache;
+
 	bll_core_start(thiz);
 
 }

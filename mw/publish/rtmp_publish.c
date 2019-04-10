@@ -11,6 +11,7 @@
 
 #include "context.h"
 #include "ThreadPool.h"
+#include "cache.h"
 
 #include "rtmp_publish.h"
 
@@ -189,11 +190,39 @@ static int rtmp_publish_set(vmp_node_t* p, int id, void* data, int size)
 	return 0;
 }
 
+#include <ctype.h>
+int tima_url_encode(const char* input, char* output)
+{
+	int len = 0;
+	char* ptr = output;
+
+	unsigned char* data = (unsigned char*)input;
+	// do encoding
+	while (*data)
+	{
+		if(isalnum(*data))
+		{
+			*ptr++ = *data;
+			len++;
+		}
+		else
+		{
+			len += 3;
+			*ptr++ = '%';
+			*ptr++ = TO_HEX_CHAR(*data >> 4);
+			*ptr++ = TO_HEX_CHAR(*data % 16);
+		}		
+		data++;
+	}
+
+	return len;
+}
 static int rtmp_publish_connect(vmp_node_t* p)
 {
 	int ret;
 	char url[256] = {0};
 	PrivInfo* thiz = p->private;
+#if 0
 	//const char *uri = "rtmp://172.20.25.47:1935/hls/";
 	//const char *uri = "rtmp://172.20.25.47:1935/live/";
 	//const char *uri = "rtmp://192.168.1.113:1935/live/";
@@ -214,7 +243,22 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	//		thiz->pub[i].connected = 1;
 	//	}
 	//}
-	snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, thiz->req.channel);
+	//char *tmp = "川A523J3.BLUE.1.0.F6xKtZXKTMISOydQ4Zf8kqrPKMCvAZvSxTrJUvmZrXURJ5oGPP8QgIN7tdcksWp5";
+	//char *tmp = "川A523J3.BLUE.1.0.F6xKtZXKTMISOydQ4Zf8kqrPKMCvAZvSxTrJUvmZrXURJ5oGPP8QgIN7tdcksWp5";
+	char *tmp = "/live/5bedQTUyM0oz.BLUE.1.0.hiMrYTO52F8a3TxJbczbYx9YVRK5N9KnVW9wQLK8syhJqgrxYTa2dsZnYrJJASEP";
+	char path[256] = {0};
+	tima_url_encode(tmp, path);
+
+	snprintf(url, sizeof(url), "%s%s", uri, tmp);
+	//snprintf(url, sizeof(url), "%s%lld_%d", uri, thiz->req.sim, thiz->req.channel);
+#else
+	CacheNetworkConfig cfg = {0};
+	context * ctx = context_get();
+	vmp_node_t *cache = ctx->cache;
+	cache->pfn_get(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
+
+	snprintf(url, sizeof(url), "rtmp://%s:%d%s", cfg.rtmp_ip, cfg.rtmp_port, thiz->req.uri);
+#endif
 	TIMA_LOGI("%p connect to %s", get_thread_id(), url);
 	thiz->pub.publisher = tima_rtmp_create(url);
 	ret = tima_rtmp_connect(thiz->pub.publisher);

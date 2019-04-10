@@ -76,7 +76,7 @@ typedef struct _PrivInfo
 
 static int bll_h264_stream_close(vmp_node_t* p);
 static int bll_h264_delete(vmp_node_t* p);
-static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel);
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, char* uri);
 static int rtmp_push_end(vmp_node_t* p, int state);
 
 
@@ -220,7 +220,6 @@ static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
 		ret = proc(ctx, ((void*)nal_node + sizeof(list_t)), NULL);
 		if (ret < 0) {
 			TIMA_LOGE("nalu process failed");
-			// retry...
 			bll_h264_stream_close(p);
 		}
 
@@ -287,15 +286,14 @@ static int h264_stream_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
-static int client_connection_close(vmp_socket_t *s)
+static int client_connection_close(vmp_socket_t *s, int immediately)
 {
 	vmp_node_t* p = (vmp_node_t*)s->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	struct bufferevent *bev = s->bev;
 
 	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
-	bufferevent_disable(bev, EV_READ|EV_WRITE); 
-	//bufferevent_free(bev);
+	bufferevent_disable(bev, EV_READ|EV_WRITE);
 
 	thiz->cond = 0;
 	usleep(10000);
@@ -308,7 +306,12 @@ static int client_connection_close(vmp_socket_t *s)
 		thiz->req.flowid, thiz->sim, thiz->channel.id, s->fd);
 
 	TIMA_LOGD("================ closed fd %d ================", s->fd);
-	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+	if (immediately) {
+		//bufferevent_free(bev);
+		h264_stream_release(p);
+	} else {
+		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+	}
 
 	return 0;
 }
@@ -317,7 +320,7 @@ static int bll_h264_stream_close(vmp_node_t* p)
 {
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
-	client_connection_close(&thiz->req.client);
+	client_connection_close(&thiz->req.client, 0);
 
 	return 0;
 }
@@ -459,7 +462,7 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 }
 #endif
 
-static int media_stream_url(vmp_node_t* p, unsigned long long sim, char channel);
+static int stream_url_query(vmp_node_t* p, unsigned long long sim, char channel);
 static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
 {
 	int ret = 0;
@@ -501,8 +504,13 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				thiz->channel.id = head.channel;
 				TIMA_LOGI("sim no. [%lld]: %d", thiz->sim, head.channel);
 
-				media_stream_url(p, thiz->sim, head.channel);
-				//rtmp_push_start(p, thiz->sim, head.channel);
+#if 0
+				char uri[256];
+				snprintf(uri, sizeof(uri), "/live/%lld_%d", thiz->sim, head.channel);
+				rtmp_push_start(p, thiz->sim, head.channel, uri);
+#else
+				stream_url_query(p, thiz->sim, head.channel);
+#endif
 			}
 			
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
@@ -606,18 +614,19 @@ static int rtmp_push_end(vmp_node_t* p, int state)
 	return 0;
 }
 
-static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
+static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, char* uri)
 {
 	PrivInfo* thiz = p->private;
 	context* ctx = context_get();
 	vmp_node_t* pub = node_create(RTMP_PUBLISH_CLASS, ctx->vector_node);
 
 	RtmpPublishReq req = {0};
+	strncpy(req.uri, uri, sizeof(req.uri));
 	req.sim			= sim;
 	req.channel		= channel;
 	req.traverse	= list_traverse;
 	req.pfncb		= h264_stream_callback;
-	pub->parent			= p;
+	pub->parent		= p;
 	//pub->pfn_callback	= h264_stream_callback;
 	pub->pfn_set(pub, RTMP_PUB_STATE_TYPE_START, &req, sizeof(RtmpPublishReq));
 	pub->pfn_start(pub);
@@ -629,39 +638,35 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel)
 
 #if 1
 #include "tima_get_property.h"
-static int media_stream_url_callback(void* p, int msg, void* arg)
+static int url_query_callback(void* p, int msg, void* arg)
 {
 	vmp_node_t* n = (vmp_node_t*)p;
 	PrivInfo* thiz = n->private;
 	if ( msg != NODE_SUCCESS)
 	{
-		VMP_LOGW("h264_stream_callback fail");
-		//h264_stream_release(n);
-		//bll_h264_delete(n);
+		VMP_LOGW("url_query_callback fail");
+
+		client_connection_close(&thiz->req.client, 1);
 		return -1;
 	}
 	TimaGetPropertyRsp *rsp = arg; 
-	TIMA_LOGD("stream uri: %s", rsp->url);
+	TIMA_LOGD("stream uri: %s", rsp->uri);
 
-	rtmp_push_start(n, thiz->sim, thiz->channel.id);
+	rtmp_push_start(n, thiz->sim, thiz->channel.id, rsp->uri);
 
-	//h264_stream_release(n);
-	//bll_h264_delete(n);
 	return 0;
 }
 
-static int media_stream_url(vmp_node_t* p, unsigned long long sim, char channel)
+static int stream_url_query(vmp_node_t* p, unsigned long long sim, char channel)
 {
-	//PrivInfo* thiz = p->private;
 	context* ctx = context_get();
 	vmp_node_t* n = node_create(TIMA_GET_PROPERTY_CLASS, ctx->vector_node);
 
 	TimaGetPropertyReq req = {0};
-	sprintf(req.simNo, "%011lld", sim);
-	req.chNo		= channel;
-	req.pfncb		= media_stream_url_callback;
+	sprintf(req.sim, "%011lld", sim);
+	req.ch			= channel;
+	req.pfncb		= url_query_callback;
 	n->parent		= p;
-	//n->pfn_callback	= media_stream_url_callback;
 	n->pfn_set(n, 0, &req, sizeof(TimaGetPropertyReq));
 	n->pfn_start(n);
 
