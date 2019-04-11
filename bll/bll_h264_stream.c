@@ -646,7 +646,7 @@ static int url_query_callback(void* p, int msg, void* arg)
 	{
 		VMP_LOGW("url_query_callback fail");
 
-		client_connection_close(&thiz->req.client, 1);
+		client_connection_close(&thiz->req.client, 1);	//... create thread to free
 		return -1;
 	}
 	TimaGetPropertyRsp *rsp = arg; 

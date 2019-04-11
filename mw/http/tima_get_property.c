@@ -19,15 +19,21 @@
 #include "http_network.h"
 #include "tima_get_property.h"
 
+typedef struct StreamCodecProperty
+{
+	int		audio_type;
+	int		video_type;
+} StreamCodecProperty;
+
 typedef struct _PrivInfo
 {
-	TimaGetPropertyReq	req;
-	TimaGetPropertyRsp	rsp;
+	TimaGetPropertyReq		req;
+	TimaGetPropertyRsp		rsp;
 
-	TimaBuffer		buffer;
+	StreamCodecProperty		codec;
 
-	int				id;
-	char*			post_data;
+	int						id;
+	char*					post_data;
 } PrivInfo;
 
 
@@ -75,6 +81,47 @@ static void tima_get_property_json_create(vmp_node_t* p)
 	TIMA_LOGD("get property [%d]: %s\n", strlen(thiz->post_data), thiz->post_data);
 }
 
+static bool tima_json_property_parse(vmp_node_t* p, char* data)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	TimaGetPropertyRsp* rsp = &thiz->rsp;
+	char* err_msg = NULL;
+	char* err_code = NULL;
+	json_t* json_root = json_loads(data, 0, NULL);
+	if (json_root)
+	{
+		json_t *jobject;
+		jobject = json_object_get(json_root, "audioCodeType");
+		if (!jobject) goto json_parse_end;
+		char* audio_type = (char*)json_string_value(jobject);
+		if (!audio_type || strlen(audio_type) < 1)
+		{
+			goto json_parse_end;
+		}
+		TIMA_LOGD("audioCodeType: %s", audio_type);
+		thiz->codec.audio_type = atoi(audio_type);
+
+		jobject = json_object_get(json_root, "videoCodeType");
+		if (!jobject) goto json_parse_end;
+		char* video_type = (char*)json_string_value(jobject);
+		if (!video_type || strlen(video_type) < 1)
+		{
+			goto json_parse_end;
+		}
+		TIMA_LOGD("videoCodeType: %s", video_type);
+		thiz->codec.video_type = atoi(video_type);
+
+		json_decref(json_root);
+		return true;
+
+json_parse_end:
+		json_decref(json_root);
+	}
+
+	TIMA_LOGE("\n ======= tima_json_property_parse error!!!! =======\n");
+	return false;
+}
+
 static bool tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 {
 #if 0
@@ -87,6 +134,7 @@ static bool tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
     	len = strlen(data);
 #endif
 
+	bool ret = false;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	TimaGetPropertyRsp* rsp = &thiz->rsp;
 	char* err_msg = NULL;
@@ -109,7 +157,10 @@ static bool tima_get_property_json_parse(vmp_node_t* p, char* data, int len)
 		char* property = (char*)json_string_value(jobject);
 		if (property)
 		{
-			strcpy(rsp->property, property);				
+			strcpy(rsp->property, property);
+
+			ret = tima_json_property_parse(p, property);
+			if (!ret) goto json_parse_end;
 		}
 		
 		json_decref(json_root);
@@ -143,7 +194,6 @@ static void tima_get_property_json_free(vmp_node_t* p)
 
 	if (thiz && thiz->post_data)
 	{
-		//tima_buffer_clean(&thiz->buffer);
 		free(thiz->post_data);
 		thiz->post_data = NULL;
 	}
@@ -161,6 +211,10 @@ void tima_get_property_callback(TimaHttpRsp* rsp)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if (rsp->status == 200) {
 		ret = tima_get_property_json_parse(p, rsp->data, rsp->size);
+		if (thiz->codec.video_type != 98) {
+			TIMA_LOGE("codec.video_type != 98, codec format error");
+			ret = false;
+		}
 	}
 
 	if(ret == true)
@@ -221,9 +275,6 @@ static void* tima_get_property_start(vmp_node_t* p)
 static int tima_get_property_stop(vmp_node_t* p)
 {
 	TIMA_LOGD("tima_get_property_stop");
-
-	//PrivInfo* thiz = p->private;
-	//tmHttpCancel(thiz->id);
 
 	return 0;
 }

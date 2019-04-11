@@ -147,7 +147,8 @@ static int tima_zlog_conf(TimaLogConfig *config)
 	fprintf(fp,"[formats]\n");
 	//fprintf(fp,"simple	= \"%%d (%%4p:%%15F:%%4L) %%-5V - %%m\"\n");
 	//fprintf(fp,"default	= \"%%d(%%F %%T) %%-6V - %%m%%n\"\n");
-	fprintf(fp,"default	= \"%%d(%%F %%T) %%-6V (%%F:%%L) - %%m%%n\"\n");
+	//fprintf(fp,"default	= \"%%d(%%F %%T) %%-6V (%%F:%%L) - %%m%%n\"\n");
+	fprintf(fp,"default	= \"%%d(%%F %%T).%%us %%-6V (%%F:%%L) - %%m%%n\"\n");
 	fprintf(fp,"[rules]\n");
 	if (mode & 0x01)
 		fprintf(fp,"*.%s         >stdout;default\n", get_log_level_value(level));
