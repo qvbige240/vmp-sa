@@ -84,9 +84,6 @@ static void tima_get_property_json_create(vmp_node_t* p)
 static bool tima_json_property_parse(vmp_node_t* p, char* data)
 {
 	PrivInfo* thiz = (PrivInfo*)p->private;
-	TimaGetPropertyRsp* rsp = &thiz->rsp;
-	char* err_msg = NULL;
-	char* err_code = NULL;
 	json_t* json_root = json_loads(data, 0, NULL);
 	if (json_root)
 	{

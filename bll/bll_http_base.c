@@ -6,6 +6,7 @@
  */
 
 #include <event2/event.h>
+#include <event2/thread.h>
 #include <event2/event_struct.h>
 
 #include "bll_http_base.h"
