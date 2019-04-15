@@ -201,7 +201,7 @@ static int tima_get_property_delete(vmp_node_t* p);
 
 void tima_get_property_callback(TimaHttpRsp* rsp)
 {
-	TIMA_LOGI("http_token_callback %d %s %d %d %s", rsp->id, rsp->reason, rsp->size, rsp->status, rsp->data);
+	TIMA_LOGD("http_token_callback %d %s %d %d %s", rsp->id, rsp->reason, rsp->size, rsp->status, rsp->data);
 
 	bool ret = false;
 	vmp_node_t* p = (vmp_node_t*)rsp->priv;

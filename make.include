@@ -18,7 +18,6 @@ XOBJCOPY	= $(CROSS)objcopy
 XOBJDUMP	= $(CROSS)objdump
 XSTRIP  	= $(CROSS)strip
 XNM	    	= $(CROSS)nm
-XNM		= $(CROSS)nm
 ECHO		= echo
 
 BIN			= $(TOP)/bin
@@ -35,8 +34,8 @@ COMMON_FLAGS += -DUSE_ZLOG
 
 
 ifeq (1,$(DEBUG_MODE))
-#CFLAGS_DEBUG += -g -O0 -DDEBUG
-CFLAGS_DEBUG += -g -O0 -DDEBUG -D_TEST
+CFLAGS_DEBUG += -g -O0 -DDEBUG
+#CFLAGS_DEBUG += -g -O0 -DDEBUG -D_TEST
 XSTRIP      = echo "  [NO STRIP]"
 endif
 

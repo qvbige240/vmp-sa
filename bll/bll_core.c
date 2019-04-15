@@ -161,7 +161,10 @@ static void* bll_core_thread(void* arg)
 		//	bll_core_onmsg(thiz, msg);
 		//	free(msg);
 		//}
-		sleep(1);
+		while (1)
+		{
+			sleep(100);
+		}
 
 #if 1
 		int test = 1;
