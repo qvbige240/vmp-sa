@@ -35,7 +35,8 @@ COMMON_FLAGS += -DUSE_ZLOG
 
 
 ifeq (1,$(DEBUG_MODE))
-CFLAGS_DEBUG += -g -O0 -DDEBUG
+#CFLAGS_DEBUG += -g -O0 -DDEBUG
+CFLAGS_DEBUG += -g -O0 -DDEBUG -D_TEST
 XSTRIP      = echo "  [NO STRIP]"
 endif
 
@@ -71,6 +72,7 @@ LIBS = -lm  -ldl -lstdc++ -lpthread -lz
 
 DEPEND_DIR      = $(TOP)/depends/x86/install
 #DEPEND_DIR      = $(TOP)/../premake/ubuntu/install
+#DEPEND_DIR      = /data/vmp/premake/centos/install
 
 
 INCLUDE_DIR     += -I$(DEPEND_DIR)/include

@@ -652,7 +652,13 @@ static int url_query_callback(void* p, int msg, void* arg)
 	TimaGetPropertyRsp *rsp = arg; 
 	TIMA_LOGD("stream uri: %s", rsp->uri);
 
+#ifdef _TEST
+	char url[256] = {0};
+	snprintf(url, sizeof(url), "%s_%lld_%d", rsp->uri, thiz->sim, thiz->channel.id);
+	rtmp_push_start(n, thiz->sim, thiz->channel.id, url);
+#else
 	rtmp_push_start(n, thiz->sim, thiz->channel.id, rsp->uri);
+#endif // _TEST
 
 	return 0;
 }
@@ -663,7 +669,11 @@ static int stream_url_query(vmp_node_t* p, unsigned long long sim, char channel)
 	vmp_node_t* n = node_create(TIMA_GET_PROPERTY_CLASS, ctx->vector_node);
 
 	TimaGetPropertyReq req = {0};
+#ifdef _TEST
+	sprintf(req.sim, "%011lld", 16180560371);
+#else
 	sprintf(req.sim, "%011lld", sim);
+#endif
 	req.ch			= channel;
 	req.pfncb		= url_query_callback;
 	n->parent		= p;
