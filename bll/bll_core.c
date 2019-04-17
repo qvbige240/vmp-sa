@@ -81,6 +81,7 @@ static int task_server_listener(PrivInfo* thiz)
 
 	ServerListenerReq req = {0};
 	req.server	= server;
+	req.read_cb	= relay_receive_message;
 	p->parent	= thiz;
 	p->pfn_set(p, 0, &req, sizeof(ServerListenerReq));
 	p->pfn_start(p);

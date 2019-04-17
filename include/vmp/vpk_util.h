@@ -80,6 +80,14 @@ VPKAPI int vpk_gettimeofday(struct timeval *tv, struct timezone *tz);
 VPKAPI int vpk_socket_closeonexec(int fd);
 VPKAPI int vpk_socket_nonblocking(int fd);
 
+static INLINE unsigned int hash_int32(unsigned int a)
+{
+	a = a ^ (a>>4);
+	a = (a^0xdeadbeef) + (a<<5);
+	a = a ^ (a>>11);
+	return a;
+}
+
 TIMA_END_DELS
 
 #endif //VPK_UTIL_H

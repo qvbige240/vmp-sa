@@ -23,7 +23,8 @@ struct listener_server {
 	struct event_base		*event_base;
 	vmp_launcher_t			*e;
 	struct evconnlistener	*lis;
-	vmp_server_t			*server;
+	//vmp_server_t			*server;
+	vmp_server_t			**server;
 	vmp_connection_t		conn;
 	server_new_connection_handler on_connect;
 };
@@ -37,7 +38,118 @@ typedef struct _PrivInfo
 
 	struct listener_server *listener;
 
+	vmp_server_t			**server;
 } PrivInfo;
+
+#define MAX_STREAM_SERVER_NUM	8
+
+static void run_events(struct event_base *base, vmp_launcher_t *e);
+
+static void stream_server_init(vmp_node_t* p, vmp_server_t *server);
+static void stream_server_setup_base(vmp_server_t *server, void *base);
+
+static void timeout_cb(evutil_socket_t fd, short event, void *arg) {}
+static void stream_server_task_set(void *base)
+{
+	//struct event timeout;
+	struct timeval tv;
+	int flags = EV_PERSIST;
+	/* Initalize one event */
+	struct event *timeout = event_new(base, -1, flags, timeout_cb, NULL);
+	//event_assign(&timeout, base, -1, flags, timeout_cb, (void*) &timeout);
+
+	evutil_timerclear(&tv);
+	tv.tv_sec = 60000;
+	event_add(timeout, &tv);
+}
+
+static void *stream_server_thread(void *arg)
+{
+	//static int always_true = 1;
+	vmp_server_t *server = (vmp_server_t *)arg;
+	
+	evthread_use_pthreads();
+	
+	stream_server_setup_base(server, NULL);
+	stream_server_task_set(server->event_base);
+
+	run_events(server->event_base, NULL);
+
+	//int udp_reuses_the_same_relay_server = (turn_params.general_relay_servers_number<=1) || (turn_params.net_engine_version == NEV_UDP_SOCKET_PER_THREAD) || (turn_params.net_engine_version == NEV_UDP_SOCKET_PER_SESSION);
+
+	//int we_need_rfc5780 = udp_reuses_the_same_relay_server && turn_params.rfc5780;
+
+	//ignore_sigpipe();
+
+	//setup_relay_server(rs, NULL, we_need_rfc5780);
+
+	//barrier_wait();
+
+	//while(always_true) {
+	//	run_events(rs->event_base, rs->ioa_eng);
+	//}
+
+	TIMA_LOGE("stream server thread %p exit", pthread_self());
+	pthread_exit(0);
+
+	return arg;
+}
+
+static void stream_server_general(vmp_node_t* p, int num)
+{
+	int ret = 0, i = 0;
+	PrivInfo* thiz = p->private;
+
+	vmp_server_t **server = calloc(1, sizeof(vmp_server_t*) * num);
+	thiz->server = server;
+
+	for (i = 0; i < num; i++)
+	{
+		server[i] = calloc(1, sizeof(vmp_server_t));
+		stream_server_init(p, server[i]);
+
+		ret = pthread_create(&(server[i]->pth_id), NULL, stream_server_thread, (void*)server[i]);
+		if (ret != 0)
+			TIMA_LOGE("create thread \'%p\' failed", &(server[i]->pth_id));
+
+		pthread_detach(server[i]->pth_id);
+	}
+}
+
+static void stream_server_init(vmp_node_t* p, vmp_server_t *server)
+{
+	context* ctx = context_get();
+
+	server->e		= ctx->service;
+	server->priv	= p->parent;
+}
+
+static void stream_server_setup_base(vmp_server_t *server, void *base)
+{
+	if (base) {
+		server->event_base = base;
+	} else {
+		server->event_base = event_base_new();
+	}
+}
+
+//static void stream_server_init(vmp_node_t* p, int num)
+//{
+//	int i = 0;
+//	PrivInfo* thiz = p->private;
+//
+//	context* ctx = context_get();
+//	vmp_server_t **server = thiz->server;
+//
+//	for (i = 0; i < num; i++)
+//	{
+//		//stream_server_setup_base(server[i], NULL);
+//		server[i]->e = ctx->service;
+//		server[i]->priv = p->parent;
+//	}
+//}
+
+
 
 vmp_launcher_t *vmp_stream_service_create(void *mem, struct event_base *base)
 {
@@ -50,7 +162,6 @@ vmp_launcher_t *vmp_stream_service_create(void *mem, struct event_base *base)
 
 	return service;
 }
-
 
 void init_server(void)
 {
@@ -65,17 +176,16 @@ void init_server(void)
 void setup_server(vmp_server_t *server)
 {
 	struct bufferevent *pair[2];
-	struct event_base* base = NULL;
 	context* ctx = context_get();
+
 	if (!ctx->service) {
-		base = event_base_new();
+		struct event_base* base = event_base_new();
 		ctx->service = vmp_stream_service_create(/*mem*/ NULL, base);
-	} else {
-		vmp_launcher_t *e = (vmp_launcher_t *)ctx->service;
-		base = e->event_base;
 	}
+
+	vmp_launcher_t *e = (vmp_launcher_t *)ctx->service;
 	
-	server->event_base	= base;
+	server->event_base	= e->event_base;
 	server->e			= ctx->service;
 
 	bufferevent_pair_new(server->event_base, VMP_BUFFEREVENTS_OPTIONS, pair);
@@ -85,6 +195,8 @@ void setup_server(vmp_server_t *server)
 	bufferevent_enable(server->in_buf, EV_READ);
 }
 
+
+vmp_server_t *server_test = NULL;
 
 static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 				struct sockaddr *address, int socklen, void *arg)
@@ -97,10 +209,13 @@ static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 		return;
 	}
 
+	unsigned int index = hash_int32(fd) % MAX_STREAM_SERVER_NUM;
 	vpk_bcopy(address, &(ls->conn.sock.peer_addr), socklen);
-	ls->conn.sock.fd		= fd;
-	ls->conn.sock.e			= ls->server->e;
-	ls->conn.stream_server	= ls->server;
+	ls->conn.sock.fd			= fd;
+	ls->conn.sock.e				= ls->server[0]->e;
+	ls->conn.sock.event_base	= ls->server[index]->event_base;
+	//ls->conn.stream_server		= ls->server[index];
+	ls->conn.stream_server		= server_test;
 
 	int rc = ls->on_connect(ls->e, &ls->conn);
 	if (rc < 0)
@@ -108,7 +223,7 @@ static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 }
 
 static struct listener_server *create_tcp_listener_server(vmp_addr *addr, vmp_launcher_t *e,
-				vmp_server_t *server, server_new_connection_handler send_socket)
+				vmp_server_t **server, server_new_connection_handler send_socket)
 {
 	struct listener_server *listener = calloc(1, sizeof(struct listener_server));
 	if(!listener)
@@ -167,7 +282,7 @@ static int send_socket_to_core(vmp_launcher_t *e, vmp_connection_t *sm)
 	return 0;
 }
 
-static void setup_tcp_listener_server(PrivInfo *thiz, vmp_launcher_t *e, vmp_server_t *server)
+static void setup_tcp_listener_server(PrivInfo *thiz, vmp_launcher_t *e, vmp_server_t **server)
 {
 	//struct listener_server *listener = NULL;
 
@@ -213,10 +328,14 @@ static void* server_listener_thread(void* arg)
 	VMP_LOGI("server_listener_thread begin\n");
 
 	server = thiz->req.server;
+
+	server_test = server;
 	init_server();
 	setup_server(server);
-	setup_tcp_listener_server(thiz, server->e, server);
+	stream_server_general(p, MAX_STREAM_SERVER_NUM);
+	setup_tcp_listener_server(thiz, server->e, thiz->server);
 
+	//barrier_wait();
 	run_listener_server(thiz->listener);
 
 	//struct in_addr	sin_addr;

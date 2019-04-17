@@ -8,6 +8,7 @@
 #ifndef SERVER_LISTENER_H
 #define SERVER_LISTENER_H
 
+#include <pthread.h>
 
 #include "tima_typedef.h"
 #include "tima_server.h"
@@ -64,6 +65,8 @@ struct stream_server {
 	struct bufferevent		*in_buf;
 	struct bufferevent		*out_buf;
 	bufferevent_data_cb		read_cb;
+
+	pthread_t				pth_id;
 };
 
 struct vmp_connection_s {
@@ -77,6 +80,9 @@ struct vmp_connection_s {
 typedef struct _ServerListenerReq
 {
 	vmp_server_t	*server;
+
+	void					*ctx;
+	bufferevent_data_cb		read_cb;
 } ServerListenerReq;
 
 typedef struct _ServerListenerRep

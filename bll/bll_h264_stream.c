@@ -502,9 +502,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
 				thiz->channel.id = head.channel;
-				TIMA_LOGI("sim no. [%lld]: %d", thiz->sim, head.channel);
+				TIMA_LOGI("%p sim no. [%lld]: %d", get_thread_id(), thiz->sim, head.channel);
 
-#if 0
+#if 1
 				char uri[256];
 				snprintf(uri, sizeof(uri), "/live/%lld_%d", thiz->sim, head.channel);
 				rtmp_push_start(p, thiz->sim, head.channel, uri);
@@ -584,7 +584,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 {
 	//struct event_base* base = event_base_new();
 	//s->event_base = base;
-	s->bev = bufferevent_socket_new(e->event_base, s->fd, VMP_BUFFEREVENTS_OPTIONS);
+	s->bev = bufferevent_socket_new(s->event_base, s->fd, VMP_BUFFEREVENTS_OPTIONS);
 	bufferevent_setcb(s->bev, stream_input_handler, NULL, stream_socket_eventcb, s);
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
