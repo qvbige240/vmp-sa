@@ -345,7 +345,7 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket TIMEOUT (0x%2x)\n", 
 			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
 	} else if (event & BEV_EVENT_CONNECTED) {
-		TIMA_LOGI("stream_socket_eventcb CONNECTED (0x%2x)\n", event);
+		TIMA_LOGI("[%ld] stream_socket_eventcb CONNECTED (0x%2x)\n", thiz->req.flowid, event);
 		return;
 	} else {
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) stream_socket_eventcb event = 0x%2x\n", 
@@ -488,8 +488,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				return 0;
 
 			if (ret < 0) {
-				TIMA_LOGE("JT/T 1078-2016 parse failed, ret = %d", ret);
-				TIMA_LOGD("=====flowid[%d] %lld[fd %d]", thiz->req.flowid, thiz->sim, thiz->req.client.fd);
+				TIMA_LOGE("[%ld] JT/T 1078-2016 parse failed, ret = %d", thiz->req.flowid, ret);
+				TIMA_LOGD("=====flowid[%ld] %lld[fd %d]", thiz->req.flowid, thiz->sim, thiz->req.client.fd);
 				goto parse_end;
 			}
 
@@ -498,7 +498,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
 				TIMA_LOGD("=====flowid[%d] %lld[fd %d], ret = %d", thiz->req.flowid, thiz->sim, thiz->req.client.fd, ret);
-				TIMA_LOGE("JT/T 1078-2016 parse failed, ret = %d", ret);
+				TIMA_LOGE("[%ld] JT/T 1078-2016 parse failed, ret = %d", thiz->req.flowid, ret);
 				ret = JT1078_STREAM_PACKAGE_SIZE;
 				goto parse_end;
 			}
@@ -506,7 +506,8 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
 				thiz->channel.id = head.channel;
-				TIMA_LOGI("[%ld] %p sim no. [%lld]: %d", thiz->req.flowid, get_thread_id(), thiz->sim, head.channel);
+				TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
+					thiz->req.flowid, get_thread_id(), thiz->req.client.fd, thiz->sim, head.channel);
 
 #if 1
 				char uri[256];
@@ -533,11 +534,11 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			}
 
 		} else if (clen < 0) {
-			TIMA_LOGE("buffer copy out failed, maybe closed");
+			TIMA_LOGE("[%ld] buffer copy out failed, maybe closed", thiz->req.flowid);
 			ret = -1;
 		}
 	} else {
-		TIMA_LOGE("socket input failed, socket to be closed");
+		TIMA_LOGE("[%ld] socket input failed, socket to be closed", thiz->req.flowid);
 		ret = -1;
 	}
 
@@ -670,10 +671,12 @@ static int url_query_callback(void* p, int msg, void* arg)
 
 static int stream_url_query(vmp_node_t* p, unsigned long long sim, char channel)
 {
+	PrivInfo* thiz = p->private;
 	context* ctx = context_get();
 	vmp_node_t* n = node_create(TIMA_GET_PROPERTY_CLASS, ctx->vector_node);
 
 	TimaGetPropertyReq req = {0};
+	req.flowid		= thiz->req.flowid;
 #ifdef _TEST
 	sprintf(req.sim, "%011lld", 16180560371);
 #else

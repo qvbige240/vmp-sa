@@ -83,7 +83,7 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 		}
 
 		ss->client_cnt++;	// need lock and -- at release
-		TIMA_LOGD("server[%d] handle fd: %d, count: %d", ss->id, session.sock.fd, ss->client_cnt);
+		TIMA_LOGI("server[%d] handle fd: %d, count: %d", ss->id, session.sock.fd, ss->client_cnt);
 
 		//handle_relay_message(ss, &session);
 		handle_message(ss, &session.sock);
