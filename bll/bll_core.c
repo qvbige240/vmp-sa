@@ -34,14 +34,14 @@ static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
 	context* ctx = context_get();
 	vmp_node_t* p = node_create(BLL_H264STREAM_CLASS, ctx->vector_node);
 
-	PrivInfo* thiz = (PrivInfo*)ss->priv;
+	PrivInfo* thiz = (PrivInfo*)ss->core;
 	thiz->flowid++;
 
 	H264StreamReq req = {0};
 	req.flowid	= thiz->flowid;
 	req.e		= ss->e;
 	memcpy(&req.client, sock, sizeof(vmp_socket_t));
-	p->parent	= ss->priv;
+	p->parent	= ss->core;
 	p->pfn_set(p, 0, &req, sizeof(H264StreamReq));
 	p->pfn_start(p);
 
@@ -74,13 +74,14 @@ static int task_server_listener(PrivInfo* thiz)
 	context* ctx = context_get();
 	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS, ctx->vector_node);
 
-	vmp_server_t *server = calloc(1, sizeof(vmp_server_t));
-	server->priv	= thiz;
-	server->read_cb = relay_receive_message;
-	thiz->server = server;
+	//vmp_server_t *server = calloc(1, sizeof(vmp_server_t));
+	//server->core	= thiz;
+	//server->read_cb = relay_receive_message;
+	//thiz->server = server;
 
 	ServerListenerReq req = {0};
-	req.server	= server;
+	//req.server	= server;
+	req.ctx		= thiz;
 	req.read_cb	= relay_receive_message;
 	p->parent	= thiz;
 	p->pfn_set(p, 0, &req, sizeof(ServerListenerReq));

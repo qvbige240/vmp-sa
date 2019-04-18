@@ -59,7 +59,7 @@ typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t
 
 struct stream_server {
 	//tima_memory_t			*mem;
-	void					*priv;
+	void					*core;
 	struct event_base		*event_base;
 	vmp_launcher_t			*e;
 	struct bufferevent		*in_buf;
@@ -67,6 +67,8 @@ struct stream_server {
 	bufferevent_data_cb		read_cb;
 
 	pthread_t				pth_id;
+
+	void					*priv;
 };
 
 struct vmp_connection_s {
@@ -79,9 +81,9 @@ struct vmp_connection_s {
 
 typedef struct _ServerListenerReq
 {
-	vmp_server_t	*server;
+	//vmp_server_t	*server;
 
-	void					*ctx;
+	void*					ctx;
 	bufferevent_data_cb		read_cb;
 } ServerListenerReq;
 
