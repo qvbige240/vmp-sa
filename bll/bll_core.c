@@ -29,6 +29,24 @@ typedef struct _PrivInfo
 } PrivInfo;
 
 
+static int handle_message_callback(void* p, int msg, void* arg)
+{
+	vmp_server_t *ss = p;
+	if ( msg != NODE_SUCCESS)
+	{
+		VMP_LOGW("handle_message_callback fail");
+
+		return -1;
+	}
+
+	PrivInfo* thiz = (PrivInfo*)ss->core;
+	ss->client_cnt--;	// need lock...
+	TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
+
+
+	return 0;
+}
+
 static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
 {
 	context* ctx = context_get();
@@ -38,10 +56,12 @@ static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
 	thiz->flowid++;
 
 	H264StreamReq req = {0};
-	req.flowid	= thiz->flowid;
-	req.e		= ss->e;
+	req.flowid		= thiz->flowid;
+	req.e			= ss->e;
+	req.s			= ss;
 	memcpy(&req.client, sock, sizeof(vmp_socket_t));
-	p->parent	= ss->core;
+	p->parent		= ss->core;
+	p->pfn_callback = handle_message_callback;
 	p->pfn_set(p, 0, &req, sizeof(H264StreamReq));
 	p->pfn_start(p);
 
@@ -62,7 +82,8 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 			continue;
 		}
 
-		TIMA_LOGD("handle fd: %d", session.sock.fd);
+		ss->client_cnt++;	// need lock and -- at release
+		TIMA_LOGD("server[%d] handle fd: %d, count: %d", ss->id, session.sock.fd, ss->client_cnt);
 
 		//handle_relay_message(ss, &session);
 		handle_message(ss, &session.sock);

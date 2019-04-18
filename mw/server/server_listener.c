@@ -98,6 +98,7 @@ static void stream_server_general(vmp_node_t* p, int num)
 	for (i = 0; i < num; i++)
 	{
 		server[i] = calloc(1, sizeof(vmp_server_t));
+		server[i]->id	= i+1;
 		server[i]->priv = p;
 
 		ret = pthread_create(&(server[i]->pth_id), NULL, stream_server_thread, (void*)server[i]);

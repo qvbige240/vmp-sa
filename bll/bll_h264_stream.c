@@ -251,6 +251,10 @@ static int h264_stream_release(vmp_node_t* p)
 	{
 		PrivInfo* thiz = (PrivInfo*)p->private;
 
+		if (p->pfn_callback) {
+			p->pfn_callback(thiz->req.s, NODE_SUCCESS, NULL);
+		}
+
 		if (thiz->req.client.bev) {
 			bufferevent_free(thiz->req.client.bev);
 			thiz->req.client.bev = NULL;

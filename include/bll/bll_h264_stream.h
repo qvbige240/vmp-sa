@@ -24,6 +24,8 @@ typedef struct
 	unsigned long		flowid;
 	vmp_launcher_t		*e;
 	vmp_socket_t		client;
+
+	void				*s;
 } H264StreamReq;
 
 typedef struct

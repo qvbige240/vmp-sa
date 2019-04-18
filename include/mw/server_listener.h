@@ -58,6 +58,8 @@ typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t
 //} vmp_socket_t;
 
 struct stream_server {
+	unsigned char			id;
+
 	//tima_memory_t			*mem;
 	void					*core;
 	struct event_base		*event_base;
@@ -67,6 +69,8 @@ struct stream_server {
 	bufferevent_data_cb		read_cb;
 
 	pthread_t				pth_id;
+
+	unsigned int			client_cnt;		//need lock
 
 	void					*priv;
 };

@@ -75,7 +75,7 @@ int tima_http_post(void *uri, void *post_data,	void *node, TimaHttpCB callback, 
 	TimaUri* tima_uri = (TimaUri*)uri;
 
 	http->callback		= callback;
-	http->req.id		= t_id++;
+	http->req.id		= ++t_id;
 	http->req.reqtype	= tima_uri->type;
 	if (tima_uri->type == HTTP_REQ_GET)
 	{
