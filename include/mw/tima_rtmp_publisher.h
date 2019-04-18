@@ -18,13 +18,14 @@ typedef struct TimaRTMPPublisher TimaRTMPPublisher;
 
 struct TimaRTMPPublisher
 {
-	int		id;
-	char	*url;
+	unsigned long	flowid;
+	//int		id;
+	char			*url;
 
 	char priv[ZERO_LEN_ARRAY];
 };
 
-TimaRTMPPublisher* tima_rtmp_create(const char *url);
+TimaRTMPPublisher* tima_rtmp_create(const char *url, unsigned long flowid);
 int tima_rtmp_connect(TimaRTMPPublisher *publisher);
 int tima_rtmp_send(TimaRTMPPublisher *publisher, RTMPPacket *packet, unsigned int timestamp);
 void tima_rtmp_destory(TimaRTMPPublisher *publisher);

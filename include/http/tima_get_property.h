@@ -23,16 +23,18 @@ extern "C"
 
 typedef struct _TimaGetPropertyReq
 {
-	char		sim[TIMA_SIM_NO_LEN];
-	int			ch;
+	unsigned long	flowid;
 
-	nodecb		pfncb;
+	char			sim[TIMA_SIM_NO_LEN];
+	int				ch;
+
+	nodecb			pfncb;
 } TimaGetPropertyReq;
 
 typedef struct _TimaGetPropertyRsp
 {
-	char		uri[MAX_LEN];
-	char		property[MAX_LEN];
+	char			uri[MAX_LEN];
+	char			property[MAX_LEN];
 } TimaGetPropertyRsp;
 
 void tima_get_property_init(void);

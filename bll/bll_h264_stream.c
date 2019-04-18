@@ -502,7 +502,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
 				thiz->channel.id = head.channel;
-				TIMA_LOGI("[%d] %p sim no. [%lld]: %d", thiz->req.flowid, get_thread_id(), thiz->sim, head.channel);
+				TIMA_LOGI("[%ld] %p sim no. [%lld]: %d", thiz->req.flowid, get_thread_id(), thiz->sim, head.channel);
 
 #if 1
 				char uri[256];
@@ -622,6 +622,7 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, 
 
 	RtmpPublishReq req = {0};
 	strncpy(req.uri, uri, sizeof(req.uri));
+	req.flowid		= thiz->req.flowid;
 	req.sim			= sim;
 	req.channel		= channel;
 	req.traverse	= list_traverse;

@@ -209,7 +209,7 @@ void tima_get_property_callback(TimaHttpRsp* rsp)
 	if (rsp->status == 200) {
 		ret = tima_get_property_json_parse(p, rsp->data, rsp->size);
 		if (thiz->codec.video_type != 98) {
-			TIMA_LOGE("codec.video_type != 98, codec format error");
+			TIMA_LOGE("[%ld] codec.video_type != 98, codec format error", thiz->req.flowid);
 			ret = false;
 		}
 	}
@@ -224,7 +224,7 @@ void tima_get_property_callback(TimaHttpRsp* rsp)
 	}
 	else
 	{
-		TIMA_LOGE("get stream uri failed!");
+		TIMA_LOGE("[%ld] get stream uri failed!", thiz->req.flowid);
 		if (thiz->req.pfncb)
 		{
 			thiz->req.pfncb(p->parent, NODE_FAIL, NULL);
@@ -249,13 +249,13 @@ static int tima_get_property_set(vmp_node_t* p, int id, void* data, int size)
 
 static void* tima_get_property_start(vmp_node_t* p)
 {
-	TIMA_LOGD("tima_get_property_start");
+	PrivInfo* thiz = p->private;
+	TIMA_LOGD("[%ld] tima_get_property_start", thiz->req.flowid);
 	
 	CacheNetworkConfig cfg;
 	vmp_node_t* cache = context_get()->cache;
 	cache->pfn_get(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 	
-	PrivInfo* thiz = p->private;
 	TimaUri uri = {0};
 	uri.type	= HTTP_REQ_POST;
 	uri.ip		= cfg.http_ip;

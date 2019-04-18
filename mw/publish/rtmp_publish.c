@@ -259,8 +259,8 @@ static int rtmp_publish_connect(vmp_node_t* p)
 
 	snprintf(url, sizeof(url), "rtmp://%s:%d%s", cfg.rtmp_ip, cfg.rtmp_port, thiz->req.uri);
 #endif
-	TIMA_LOGI("%p connect to %s", get_thread_id(), url);
-	thiz->pub.publisher = tima_rtmp_create(url);
+	TIMA_LOGI("[%ld] %p connect to %s", thiz->req.flowid, get_thread_id(), url);
+	thiz->pub.publisher = tima_rtmp_create(url, thiz->req.flowid);
 	ret = tima_rtmp_connect(thiz->pub.publisher);
 	if (ret < 0) {
 		TIMA_LOGW("tima_rtmp_connect failed");

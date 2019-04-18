@@ -13,7 +13,7 @@ typedef struct _PrivInfo
 	RTMP		rtmp;
 } PrivInfo;
 
-TimaRTMPPublisher* tima_rtmp_create(const char *url)
+TimaRTMPPublisher* tima_rtmp_create(const char *url, unsigned long flowid)
 {
 	TimaRTMPPublisher* thiz = TIMA_CALLOC(1, sizeof(TimaRTMPPublisher) + sizeof(PrivInfo));
 	if (!thiz) {
@@ -25,6 +25,7 @@ TimaRTMPPublisher* tima_rtmp_create(const char *url)
 	RTMP_Init(&priv->rtmp);
 	RTMP_LogSetLevel(RTMP_LOGWARNING);
 	//RTMP_LogSetLevel(RTMP_LOGDEBUG);
+	thiz->flowid = flowid;
 	thiz->url = strdup(url);
 
 	return thiz;
@@ -54,10 +55,10 @@ int tima_rtmp_connect(TimaRTMPPublisher *publisher)
 		goto ret_error;
 	}
 
-	VMP_LOGI("connected[%d]: %s", thiz->id, thiz->url);
+	VMP_LOGI("[%ld] connected: %s", thiz->flowid, thiz->url);
 	return 0;
 ret_error:
-	VMP_LOGE("rtmp[%s] connect rtmp error.", thiz->url);
+	VMP_LOGE("[%ld] rtmp[%s] connect rtmp error.", thiz->flowid, thiz->url);
 	return -1;
 }
 
@@ -77,12 +78,12 @@ int tima_rtmp_send(TimaRTMPPublisher *publisher, RTMPPacket *packet, unsigned in
 	//packet->m_nTimeStamp = timestamp;
 
 	if (!RTMP_IsConnected(&priv->rtmp)) {
-		VMP_LOGE("can not connect to server, url[%s].", thiz->url);
+		VMP_LOGE("[%ld] can not connect to server, url[%s].", thiz->flowid, thiz->url);
 		return -1;
 	}
 
 	if (!RTMP_SendPacket(&priv->rtmp, packet, 1)) {
-		VMP_LOGE("failed to send, url[%s].", thiz->url);
+		VMP_LOGE("[%ld] failed to send, url[%s].", thiz->flowid, thiz->url);
 		return -1;
 	}
 
@@ -97,7 +98,7 @@ void tima_rtmp_destory(TimaRTMPPublisher *publisher)
 	{
 
 		RTMP_Close(&priv->rtmp);
-		VMP_LOGI("closed[%d]: %s.", thiz->id, thiz->url);
+		VMP_LOGI("[%d] closed: %s.", thiz->flowid, thiz->url);
 		if (thiz->url)
 			free(thiz->url);
 
