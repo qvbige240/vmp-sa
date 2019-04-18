@@ -502,7 +502,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if (thiz->sim == (unsigned long long)-1) {
 				thiz->sim = head.simno;
 				thiz->channel.id = head.channel;
-				TIMA_LOGI("%p sim no. [%lld]: %d", get_thread_id(), thiz->sim, head.channel);
+				TIMA_LOGI("[%d] %p sim no. [%lld]: %d", thiz->req.flowid, get_thread_id(), thiz->sim, head.channel);
 
 #if 1
 				char uri[256];

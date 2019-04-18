@@ -80,7 +80,6 @@ static int task_server_listener(PrivInfo* thiz)
 	//thiz->server = server;
 
 	ServerListenerReq req = {0};
-	//req.server	= server;
 	req.ctx		= thiz;
 	req.read_cb	= relay_receive_message;
 	p->parent	= thiz;

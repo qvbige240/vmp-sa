@@ -81,8 +81,6 @@ struct vmp_connection_s {
 
 typedef struct _ServerListenerReq
 {
-	//vmp_server_t	*server;
-
 	void*					ctx;
 	bufferevent_data_cb		read_cb;
 } ServerListenerReq;

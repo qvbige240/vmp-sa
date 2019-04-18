@@ -24,7 +24,6 @@ struct listener_server {
 	vmp_launcher_t			*e;
 	struct evconnlistener	*lis;
 	vmp_server_t			*server;
-	//vmp_server_t			**server;
 	vmp_connection_t		conn;
 
 	server_new_connection_handler on_connect;
@@ -51,7 +50,6 @@ typedef struct _PrivInfo
 static void setup_server(vmp_node_t* p, vmp_server_t *server, void *base);
 static void run_events(struct event_base *base, vmp_launcher_t *e);
 
-//static void stream_server_init(vmp_node_t* p, vmp_server_t *server);
 static INLINE void stream_server_setup(vmp_node_t* p, vmp_server_t *server, void *base);
 
 static void timeout_cb(evutil_socket_t fd, short event, void *arg) 
@@ -73,31 +71,15 @@ static void stream_server_task_set(void *base)
 
 static void *stream_server_thread(void *arg)
 {
-	//static int always_true = 1;
 	vmp_server_t *server = (vmp_server_t *)arg;
 	vmp_node_t* p = server->priv;
 	
 	evthread_use_pthreads();
 	
-	//stream_server_setup_base(server, NULL);
 	stream_server_setup(p, server, NULL);
 	stream_server_task_set(server->event_base);
 
 	run_events(server->event_base, NULL);
-
-	//int udp_reuses_the_same_relay_server = (turn_params.general_relay_servers_number<=1) || (turn_params.net_engine_version == NEV_UDP_SOCKET_PER_THREAD) || (turn_params.net_engine_version == NEV_UDP_SOCKET_PER_SESSION);
-
-	//int we_need_rfc5780 = udp_reuses_the_same_relay_server && turn_params.rfc5780;
-
-	//ignore_sigpipe();
-
-	//setup_relay_server(rs, NULL, we_need_rfc5780);
-
-	//barrier_wait();
-
-	//while(always_true) {
-	//	run_events(rs->event_base, rs->ioa_eng);
-	//}
 
 	TIMA_LOGE("stream server thread %p exit", pthread_self());
 	pthread_exit(0);
@@ -117,7 +99,6 @@ static void stream_server_general(vmp_node_t* p, int num)
 	{
 		server[i] = calloc(1, sizeof(vmp_server_t));
 		server[i]->priv = p;
-		//stream_server_init(p, server[i]);
 
 		ret = pthread_create(&(server[i]->pth_id), NULL, stream_server_thread, (void*)server[i]);
 		if (ret != 0)
@@ -126,14 +107,6 @@ static void stream_server_general(vmp_node_t* p, int num)
 		pthread_detach(server[i]->pth_id);
 	}
 }
-
-//static void stream_server_init(vmp_node_t* p, vmp_server_t *server)
-//{
-//	context* ctx = context_get();
-//
-//	server->e		= ctx->service;
-//	server->core	= p->parent;
-//}
 
 static INLINE void stream_server_setup(vmp_node_t* p, vmp_server_t *server, void *base)
 {
@@ -191,13 +164,9 @@ static void setup_server(vmp_node_t* p, vmp_server_t *server, void *base)
 	bufferevent_pair_new(server->event_base, VMP_BUFFEREVENTS_OPTIONS, pair);
 	server->in_buf = pair[0];
 	server->out_buf = pair[1];
-	//bufferevent_setcb(server->in_buf, server->read_cb/*relay_receive_message*/, NULL, NULL, server);
 	bufferevent_setcb(server->in_buf, thiz->req.read_cb, NULL, NULL, server);
 	bufferevent_enable(server->in_buf, EV_READ|EV_PERSIST);
 }
-
-
-//vmp_server_t *server_test = NULL;
 
 static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 				struct sockaddr *address, int socklen, void *arg)
@@ -338,15 +307,11 @@ static void* server_listener_thread(void* arg)
 
 	VMP_LOGI("server_listener_thread begin\n");
 
-	//server = thiz->req.server;
-	//server_test = server;
-
 	server = calloc(1, sizeof(vmp_server_t));
 	thiz->main_server = server;
 	server->priv = p;
 
 	init_server();
-	//setup_server(server);
 	setup_server(p, server, NULL);
 	stream_server_general(p, MAX_STREAM_SERVER_NUM);
 	setup_tcp_listener_server(p, server);
