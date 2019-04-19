@@ -90,6 +90,7 @@ VPKAPI int vpk_gettimeofday(struct timeval *tv, struct timezone *tz);
 VPKAPI int vpk_socket_closeonexec(int fd);
 VPKAPI int vpk_socket_nonblocking(int fd);
 VPKAPI void* vpk_sockaddr_get_addr(const vpk_sockaddr *addr);
+VPKAPI unsigned short vpk_sockaddr_get_port(const vpk_sockaddr *addr);
 VPKAPI int vpk_inet_ntop(int af, const void *src, char *dst, int size);
 
 static INLINE unsigned int hash_int32(unsigned int a)

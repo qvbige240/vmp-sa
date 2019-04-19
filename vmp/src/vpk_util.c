@@ -229,6 +229,17 @@ void* vpk_sockaddr_get_addr(const vpk_sockaddr *addr)
 		return (void*) &a->s4.sin_addr;
 }
 
+unsigned short vpk_sockaddr_get_port(const vpk_sockaddr *addr)
+{
+	const vpk_sockaddr *a = (const vpk_sockaddr*) addr;
+
+	return_val_if_fail(a->ss.sa_family == AF_INET ||
+		a->ss.sa_family == AF_INET6, (unsigned short)0xFFFF);
+
+	return ntohs((unsigned short)(a->ss.sa_family == AF_INET6 ?
+		a->s6.sin6_port : a->s4.sin_port));
+}
+
 int vpk_inet_ntop(int af, const void *src, char *dst, int size)
 {
 	return_val_if_fail(src && dst && size, -1);

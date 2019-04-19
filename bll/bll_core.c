@@ -80,6 +80,16 @@ void* sockaddr_get_addr(const vmp_addr *addr)
 	else
 		return (void*) &a->s4.sin_addr;
 }
+unsigned short sockaddr_get_port(const vmp_addr *addr)
+{
+	const vmp_addr *a = (const vmp_addr*) addr;
+
+	return_val_if_fail(a->ss.sa_family == AF_INET ||
+		a->ss.sa_family == AF_INET6, (unsigned short)0xFFFF);
+
+	return ntohs((unsigned short)(a->ss.sa_family == AF_INET6 ?
+		a->s6.sin6_port : a->s4.sin_port));
+}
 
 static void relay_receive_message(struct bufferevent *bev, void *ptr)
 {
@@ -94,15 +104,15 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 			TIMA_LOGE("Weird buffer error");
 			continue;
 		}
-		
+
 		char ip[INET_ADDRSTRLEN] = {0};
 		vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(&session.sock.peer_addr), ip, sizeof(ip));
-		printf("ip: %s\n", ip);
+		printf("ip: %s:%u\n", ip, vpk_sockaddr_get_port(&session.sock.peer_addr));
 
 		ss->client_cnt++;	// need lock and -- at release
-		TIMA_LOGI("server[%d] handle fd: %d, count: %d  (%s)", 
-			ss->id, session.sock.fd, ss->client_cnt, 
-			inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&session.sock.peer_addr)));
+		TIMA_LOGI("server[%d] handle fd: %d, count: %d  (%s : %u)", 
+			ss->id, session.sock.fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&session.sock.peer_addr));
+			//inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&session.sock.peer_addr)));
 
 		//handle_relay_message(ss, &session);
 		handle_message(ss, &session.sock);
