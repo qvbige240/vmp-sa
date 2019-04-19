@@ -300,7 +300,7 @@ static int client_connection_close(vmp_socket_t *s, int immediately)
 	bufferevent_disable(bev, EV_READ|EV_WRITE);
 
 	thiz->cond = 0;
-	usleep(10000);
+	usleep(5000);
 
 	while(thiz->running) {
 		usleep(100000);
@@ -314,7 +314,10 @@ static int client_connection_close(vmp_socket_t *s, int immediately)
 		//bufferevent_free(bev);
 		h264_stream_release(p);
 	} else {
-		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+		if (thiz->publish)
+			rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+		else
+			h264_stream_release(p);
 	}
 
 	return 0;
@@ -357,7 +360,10 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	//bufferevent_free(bev);
 
 	thiz->cond = 0;
-	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+	if (thiz->publish)
+		rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
+	else
+		h264_stream_release(p);
 }
 
 

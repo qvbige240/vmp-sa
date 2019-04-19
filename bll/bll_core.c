@@ -55,6 +55,17 @@ static int handle_message(vmp_server_t *ss, vmp_socket_t *sock)
 	PrivInfo* thiz = (PrivInfo*)ss->core;
 	thiz->flowid++;
 
+
+	char ip[INET_ADDRSTRLEN] = {0};
+	vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(&sock->peer_addr), ip, sizeof(ip));
+	printf("ip: %s:%u\n", ip, vpk_sockaddr_get_port(&sock->peer_addr));
+
+	ss->client_cnt++;	// need lock and -- at release
+	TIMA_LOGI("[%ld] server[%d] handle fd: %d, count: %d  (%s : %u)", 
+		thiz->flowid, ss->id, sock->fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&sock->peer_addr));
+	//inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&sock->peer_addr)));
+
+
 	H264StreamReq req = {0};
 	req.flowid		= thiz->flowid;
 	req.e			= ss->e;
@@ -104,15 +115,6 @@ static void relay_receive_message(struct bufferevent *bev, void *ptr)
 			TIMA_LOGE("Weird buffer error");
 			continue;
 		}
-
-		char ip[INET_ADDRSTRLEN] = {0};
-		vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(&session.sock.peer_addr), ip, sizeof(ip));
-		printf("ip: %s:%u\n", ip, vpk_sockaddr_get_port(&session.sock.peer_addr));
-
-		ss->client_cnt++;	// need lock and -- at release
-		TIMA_LOGI("server[%d] handle fd: %d, count: %d  (%s : %u)", 
-			ss->id, session.sock.fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&session.sock.peer_addr));
-			//inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&session.sock.peer_addr)));
 
 		//handle_relay_message(ss, &session);
 		handle_message(ss, &session.sock);
