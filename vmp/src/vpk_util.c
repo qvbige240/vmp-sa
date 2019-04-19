@@ -4,8 +4,13 @@
  * 2017-03-26 qing.zou created
  *
  */
+ 
+#include <errno.h>
 #include <stdarg.h>
 #include <fcntl.h>
+
+#include <arpa/inet.h>
+
 #include "vpk_util.h"
 
 int vpk_hex_to_int(char c)
@@ -206,6 +211,38 @@ int vpk_socket_nonblocking(int fd)
 	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
 		printf("fcntl(%d, F_GETFL)", fd);
 		return -1;
+	}
+
+	return 0;
+}
+
+void* vpk_sockaddr_get_addr(const vpk_sockaddr *addr)
+{
+	const vpk_sockaddr *a = (const vpk_sockaddr*)addr;
+
+	return_val_if_fail(a->ss.sa_family == AF_INET ||
+		a->ss.sa_family == AF_INET6, NULL);
+
+	if (a->ss.sa_family == AF_INET6)
+		return (void*) &a->s6.sin6_addr;
+	else
+		return (void*) &a->s4.sin_addr;
+}
+
+int vpk_inet_ntop(int af, const void *src, char *dst, int size)
+{
+	return_val_if_fail(src && dst && size, -1);
+
+	*dst = '\0';
+
+	return_val_if_fail(af==AF_INET || af==AF_INET6, -2);
+
+	if (inet_ntop(af, src, dst, size) == NULL) {
+		int status = errno;
+		if (status == 0)
+			status = -3;
+
+		return status;
 	}
 
 	return 0;

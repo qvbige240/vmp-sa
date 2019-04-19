@@ -15,11 +15,7 @@
 
 #define VMP_BUFFEREVENTS_OPTIONS (BEV_OPT_DEFER_CALLBACKS | BEV_OPT_THREADSAFE | BEV_OPT_UNLOCK_CALLBACKS | BEV_OPT_CLOSE_ON_FREE)
 
-typedef union {
-	struct sockaddr ss;
-	struct sockaddr_in s4;
-	struct sockaddr_in6 s6;
-} vmp_addr;
+#define vmp_addr	vpk_sockaddr
 
 typedef struct vmp_launcher_s
 {

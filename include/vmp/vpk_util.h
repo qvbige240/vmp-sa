@@ -7,9 +7,19 @@
 #ifndef VPK_UTIL_H
 #define VPK_UTIL_H
 
+#include <netinet/in.h>
+
 #include "vpk_typedef.h"
 
 TIMA_BEGIN_DELS
+
+
+typedef union {
+	struct sockaddr ss;
+	struct sockaddr_in s4;
+	struct sockaddr_in6 s6;
+} vpk_sockaddr;
+
 
 /* VPK_SWAP_VALUE - this swaps x for y */
 #define VPK_SWAP_VALUE(x, y)	do { (x) ^= (y); (y) ^= (x); (x) ^= (y); } while(0)
@@ -79,6 +89,8 @@ VPKAPI int vpk_gettimeofday(struct timeval *tv, struct timezone *tz);
 
 VPKAPI int vpk_socket_closeonexec(int fd);
 VPKAPI int vpk_socket_nonblocking(int fd);
+VPKAPI void* vpk_sockaddr_get_addr(const vpk_sockaddr *addr);
+VPKAPI int vpk_inet_ntop(int af, const void *src, char *dst, int size);
 
 static INLINE unsigned int hash_int32(unsigned int a)
 {
