@@ -90,23 +90,20 @@ static bool tima_json_property_parse(vmp_node_t* p, char* data)
 		json_t *jobject;
 		jobject = json_object_get(json_root, "audioCodeType");
 		if (!jobject) goto json_parse_end;
-		char* audio_type = (char*)json_string_value(jobject);
-		if (!audio_type || strlen(audio_type) < 1)
-		{
-			goto json_parse_end;
-		}
-		TIMA_LOGD("audioCodeType: %s", audio_type);
-		thiz->codec.audio_type = atoi(audio_type);
+		int audio_type = json_integer_value(jobject);
+		//if (!audio_type || strlen(audio_type) < 1)
+		//{
+		//	goto json_parse_end;
+		//}
+		TIMA_LOGD("audioCodeType: %d", audio_type);
+		//thiz->codec.audio_type = atoi(audio_type);
+		thiz->codec.audio_type = audio_type;
 
 		jobject = json_object_get(json_root, "videoCodeType");
 		if (!jobject) goto json_parse_end;
-		char* video_type = (char*)json_string_value(jobject);
-		if (!video_type || strlen(video_type) < 1)
-		{
-			goto json_parse_end;
-		}
-		TIMA_LOGD("videoCodeType: %s", video_type);
-		thiz->codec.video_type = atoi(video_type);
+		int video_type = json_integer_value(jobject);
+		TIMA_LOGD("videoCodeType: %d", video_type);
+		thiz->codec.video_type = video_type;
 
 		json_decref(json_root);
 		return true;
