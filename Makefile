@@ -9,7 +9,17 @@ ALL_DIRS = $(DIRS) $(APP_DIR)
 
 .PHONY:	all clean dis  $(ALL_DIRS)
 
-all:  $(ALL_DIRS)
+all: version $(ALL_DIRS)
+
+SHELL := /bin/bash
+version:
+	@echo "DEPEND_DIR: $(DEPEND_DIR)"
+	@if test ! -d $(TOP)/lib ; then \
+		mkdir -p $(TOP)/lib; \
+	fi
+	@if test ! -d $(TOP)/bin ; then \
+		mkdir -p $(TOP)/bin; \
+	fi
 
 $(ALL_DIRS):
 	@if test -d $@ ; then cd $@ ; $(MAKE) all ; fi
