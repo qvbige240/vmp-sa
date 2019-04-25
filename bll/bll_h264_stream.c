@@ -515,7 +515,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
 					thiz->req.flowid, get_thread_id(), thiz->req.client.fd, thiz->sim, head.channel);
 
-#if 0
+#ifdef _TEST
 				char uri[256];
 				snprintf(uri, sizeof(uri), "/live/%lld_%d", thiz->sim, head.channel);
 				rtmp_push_start(p, thiz->sim, head.channel, uri);

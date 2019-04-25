@@ -202,7 +202,12 @@ function release()
     fi
  
     #PKG_DIR=tima-sdk-${dst_platform}.${cur_time}.${CODE_VERSION}
-    PKG_DIR=vmp-server-${dst_platform}.${cur_time}
+    if [ ${STRESS_TEST} -ne 0 ]; then
+        PKG_DIR=vmp-server-${dst_platform}.${cur_time}.test
+    else
+        PKG_DIR=vmp-server-${dst_platform}.${cur_time}
+    fi
+
     if [ -d $PKG_DIR ]; then
         rm -rf ${PKG_DIR}/*
     else

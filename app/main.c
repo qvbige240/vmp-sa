@@ -91,6 +91,8 @@ int main(int argc, char* argv[])
 	while (bll_cond())
 	{
 		bll_idle();
+
+		sleep(3600);
 	}
 	
 	bll_done();

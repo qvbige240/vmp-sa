@@ -68,7 +68,6 @@ int bll_cond(void)
 void bll_idle(void)
 {
 	PrintThreadPoolStats();
-	sleep(30);
 }
 
 void bll_done(void)

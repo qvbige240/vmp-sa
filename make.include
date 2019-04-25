@@ -35,8 +35,11 @@ COMMON_FLAGS += -DUSE_ZLOG
 
 ifeq (1,$(DEBUG_MODE))
 CFLAGS_DEBUG += -g -O0 -DDEBUG
-#CFLAGS_DEBUG += -g -O0 -DDEBUG -D_TEST
 XSTRIP      = echo "  [NO STRIP]"
+endif
+
+ifeq (1,$(STRESS_TEST))
+CFLAGS_DEBUG += -D_TEST
 endif
 
 	
