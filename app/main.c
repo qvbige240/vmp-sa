@@ -46,6 +46,10 @@ int main(int argc, char* argv[])
 	//sigaction(SIGSEGV, &action, NULL);
 	//sigaction(SIGFPE,  &action, NULL);
 #endif
+	fprintf(stdout, "\n ****************************** ******************************\n");
+	fprintf(stdout, " *    tima vmp stream server starting...                     *\n");
+	fprintf(stdout, " *    version %s                                           *", "v1.0");
+	fprintf(stdout, "\n ****************************** ******************************\n\n\n");
 
 	char* config_file = NULL;
 
@@ -75,6 +79,12 @@ int main(int argc, char* argv[])
 		help(argv[0]);
 		return -1;
 	}
+
+//#ifdef DEBUG
+//	daemon(0, 1);
+//#else
+//	daemon(0, 0);
+//#endif
 
 	bll_init(config_file);
 	

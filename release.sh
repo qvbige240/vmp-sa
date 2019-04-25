@@ -151,6 +151,10 @@ function distribution()
         echo "cp -f $config_file $PKG_DIR/bin"
         cp -f $config_file $PKG_DIR/bin
     done
+
+    if [ -f ${WORKDIR}/bin/README.md ]; then
+        cp -f ${WORKDIR}/bin/README.md $PKG_DIR
+    fi
     
     if [ -f ${WORKDIR}/conf/tvmpssd.conf ]; then
         cp -R ${WORKDIR}/conf $PKG_DIR
