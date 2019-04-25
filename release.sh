@@ -38,7 +38,7 @@ function find_osource_library()
     dir_premake=premake
     if [ ! -d ${dir_premake} ]; then
        
-        local osource_library=$(proj_path_get premake)
+        local osource_library=$(proj_path_get premake-vmp)
         if [ -d $osource_library ]; then
             ln -s ${osource_library} ${WORKDIR}/premake
         else
