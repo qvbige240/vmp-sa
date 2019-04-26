@@ -203,9 +203,9 @@ function release()
  
     #PKG_DIR=tima-sdk-${dst_platform}.${cur_time}.${CODE_VERSION}
     if [ ${STRESS_TEST} -ne 0 ]; then
-        PKG_DIR=vmp-server-${dst_platform}.${cur_time}.test
+        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}.test
     else
-        PKG_DIR=vmp-server-${dst_platform}.${cur_time}
+        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}
     fi
 
     if [ -d $PKG_DIR ]; then
@@ -222,8 +222,8 @@ function release()
     #if [ -f ${PKG_DIR}.tgz ]; then
     #    rm ${PKG_DIR}.tgz
     #fi
-    if ls tima-*.tgz >/dev/null 2>&1; then
-        rm tima-*.tgz
+    if ls vmp-sa-*.tgz >/dev/null 2>&1; then
+        rm vmp-sa-*.tgz
     fi
     echo "tar -zcvf ${PKG_DIR}.tgz ${PKG_DIR}"
     tar -zcvf ${PKG_DIR}.tgz ${PKG_DIR} 
