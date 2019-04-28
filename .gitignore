@@ -17,6 +17,7 @@ bin/
 test/tvmpss_client
 premake
 vmp-server-*
+vmp-sa-*
 
 .*
 *.o

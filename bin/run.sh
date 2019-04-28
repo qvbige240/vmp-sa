@@ -12,12 +12,12 @@ function stream_server_run()
         return -1
     fi
 
-    if [ ! -f ../conf/tvmpssd.conf ]; then
-        echo -e "ERROR: config file \'tvmpssd.conf\' not exist."
+    if [ ! -f ../conf/vmp-sa.conf ]; then
+        echo -e "ERROR: config file \'vmp-sa.conf\' not exist."
         return -1
     fi
     
-    ./tvmpssd -c ../conf/tvmpssd.conf &
+    ./tvmpssd -c ../conf/vmp-sa.conf &
 }
 
 stream_server_run

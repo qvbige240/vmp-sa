@@ -156,7 +156,8 @@ function distribution()
         cp -f ${WORKDIR}/bin/README.md $PKG_DIR
     fi
     
-    if [ -f ${WORKDIR}/conf/tvmpssd.conf ]; then
+    #if [ -f ${WORKDIR}/conf/tvmpssd.conf ]; then
+    if [ -f ${WORKDIR}/conf/vmp-sa.conf ]; then
         cp -R ${WORKDIR}/conf $PKG_DIR
     fi
     
