@@ -5,6 +5,7 @@ WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
 echo "WORKDIR: $WORKDIR "
 cur_time=`date +%y%m%d`
 #CODE_VERSION=`svn info | grep "Last Changed Rev: " | sed -e "s/Last Changed Rev: //g"`
+CODE_VERSION=`git rev-list --all|wc -l`
 APP_DIR=${WORKDIR}/bin
 
 cd ${WORKDIR}
@@ -204,9 +205,9 @@ function release()
  
     #PKG_DIR=tima-sdk-${dst_platform}.${cur_time}.${CODE_VERSION}
     if [ ${STRESS_TEST} -ne 0 ]; then
-        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}.test
+        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}.${CODE_VERSION}.test
     else
-        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}
+        PKG_DIR=vmp-sa-${dst_platform}.${cur_time}.${CODE_VERSION}
     fi
 
     if [ -d $PKG_DIR ]; then
