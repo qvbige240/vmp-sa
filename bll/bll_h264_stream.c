@@ -99,7 +99,7 @@ static inline void stream_set_wartermark(vmp_node_t* p, struct bufferevent *bev)
 {
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if (thiz->wmark == 1) {
-		bufferevent_setwatermark(bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, 0);
+		bufferevent_setwatermark(bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
 		thiz->wmark = 2;
 	}
 }
@@ -600,6 +600,7 @@ int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	//bufferevent_setwatermark(s->bev, EV_READ|EV_WRITE, 0, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_WRITE, BUFFEREVENT_LOW_WATERMARK, BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_setwatermark(s->bev, EV_READ, BUFFEREVENT_LOW_WATERMARK, 0);
+	bufferevent_setwatermark(s->bev, EV_READ, 0, BUFFEREVENT_HIGH_WATERMARK);
 	bufferevent_settimeout(s->bev, 60, 0);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
@@ -656,7 +657,7 @@ static int url_query_callback(void* p, int msg, void* arg)
 	PrivInfo* thiz = n->private;
 	if ( msg != NODE_SUCCESS)
 	{
-		VMP_LOGW("url_query_callback fail");
+		VMP_LOGW("[%ld] url_query_callback fail", thiz->req.flowid);
 
 		client_connection_close(&thiz->req.client, 1);	//... create thread to free
 		return -1;
