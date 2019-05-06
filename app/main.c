@@ -5,6 +5,7 @@
  *
  */
 
+#include <stdlib.h>
 #include <signal.h>
 #include <getopt.h>
 
@@ -96,6 +97,10 @@ int main(int argc, char* argv[])
 	}
 	
 	bll_done();
+
+	if (config_file) {
+		free(config_file);
+	}
 	
 	return 0;
 }
