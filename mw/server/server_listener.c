@@ -271,11 +271,11 @@ static void setup_tcp_listener_server(vmp_node_t* p, vmp_server_t *server)
 	if (!inet_aton("0.0.0.0", &sin_addr))
 		TIMA_LOGE("inet_aton error!");
 
-	int port = 9999;
+	//int port = 9999;
 	struct sockaddr_in my_address = {0};
 	my_address.sin_family = AF_INET;
 	my_address.sin_addr.s_addr = sin_addr.s_addr;
-	my_address.sin_port = htons(port);
+	my_address.sin_port = htons(thiz->req.port);
 
 	thiz->listener = create_tcp_listener_server((vmp_addr *)&my_address, server->e, server, send_socket_to_core);
 }
