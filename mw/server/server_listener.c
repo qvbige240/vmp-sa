@@ -212,11 +212,12 @@ static struct listener_server *create_tcp_listener_server(vmp_addr *addr, vmp_la
 		return NULL;
 	}
 	listener->server		= server;
+	listener->event_base	= server->event_base;
 	listener->on_connect	= send_socket;
 	listener->e				= e;
 	listener->parent		= p;
 
-	listener->lis = evconnlistener_new_bind(listener->e->event_base, server_accept_handler, 
+	listener->lis = evconnlistener_new_bind(listener->event_base, server_accept_handler, 
 						listener, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,	
 						(struct sockaddr*)addr, sizeof(vmp_addr));
 	if(!listener->lis)
@@ -313,7 +314,10 @@ static void* server_listener_thread(void* arg)
 	server->priv = p;
 
 	init_server();
-	setup_server(p, server, NULL);
+	if (thiz->req.base)
+		setup_server(p, server, thiz->req.base);
+	else
+		setup_server(p, server, NULL);
 	stream_server_general(p, MAX_STREAM_SERVER_NUM);
 	setup_tcp_listener_server(p, server);
 

@@ -85,6 +85,7 @@ struct vmp_connection_s {
 
 typedef struct _ServerListenerReq
 {
+	void*					base;
 	unsigned short			port;
 	void*					ctx;
 	bufferevent_data_cb		read_cb;
