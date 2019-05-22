@@ -257,7 +257,15 @@ static int rtmp_publish_connect(vmp_node_t* p)
 	vmp_node_t *cache = ctx->cache;
 	cache->pfn_get(cache, CACHE_TIMA_NETWORK, &cfg, sizeof(CacheNetworkConfig));
 
+ #if 1
 	snprintf(url, sizeof(url), "rtmp://%s:%d%s", cfg.rtmp_ip, cfg.rtmp_port, thiz->req.uri);
+ #else
+	if ((thiz->req.flowid % 2) == 0)
+		snprintf(url, sizeof(url), "rtmp://%s:%d%s", "127.0.0.1", cfg.rtmp_port, thiz->req.uri);
+	else
+		snprintf(url, sizeof(url), "rtmp://%s:%d%s", "172.20.25.209", cfg.rtmp_port, thiz->req.uri);
+ #endif
+
 #endif
 	TIMA_LOGI("[%ld] %p connect to %s", thiz->req.flowid, get_thread_id(), url);
 	thiz->pub.publisher = tima_rtmp_create(url, thiz->req.flowid);
