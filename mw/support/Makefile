@@ -32,6 +32,7 @@ SOURCES =
 SOURCES +=  \
 	tima_buffer.c \
 	tima_logs.c \
+	tima_websock.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 

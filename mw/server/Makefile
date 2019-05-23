@@ -32,6 +32,7 @@ SOURCES =
 
 SOURCES +=  \
 	server_listener.c \
+	server_websock.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 
