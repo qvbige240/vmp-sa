@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#pragma pack(1)
+//#pragma pack(1)
 
 #ifdef __cplusplus
 extern "C"
@@ -35,6 +35,7 @@ typedef struct tima_wsmessage {
 typedef struct TimaWebsockFunc
 {
 	int (*onmessage)(void *client, tima_wsmessage_t *msg);
+	//int (*onmessage)(void *client, void *msg);
 	//int (*onopen)(void *client);
 	int (*onclose)(void *client);
 	int (*onpong)(void *client);
@@ -45,7 +46,9 @@ typedef struct TimaWebsockFunc
 int tima_websock_fd_get(void *client);
 int tima_websock_callback_set(void *client, TimaWebsockFunc *cb);
 
-#pragma pack()
+int tima_websock_send_text(void *client, char *text);
+
+//#pragma pack()
 
 #ifdef __cplusplus
 }

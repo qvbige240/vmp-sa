@@ -11,6 +11,7 @@
 
 #include "tima_logs.h"
 #include "tima_buffer.h"
+#include "tima_websock.h"
 
 
 #endif // TIMA_SUPPORT_H
