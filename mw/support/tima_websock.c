@@ -34,3 +34,13 @@ int tima_websock_callback_set(void *client, TimaWebsockFunc *cb)
 
 	return 0;
 }
+
+int tima_websock_send_text(void *client, char *text)
+{
+	return libwebsock_send_text(client, text);
+}
+
+int tima_websock_send_binary(void *client, char *data, unsigned int length)
+{
+	return libwebsock_send_binary(client, data, length);
+}

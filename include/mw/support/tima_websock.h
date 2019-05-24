@@ -48,6 +48,8 @@ int tima_websock_callback_set(void *client, TimaWebsockFunc *cb);
 
 int tima_websock_send_text(void *client, char *text);
 
+int tima_websock_send_binary(void *client, char *data, unsigned int length);
+
 //#pragma pack()
 
 #ifdef __cplusplus
