@@ -40,6 +40,7 @@ SOURCES +=  \
 	bll_h264_stream.c \
 	bll_http_base.c \
 	bll_voice_task.c \
+	bll_websock_ioa.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 

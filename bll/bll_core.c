@@ -13,6 +13,7 @@
 #include "server_listener.h"
 #include "bll_h264_stream.h"
 #include "bll_http_base.h"
+#include "bll_voice_task.h"
 
 typedef struct _PrivInfo
 {
@@ -142,6 +143,36 @@ static int task_server_listener(PrivInfo* thiz)
 	return 0;
 }
 
+static int task_intercom_server_device(PrivInfo* thiz)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS, ctx->vector_node);
+
+	ServerListenerReq req = {0};
+	req.base	= event_base_new();
+	req.port	= 9001;
+	req.ctx		= thiz;
+	req.read_cb	= relay_receive_message;	//...
+	p->parent	= thiz;
+	p->pfn_set(p, 0, &req, sizeof(ServerListenerReq));
+	p->pfn_start(p);
+
+	return 0;
+}
+
+static int task_voi_server_client(PrivInfo* thiz)
+{
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(BLL_VOICE_TASK_CLASS, ctx->vector_node);
+
+	VoiceTaskReq req = {0};
+	p->parent	= thiz;
+	p->pfn_set(p, 0, &req, sizeof(VoiceTaskReq));
+	p->pfn_start(p);
+
+	return 0;
+}
+
 static void task_hbase_start(PrivInfo* thiz)
 {
 	context* ctx = context_get();
@@ -204,7 +235,9 @@ static void* bll_core_thread(void* arg)
 	PrivInfo* thiz = (PrivInfo*)arg;
 	
 	task_hbase_start(thiz);
+	//task_server_listener1(thiz);
 	task_server_listener(thiz);
+	task_voi_server_client(thiz);
 
 
 	while(thiz->cond)

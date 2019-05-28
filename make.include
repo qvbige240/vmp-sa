@@ -90,6 +90,8 @@ LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
 LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
 #LIB_EVENT       = $(LIB_DIR)/libevent.a
 LIB_RTMP        = $(DEPEND_DIR)/lib/librtmp.a
+LIB_WEBSOCK     = $(DEPEND_DIR)/lib/libwebsock.a
+
 LIB_THREADPOOL  = $(LIB_DIR)/libthreadpool.a
 
 LIB_VMP         = $(LIB_DIR)/libvmp.a
@@ -108,6 +110,7 @@ STATIC_LIBS     += $(LIB_ZLOG)
 STATIC_LIBS     += $(LIB_JANSSON)
 STATIC_LIBS     += $(LIB_RTMP)
 STATIC_LIBS     += $(LIB_EVENT)
+STATIC_LIBS     += $(LIB_WEBSOCK)
 STATIC_LIBS     += $(LIB_THREADPOOL)
 STATIC_LIBS     += $(LIB_UTILS)
 STATIC_LIBS     += $(LIB_VMP)

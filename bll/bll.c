@@ -19,9 +19,12 @@
 
 #include "bll.h"
 #include "server_listener.h"
+#include "server_websock.h"
 #include "bll_core.h"
 #include "bll_h264_stream.h"
 #include "bll_http_base.h"
+#include "bll_voice_task.h"
+#include "bll_websock_ioa.h"
 
 static void PrintThreadPoolStats(void)
 {
@@ -54,8 +57,11 @@ void bll_init(const char *conf)
 	context_init((void*)conf);
 	cache_init();
 	server_listener_init();
+	server_websock_init();
 	bll_h264_init();
 	bll_hbase_init();
+	bll_voice_init();
+	bll_websockioa_init();
 
 	bll_core_init();	// start
 }

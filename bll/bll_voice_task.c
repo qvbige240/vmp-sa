@@ -11,6 +11,7 @@
 #include "server_websock.h"
 
 #include "bll_voice_task.h"
+#include "bll_websock_ioa.h"
 
 
 typedef struct _PrivInfo
@@ -55,6 +56,16 @@ static int on_connect(void *client)
 	int fd = tima_websock_fd_get(client);
 
 	TIMA_LOGI("websock server handle fd: %d", fd);
+
+	context* ctx = context_get();
+	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, ctx->vector_node);
+
+	WebsockIOAReq req = {0};
+	req.client	= client;
+	//p->parent	= thiz;
+	p->pfn_set(p, 0, &req, sizeof(WebsockIOAReq));
+	p->pfn_start(p);
+
 
 	//TIMA_LOGI("[%ld] server[%d] handle fd: %d, count: %d  (%s : %u)", 
 		//thiz->flowid, ss->id, sock->fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&sock->peer_addr));
