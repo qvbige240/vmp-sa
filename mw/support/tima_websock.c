@@ -44,3 +44,11 @@ int tima_websock_send_binary(void *client, char *data, unsigned int length)
 {
 	return libwebsock_send_binary(client, data, length);
 }
+
+relay_wserver_t* tima_websock_get_relay_server(void *client)
+{
+	libwebsock_client_state *c = client;
+	return_val_if_fail(c, NULL);
+
+	return c->server;
+}

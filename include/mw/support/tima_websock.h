@@ -11,20 +11,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
+#include <pthread.h>
 
-//#pragma pack(1)
+#include <event2/event.h>
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-//typedef struct _TimaWebsock
-//{
-//	libwebsock_context*		websock;
-//
-//} TimaWebsock;
+typedef struct relay_wserver_s
+{
+	unsigned char			id;
+
+	struct event_base		*event_base;
+
+	pthread_t				pth_id;
+} relay_wserver_t;
+
 
 typedef struct tima_wsmessage {
 	unsigned int			opcode;
@@ -50,7 +54,8 @@ int tima_websock_send_text(void *client, char *text);
 
 int tima_websock_send_binary(void *client, char *data, unsigned int length);
 
-//#pragma pack()
+relay_wserver_t* tima_websock_get_relay_server(void *client);
+
 
 #ifdef __cplusplus
 }
