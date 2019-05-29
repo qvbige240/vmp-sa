@@ -102,4 +102,8 @@ typedef enum _ret
 
 #define VPKAPI			extern	
 
+
+#define LOG_D   printf
+
+
 #endif //VPK_TYPEDEF_H

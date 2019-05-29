@@ -22,6 +22,7 @@
 //#include "vpk_heap.h"
 //#include "vpk_b64.h"
 //#include "vpk_crypto.h"
+#include "vpk_sock.h"
 
 TIMA_BEGIN_DELS
 
