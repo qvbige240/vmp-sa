@@ -143,23 +143,6 @@ static int task_server_listener(PrivInfo* thiz)
 	return 0;
 }
 
-static int task_intercom_server_device(PrivInfo* thiz)
-{
-	context* ctx = context_get();
-	vmp_node_t* p = node_create(SERVER_LISTENER_CLASS, ctx->vector_node);
-
-	ServerListenerReq req = {0};
-	req.base	= event_base_new();
-	req.port	= 9001;
-	req.ctx		= thiz;
-	req.read_cb	= relay_receive_message;	//...
-	p->parent	= thiz;
-	p->pfn_set(p, 0, &req, sizeof(ServerListenerReq));
-	p->pfn_start(p);
-
-	return 0;
-}
-
 static int task_voi_server_client(PrivInfo* thiz)
 {
 	context* ctx = context_get();

@@ -25,6 +25,7 @@
 #include "bll_http_base.h"
 #include "bll_voice_task.h"
 #include "bll_websock_ioa.h"
+#include "bll_socket_ioa.h"
 
 static void PrintThreadPoolStats(void)
 {
@@ -62,6 +63,7 @@ void bll_init(const char *conf)
 	bll_hbase_init();
 	bll_voice_init();
 	bll_websockioa_init();
+	bll_sockioa_init();
 
 	bll_core_init();	// start
 }

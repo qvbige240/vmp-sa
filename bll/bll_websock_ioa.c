@@ -8,12 +8,16 @@
 #include "context.h"
 #include "ThreadPool.h"
 
+#include "event2/event.h"
+
 #include "bll_websock_ioa.h"
 
 typedef struct _PrivInfo
 {
 	WebsockIOAReq		req;
 	WebsockIOARep		rep;
+
+	VmpSocketIOA		*sock;
 
 	int					id;
 } PrivInfo;
@@ -101,7 +105,9 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 		return;
 	}
 
-	VmpSocketIOA *s = (VmpSocketIOA*)arg;
+	vmp_node_t* p = arg;
+	PrivInfo* thiz = p->private;
+	VmpSocketIOA *s = thiz->sock;
 
 	if(!s) {
 		return;
@@ -114,6 +120,8 @@ try_start:
 	if (ret > 0) {
 		try_again = 1;
 		VMP_LOGD("recv: %s", recv_buffer);
+
+		tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
 	}
 
 	if (try_again) {
@@ -140,12 +148,13 @@ static void* bll_websockioa_start(vmp_node_t* p)
 	VmpSocketIOA *s = NULL;
 	relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
 
-	ret = vmp_relay_socket_create(rws, VPK_APPTYPE_WEBSOCKET_RELAY, &s);
+	ret = vmp_relay_socket_create(rws, VPK_APPTYPE_WEBSOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
 		VMP_LOGE("relay socket create failed.");
 	}
 
-	s->read_event = event_new(rws->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, s);
+	s = thiz->sock;
+	s->read_event = event_new(rws->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
 	event_add(s->read_event, NULL);
 	
 	return NULL;
