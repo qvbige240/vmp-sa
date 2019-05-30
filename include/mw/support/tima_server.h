@@ -35,6 +35,8 @@ typedef struct vmp_socket_s
 
 	vmp_launcher_t		*e;
 
+	void				*server;
+
 	void				*priv;
 } vmp_socket_t;
 

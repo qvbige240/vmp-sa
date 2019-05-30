@@ -100,7 +100,7 @@ int vpk_inet_ntop(int af, const void *src, char *dst, int size)
 	return 0;
 }
 
-static void vpk_addr_copy(vpk_sockaddr* dst, const vpk_sockaddr* src)
+void vpk_addr_copy(vpk_sockaddr* dst, const vpk_sockaddr* src)
 {
 	if(dst && src)
 		vpk_bcopy(src, dst, sizeof(vpk_sockaddr));

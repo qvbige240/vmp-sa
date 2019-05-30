@@ -78,6 +78,7 @@ VPKAPI int vpk_inet_ntop(int af, const void *src, char *dst, int size);
 
 unsigned int get_sockaddr_len(const vpk_sockaddr* addr);
 
+void vpk_addr_copy(vpk_sockaddr* dst, const vpk_sockaddr* src);
 int vpk_addr_bind(int fd, const vpk_sockaddr* addr, int reusable);
 int vpk_addr_to_string(const vpk_sockaddr* addr, unsigned char* saddr);
 int vpk_addr_get_from_sock(int fd, vpk_sockaddr *addr);
