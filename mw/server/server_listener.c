@@ -194,6 +194,7 @@ static void server_accept_handler(struct evconnlistener *l, evutil_socket_t fd,
 	ls->conn.sock.fd			= fd;
 	ls->conn.sock.e				= server->e;
 	ls->conn.sock.event_base	= server->event_base;
+	ls->conn.sock.server		= server;
 	ls->conn.stream_server		= server;
 
 	int rc = ls->on_connect(ls->e, &ls->conn);

@@ -68,10 +68,10 @@ int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head
 	head->channel	= packet[14];
 	head->mtype		= packet[15];
 
-	int is_audio = ((packet[15]& 0xf0) == 0x30);
-	if (is_audio)
-		head->bodylen = packet[28] * 2;
-	else
+	//int is_audio = ((packet[15]& 0xf0) == 0x30);
+	//if (is_audio)
+	//	head->bodylen = packet[28] * 2;
+	//else
 		head->bodylen = (packet[28] << 8) | packet[29];
 
 	*body = packet + 30;
