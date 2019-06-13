@@ -371,7 +371,9 @@ static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size, Stream
 	const char *data = buf;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
-	vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
+	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
+	TIMA_LOGD("relay send len = %d", len);
+
 	//void *pkt = NULL;
 	//nal_node_t *nalu_node = NULL;
 
@@ -531,7 +533,14 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
 
 				thiz->channel.id = head.channel;
-				socket_input_proc(p, (const char*)stream, head.bodylen, &thiz->channel);
+
+#if 1
+				//socket_input_proc(p, (const char*)stream, head.bodylen, &thiz->channel);
+				socket_input_proc(p, (const char*)thiz->buff, head.bodylen+30, &thiz->channel);
+#else	// write back to device
+				int ret = bufferevent_write(bev, thiz->buff, head.bodylen+30);
+				VMP_LOGD("bufferevent_write len=%d", head.bodylen+30);
+#endif
 
 			} else if ((head.mtype & 0xf0) == 0x40) {	// transparent
 
@@ -595,8 +604,8 @@ static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 {
 	s->bev = bufferevent_socket_new(s->event_base, s->fd, VMP_BUFFEREVENTS_OPTIONS);
 	bufferevent_setcb(s->bev, stream_input_handler, NULL, stream_socket_eventcb, s);
-	bufferevent_setwatermark(s->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
-	bufferevent_settimeout(s->bev, 60, 0);
+	//bufferevent_setwatermark(s->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
+	//bufferevent_settimeout(s->bev, 60, 0);
 	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
 }
@@ -734,7 +743,9 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 		return;
 	}
 
-	VmpSocketIOA *s = (VmpSocketIOA*)arg;
+	vmp_node_t* p = arg;
+	PrivInfo* thiz = p->private;
+	VmpSocketIOA *s = thiz->sock;
 
 	if(!s) {
 		return;
@@ -746,7 +757,12 @@ try_start:
 	ret = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
 	if (ret > 0) {
 		try_again = 1;
-		VMP_LOGD("recv: %s", recv_buffer);
+		VMP_LOGD("recvfrom websock[len=%d]: %s", ret, recv_buffer);
+
+		//tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
+		ret = bufferevent_write(thiz->req.client.bev, recv_buffer, ret);
+		VMP_LOGD("websock bufferevent_write ret=%d", ret);
+
 	}
 
 	if (try_again) {
@@ -770,7 +786,7 @@ static void socket_relay_init(vmp_node_t* p)
 	}
 
 	s = thiz->sock;
-	s->read_event = event_new(relay->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, s);
+	s->read_event = event_new(relay->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
 	event_add(s->read_event, NULL);
 }
 

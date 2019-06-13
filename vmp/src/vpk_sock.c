@@ -483,7 +483,7 @@ int vpk_udp_send(int fd, const vpk_sockaddr* dest_addr, const char* buffer, int 
 {
 	int rc = 0;
 
-	if(fd >= 0) {
+	if (fd >= 0) {
 
 		int cycle;
 		int try_again = 1;
