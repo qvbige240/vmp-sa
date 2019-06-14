@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "tima_http_client.h"
+#include <event2/http.h>
+#include <event2/buffer.h>
 
-#include "event2/buffer.h"
-#include "event2/http.h"
+#include "tima_http_client.h"
 
 
 static void http_request_free(HttpClient *client)

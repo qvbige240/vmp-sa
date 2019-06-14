@@ -11,7 +11,7 @@
 #include "tima_typedef.h"
 #include "tima_server.h"
 
-#pragma pack(1)
+//#pragma pack(1)
 
 TIMA_BEGIN_DELS
 
@@ -57,7 +57,7 @@ typedef struct _ServerWebsockRep
 void server_websock_init(void);
 void server_websock_done(void);
 
-#pragma pack()
+//#pragma pack()
 
 TIMA_END_DELS
 
