@@ -68,7 +68,7 @@ INCLUDE_DIR	+= -I/usr/include
 #---------------------------------------------------------------------------
 # Linker options
 #---------------------------------------------------------------------------
-LIBS = -lm  -ldl -lstdc++ -lpthread -lz
+LIBS = -lcrypto -lssl -lm -ldl -lstdc++ -lpthread -lz
 
 #LD_FLAGS = -L$(LIBRARY_DIR)) $(LIBS)
 
@@ -88,6 +88,7 @@ LIB_ZLOG        = $(DEPEND_DIR)/lib/libzlog.a
 LIB_JANSSON     = $(DEPEND_DIR)/lib/libjansson.a
 LIB_EVENT       = $(DEPEND_DIR)/lib/libevent.a
 LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_pthreads.a
+LIB_EVENT       += $(DEPEND_DIR)/lib/libevent_openssl.a
 #LIB_EVENT       = $(LIB_DIR)/libevent.a
 LIB_RTMP        = $(DEPEND_DIR)/lib/librtmp.a
 LIB_WEBSOCK     = $(DEPEND_DIR)/lib/libwebsock.a
