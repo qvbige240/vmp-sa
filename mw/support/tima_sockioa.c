@@ -25,6 +25,19 @@ VmpSocketIOA* vmp_unbound_relay_socket_create(void *e, int family, vpk_prototype
 
 void vmp_socket_release(VmpSocketIOA *s)
 {
+	//...
+
+	if (s)
+	{
+		if (s->read_event) {
+			event_free(s->read_event);
+			s->read_event = NULL;
+		}
+
+		close(s->abs.fd);
+
+		VPK_FREE(s);
+	}
 
 }
 

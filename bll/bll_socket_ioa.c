@@ -257,6 +257,8 @@ static int socket_input_release(vmp_node_t* p)
 			thiz->req.client.bev = NULL;
 		}
 
+		vmp_socket_release(thiz->sock);
+
 		tima_buffer_clean(&thiz->channel.buffer);
 		//if (thiz->channel.meta_data.data) {
 		//	free(thiz->channel.meta_data.data);

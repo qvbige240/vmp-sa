@@ -178,6 +178,15 @@ static int ioa_on_close(void *client)
 {
 	int fd = tima_websock_fd_get(client);
 
+	vmp_node_t *p =	tima_websock_priv_get(client);
+	PrivInfo* thiz = p->private;
+
+	//relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
+	//event_free(thiz->sock->read_event);
+
+	vmp_socket_release(thiz->sock);
+
+
 	TIMA_LOGI("[%p]websock client close fd: %d", (void*)pthread_self(), fd);
 
 	return 0;
