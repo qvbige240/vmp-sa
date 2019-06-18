@@ -19,21 +19,6 @@
 
 #define JT1078_STREAM_PACKAGE_SIZE		980
 
-//typedef void (*node_destroy)(void* ctx, void* data);
-//
-//typedef struct nal_node_s {
-//	list_t				node;
-//
-//	stream_object();
-//	//int					cid;			/* channel id */			
-//	//int					mtype;		/* media type video/audio */	
-//	//int					seq;		/* sequence */			
-//	//long				size;		/* package size */			
-//	//unsigned long long	sim;		/* sim number */
-//	//unsigned char*		package;
-//
-//	node_destroy		destroy;
-//} nal_node_t;
 
 typedef struct StreamChannel
 {
@@ -77,157 +62,6 @@ static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, 
 static int rtmp_push_end(vmp_node_t* p, int state);
 
 
-//static int stream_nalu_wmcnt(vmp_node_t* p, size_t size)
-//{
-//	PrivInfo* thiz = (PrivInfo*)p->private;
-//
-//	if (thiz->wmark)
-//		return 0;
-//
-//	if (thiz->wm_time++ < 4) {
-//		thiz->wm_count += size;
-//	} else {
-//		thiz->wmark = (thiz->wm_count/thiz->wm_time) > (8 << 10) ? 1 : -1;
-//	}
-//
-//	return 0;
-//}
-//static inline void stream_set_wartermark(vmp_node_t* p, struct bufferevent *bev)
-//{
-//	PrivInfo* thiz = (PrivInfo*)p->private;
-//	if (thiz->wmark == 1) {
-//		bufferevent_setwatermark(bev, EV_READ, VOI_BUFFEREVENT_LOW_WATERMARK, VOI_BUFFEREVENT_HIGH_WATERMARK);
-//		thiz->wmark = 2;
-//	}
-//}
-//
-//static void pkt_node_release(void *ctx, void *data)
-//{
-//	nal_node_t *node = data;
-//	if (node) {
-//		if (node->package)
-//			free(node->package);
-//		node->package = NULL;
-//		free((void*)node);
-//	}
-//}
-//static nal_node_t* pkt_node_create(void *package, int size, int cid, int seq)
-//{
-//	nal_node_t* pkt = (nal_node_t*)calloc(1, sizeof(nal_node_t));
-//	//return_val_if_fail(pkt && size > 0, -1);
-//
-//	if (pkt) {
-//		INIT_LIST_HEAD(&pkt->node);
-//
-//		pkt->seq		= seq;
-//		pkt->cid		= cid;
-//		pkt->size		= size;
-//		pkt->package	= package;
-//		pkt->destroy	= pkt_node_release;
-//		//pkt->package	= (char*)pkt + sizeof(nal_node_t);
-//		//memcpy(pkt->buffer, buf, size);
-//	} else {
-//		TIMA_LOGE("node create failed, malloc null");
-//	}
-//
-//	return pkt;
-//}
-//
-//static int list_clear_out(void* p)
-//{
-//	nal_node_t* nalu = NULL;
-//	PrivInfo* thiz = ((vmp_node_t*)p)->private;
-//
-//	pthread_mutex_lock(&thiz->list_mutex);
-//
-//	list_t *pos, *n;
-//	list_for_each_safe(pos, n, &thiz->nalu_head)
-//	{
-//		nalu = container_of(pos, nal_node_t, node);
-//		if (nalu) {
-//			list_del(pos);
-//			nalu->destroy(NULL, nalu);
-//			thiz->list_size--;
-//		}
-//	}
-//
-//	pthread_mutex_unlock(&thiz->list_mutex);
-//
-//	return 0;
-//}
-//
-//static int list_add_nalu(void* p, void* data)
-//{
-//	PrivInfo* thiz = NULL;
-//	nal_node_t* nalu = (nal_node_t*)data;
-//
-//	thiz = ((vmp_node_t*)p)->private;
-//
-//	pthread_mutex_lock(&thiz->list_mutex);
-//
-//	list_add_tail(&nalu->node, &thiz->nalu_head);
-//	if (thiz->list_size++ == 0)
-//		pthread_cond_broadcast(&thiz->cond_empty);
-//
-//	pthread_mutex_unlock(&thiz->list_mutex);
-//
-//	return 0;
-//}
-//
-//static void* list_del_nalu(void* p)
-//{
-//	PrivInfo* thiz = NULL;
-//	nal_node_t* nalu = NULL;
-//
-//	thiz = ((vmp_node_t*)p)->private;
-//
-//	pthread_mutex_lock(&thiz->list_mutex);
-//
-//	if (list_empty(&thiz->nalu_head)) {
-//		pthread_cond_wait(&thiz->cond_empty, &thiz->list_mutex);
-//	}
-//
-//	if (thiz->list_size > 0) {
-//		nalu = container_of(thiz->nalu_head.next, nal_node_t, node);
-//		list_del(thiz->nalu_head.next);
-//		thiz->list_size--;
-//		if (!nalu)
-//			TIMA_LOGE("nalu node get failed, null");
-//		//else
-//		if (thiz->list_size > 100)
-//			TIMA_LOGI("%lld [%d] list_size: %d", thiz->sim, nalu->cid, thiz->list_size);
-//	} else {
-//		TIMA_LOGD("pthread_cond_wait end");
-//	}
-//
-//	pthread_mutex_unlock(&thiz->list_mutex);
-//
-//	return nalu;
-//}
-//
-//static int list_traverse(vmp_node_t* p, pub_callback proc, void* ctx)
-//{
-//	int ret = -1;
-//	return_val_if_fail(p && proc != NULL && ctx, -1);
-//	//PrivInfo* thiz = (PrivInfo*)p->private;
-//
-//	nal_node_t *nal_node = list_del_nalu(p);
-//
-//	if (nal_node) {
-//		ret = proc(ctx, ((void*)nal_node + sizeof(list_t)), NULL);
-//		if (ret < 0) {
-//			TIMA_LOGE("nalu process failed");
-//			bll_sockioa_stream_close(p);
-//		}
-//
-//		nal_node->destroy(NULL, nal_node);
-//	} else {
-//		//usleep(20000);
-//	}
-//
-//	return ret;
-//}
-
 #if 1
 static unsigned long long get_thread_id(void)
 {
@@ -256,7 +90,8 @@ static int socket_input_release(vmp_node_t* p)
 			bufferevent_free(thiz->req.client.bev);
 			thiz->req.client.bev = NULL;
 		}
-
+		
+		//event_free(thiz->sock->read_event);
 		vmp_socket_release(thiz->sock);
 
 		tima_buffer_clean(&thiz->channel.buffer);
@@ -376,87 +211,6 @@ static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size, Stream
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
 	TIMA_LOGD("relay send len = %d", len);
 
-	//void *pkt = NULL;
-	//nal_node_t *nalu_node = NULL;
-
-	////int i = 0;
-	////for (i = 0; i < 32; i++)
-	////	printf("%02x ", (unsigned char)data[i]);
-	////printf("\n");
-
-	//tima_buffer_strdup(&channel->buffer, data, length, 1);
-	//data = tima_buffer_data(&channel->buffer, 0);
-	//length = tima_buffer_used(&channel->buffer);
-
-	////size_t s = tima_buffer_size(&thiz->buffer);
-	////if (s > 64 << 10)
-	////	printf("buffer total size: %d\n", s);
-
-	//if (!channel->started) {
-
-	//	int i = 0;
-	//	for (i = 0; i < 32; i++)
-	//		printf("%02x ", (unsigned char)data[i]);
-	//	printf("\n");
-
-	//	pos = h264_metadata_get(data, length, 0, &channel->meta_data);
-	//	if (pos == 0) {
-	//		VMP_LOGE("stream parse error at metadata");
-	//		return -1;
-	//	}
-	//	channel->started = 1;
-
-	//	pkt = rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
-	//	if (!pkt) {
-	//		TIMA_LOGE("rtmp_meta_pack failed");
-	//		return -1;
-	//	}
-	//	nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
-	//	list_add_nalu(p, nalu_node);
-	//} else {
-	//	if (length > size + 3) {
-	//		if (!h264_has_start_code(data, length, length-size-3)) {
-	//			//TIMA_LOGD("don't have start code h264_has_start_code");
-	//			return 0;
-	//		}
-	//	}
-	//}
-
-	//do 
-	//{
-	//	h264_nalu_t nalu;
-	//	len = h264_nalu_read(data, length, pos, &nalu);
-	//	if (len != 0) {
-	//		pos += len;
-	//		TIMA_LOGD("## %lld nalu type(%d) len(%d)", thiz->sim, nalu.nalu_type, nalu.nalu_len);
-
-	//		if (!thiz->wmark)
-	//			stream_nalu_wmcnt(p, nalu.nalu_len);
-
-	//		if (nalu.nalu_type == 0x05) {
-	//			pkt = rtmp_meta_pack(thiz->packager, channel->meta_data.data, channel->meta_data.size);
-	//			if (!pkt) {
-	//				TIMA_LOGE("rtmp_meta_pack failed");
-	//				return -1;
-	//			}
-	//			nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
-	//			list_add_nalu(p, nalu_node);
-
-	//		} else if (nalu.nalu_type == 0x07 || nalu.nalu_type == 0x08 || nalu.nalu_type == 0x06) {
-	//			continue;
-	//		}
-
-	//		pkt = rtmp_data_pack(thiz->packager, nalu.nalu_data, nalu.nalu_len);
-	//		if (!pkt) {
-	//			TIMA_LOGE("rtmp_data_pack failed");
-	//			return -1;
-	//		}
-	//		nalu_node = pkt_node_create(pkt, 0, channel->id, 0);
-	//		list_add_nalu(p, nalu_node);
-	//	}
-	//} while (len);
-
-	//tima_buffer_align(&channel->buffer, pos);
 
 	return 0;
 }
@@ -612,98 +366,6 @@ static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
 	return 0;
 }
 
-//
-//static int rtmp_push_end(vmp_node_t* p, int state)
-//{
-//	PrivInfo* thiz = p->private;
-//	vmp_node_t* pub = thiz->publish;
-//
-//	if (pub) {
-//		pub->pfn_set(pub, state, NULL, 0);
-//		thiz->publish = NULL;
-//	}
-//
-//	//pthread_mutex_lock(&thiz->list_mutex);
-//	
-//	pthread_cond_broadcast(&thiz->cond_empty);
-//
-//	//pthread_mutex_unlock(&thiz->list_mutex);
-//
-//	return 0;
-//}
-//
-//static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, char* uri)
-//{
-//	PrivInfo* thiz = p->private;
-//	context* ctx = context_get();
-//	vmp_node_t* pub = node_create(RTMP_PUBLISH_CLASS, ctx->vector_node);
-//
-//	RtmpPublishReq req = {0};
-//	strncpy(req.uri, uri, sizeof(req.uri));
-//	req.flowid		= thiz->req.flowid;
-//	req.sim			= sim;
-//	req.channel		= channel;
-//	req.traverse	= list_traverse;
-//	req.pfncb		= socket_input_callback;
-//	pub->parent		= p;
-//	//pub->pfn_callback	= socket_input_callback;
-//	pub->pfn_set(pub, RTMP_PUB_STATE_TYPE_START, &req, sizeof(RtmpPublishReq));
-//	pub->pfn_start(pub);
-//
-//	thiz->publish = pub;
-//
-//	return 0;
-//}
-//
-//#if 1
-//#include "tima_get_property.h"
-//static int url_query_callback(void* p, int msg, void* arg)
-//{
-//	vmp_node_t* n = (vmp_node_t*)p;
-//	PrivInfo* thiz = n->private;
-//	if ( msg != NODE_SUCCESS)
-//	{
-//		VMP_LOGW("[%ld] url_query_callback fail", thiz->req.flowid);
-//
-//		client_connection_close(&thiz->req.client, 1);	//... create thread to free
-//		return -1;
-//	}
-//	TimaGetPropertyRsp *rsp = arg; 
-//	TIMA_LOGD("stream uri: %s", rsp->uri);
-//
-//#ifdef _TEST
-//	char url[256] = {0};
-//	snprintf(url, sizeof(url), "%s_%lld_%d", rsp->uri, thiz->sim, thiz->channel.id);
-//	rtmp_push_start(n, thiz->sim, thiz->channel.id, url);
-//#else
-//	rtmp_push_start(n, thiz->sim, thiz->channel.id, rsp->uri);
-//#endif // _TEST
-//
-//	return 0;
-//}
-//
-//static int stream_url_query(vmp_node_t* p, unsigned long long sim, char channel)
-//{
-//	PrivInfo* thiz = p->private;
-//	context* ctx = context_get();
-//	vmp_node_t* n = node_create(TIMA_GET_PROPERTY_CLASS, ctx->vector_node);
-//
-//	TimaGetPropertyReq req = {0};
-//	req.flowid		= thiz->req.flowid;
-//#ifdef _TEST
-//	sprintf(req.sim, "%011lld", 16180560371);
-//#else
-//	sprintf(req.sim, "%011lld", sim);
-//#endif
-//	req.ch			= channel;
-//	req.pfncb		= url_query_callback;
-//	n->parent		= p;
-//	n->pfn_set(n, 0, &req, sizeof(TimaGetPropertyReq));
-//	n->pfn_start(n);
-//
-//	return 0;
-//}
-//#endif
 
 static void socket_input_init(PrivInfo* thiz)
 {
@@ -727,7 +389,7 @@ static int bll_sockioa_set(vmp_node_t* p, int id, void* data, int size)
 	return 0;
 }
 
-static char cmsg[1024] = {0};
+static char cmsg[2048] = {0};
 static char recv_buffer[2048] = {0};
 
 static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
@@ -763,7 +425,6 @@ try_start:
 
 		//tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
 		ret = bufferevent_write(thiz->req.client.bev, recv_buffer, ret);
-		VMP_LOGD("websock bufferevent_write ret=%d", ret);
 
 	}
 

@@ -192,7 +192,7 @@ static int ioa_on_close(void *client)
 	return 0;
 }
 
-static char cmsg[1024] = {0};
+static char cmsg[2048] = {0};
 static char recv_buffer[2048] = {0};
 
 static void relay_input_handler(evutil_socket_t fd, short what, void* arg)

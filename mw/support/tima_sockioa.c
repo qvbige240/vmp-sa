@@ -25,8 +25,6 @@ VmpSocketIOA* vmp_unbound_relay_socket_create(void *e, int family, vpk_prototype
 
 void vmp_socket_release(VmpSocketIOA *s)
 {
-	//...
-
 	if (s)
 	{
 		if (s->read_event) {
@@ -38,7 +36,6 @@ void vmp_socket_release(VmpSocketIOA *s)
 
 		VPK_FREE(s);
 	}
-
 }
 
 int vmp_relay_socket_create(void *e, sock_application_t atype, VmpSocketIOA **s)
