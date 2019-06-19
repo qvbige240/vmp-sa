@@ -82,12 +82,13 @@ static void* server_websock_thread(void* arg)
 		char port[8] = {0};
 		websock->user_data = p;
 		sprintf(port, "%d", thiz->req.port);
-		//libwebsock_bind(websock, "0.0.0.0", port);
-
+#if 1
+		libwebsock_bind(websock, "0.0.0.0", port);
+#else
 		//libwebsock_bind_ssl(websock, "0.0.0.0", port, "./privkey.pem", "./cacert.pem");
 		libwebsock_bind_ssl(websock, "0.0.0.0", port, "server.key", "server.crt");
 		VMP_LOGI("websock listening on port %s, privkey: %s, ca: %s\n", port, "./privkey.pem", "./cacert.pem");
-
+#endif
 		websock->onmessage	= ws_onmessage;
 		websock->onopen		= ws_onopen;
 		websock->onclose	= ws_onclose;
