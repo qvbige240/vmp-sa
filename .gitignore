@@ -10,6 +10,7 @@
 *.swp
 *.db
 *.log
+*.demo
 *~
 obj/
 solution/vmp

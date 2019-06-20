@@ -440,8 +440,8 @@ static unsigned int rate = 8000;
 static unsigned int format = SND_PCM_FORMAT_S16_LE;
 static unsigned int channel = 1;
 
-unsigned int buffer_time = 200000;
-unsigned int period_time = 50000;
+unsigned int buffer_time = 300000;
+unsigned int period_time = 100000;
 snd_pcm_sframes_t buffer_size;
 snd_pcm_sframes_t period_size;
 
@@ -652,7 +652,7 @@ static void alsa_pcm_play_8000_1(char *buffer, int len)
 
 play_back:
 
-	while((ret = alsa_pcm_write(buffer+offset))<0)
+	while((ret = alsa_pcm_write(buffer+offset))<=0)
 	//while((ret = snd_pcm_writei(playback_handle, buffer+offset, frames_play))<0)
 	{
 		//usleep(2000);
@@ -671,8 +671,8 @@ play_back:
 			fprintf(stderr, "error from writei: %s\n", snd_strerror(ret));
 		}  
 	}
-	
-	printf("snd_pcm_writei ret = %d, len = %d\n", ret, len);
+	if (ret < period_size)
+		printf("=========== snd_pcm_writei ret = %d, len = %d ===========\n", ret, len);
 
 //	if (len/2 > ret) {
 //		offset += ret;
@@ -760,12 +760,16 @@ static void* list_del_audio(void* p)
 
 	if (list_empty(&thiz->audio_head)) {
 		pthread_cond_wait(&thiz->cond_empty, &thiz->list_mutex);
+
+		//pthread_mutex_unlock(&thiz->list_mutex);
+		//return NULL;
 	}
 
 	if (thiz->list_size > 0) {
 		audio = container_of(thiz->audio_head.next, audio_node_t, node);
 		list_del(thiz->audio_head.next);
 		thiz->list_size--;
+		printf("======== list_size = %d\n", thiz->list_size);
 		if (!audio)
 			printf("audio node get failed, null\n");
 		//else
@@ -826,6 +830,15 @@ int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head
 	return head->bodylen + 30;	
 }
 
+void play_pcm()
+{
+	int ret = vpk_file_read();
+	if (ret == -1) {        
+		printf("========== end ==========\n");
+		return;
+	}
+	alsa_pcm_play_8000_1(priv->buf, priv->buf_size);
+}
 void alsa_play(int client)
 {
 	int ret = 0;
@@ -839,6 +852,7 @@ void alsa_play(int client)
 	//memset(recv_data, 0x00, sizeof(recv_data));
 
 
+#if 0
 	vpk_file_open(NULL, "./pcm_8000_1.pcm");
 	printf("start send pcm data...\n");
 
@@ -846,25 +860,29 @@ void alsa_play(int client)
 	char *g711_data = calloc(1, priv->buf_size/2);
 	while (1)
 	{
-		//memset(encode_buff, 0, 1024);
-		ret = vpk_file_read();
-		if (ret == -1) {        
-			printf("========== end ==========\n");
-			break;        
-		}
-		////ret = jt1078_package(encode_buff, priv->buf, priv->buf_size);
-		//pcm16_to_alaw(priv->buf_size, priv->buf, g711_data);
-		//ret = jt1078_package(encode_buff, g711_data, priv->buf_size/2);
-		//send(client, encode_buff, ret, 0);
-		//usleep(5000);
+		////memset(encode_buff, 0, 1024);
+		//ret = vpk_file_read();
+		//if (ret == -1) {        
+		//	printf("========== end ==========\n");
+		//	break;        
+		//}
+		//////ret = jt1078_package(encode_buff, priv->buf, priv->buf_size);
+		////pcm16_to_alaw(priv->buf_size, priv->buf, g711_data);
+		////ret = jt1078_package(encode_buff, g711_data, priv->buf_size/2);
+		////send(client, encode_buff, ret, 0);
+		////usleep(5000);
 
-		alsa_pcm_play_8000_1(priv->buf, priv->buf_size);
-		//usleep(1000);
+		//alsa_pcm_play_8000_1(priv->buf, priv->buf_size);
+		////usleep(1000);
 
+		play_pcm();
+		//sleep(5);
 	}
 
-#if 0
+#else
+	usleep(1000);
 
+	//while (1) {sleep(1);}
 	while (1) {
 
 		audio_node_t* audio = list_del_audio(NULL);
@@ -897,7 +915,7 @@ void *vpk_test_play(void* arg)
 	//alsa_device_list();
 	//alsa_pcm_setting_8000_1();
 
-	sleep(1);
+	//sleep(1);
 
 	while(1)
 	{
@@ -916,6 +934,7 @@ void alsa_recv(int client)
 	int length = 0;
 	char recv_data[1024];
 
+	static int pcm_size = 0;
 	static char pcm_data[9632] = {0};
 
 	unsigned char *stream = NULL;
@@ -932,16 +951,24 @@ void alsa_recv(int client)
 
 
 		ret = recv(client, recv_data+length, sizeof(recv_data)-length, 0);
-		length += ret;
-		printf("recv ret = %d, length = %d\n", ret, length);
+		length += ret;			
+		
+		struct timeval now;
+		gettimeofday(&now, 0);
+		printf("recv ret = %d, length = %d, now(%dus)\n", ret, length, now.tv_usec);
+
 		while ( (ret = packet_jt1078_parse(recv_data, length, &head, &stream)) > 0)
 		{
-			printf("ret = %d, head.bodylen = %d\n", ret, head.bodylen);
+			printf("ret = %d, head.bodylen = %d, pcm_size = %d\n", ret, head.bodylen, pcm_size);
 			alaw_to_pcm16(head.bodylen, stream, pcm_data);
 			//alsa_pcm_play_8000_1(pcm_data, head.bodylen*2);
 
-			audio_node_t* audio = pkt_node_create(pcm_data, head.bodylen*2);
+				
+			audio_node_t* audio = pkt_node_create(pcm_data, period_size*2);
 			list_add_audio(NULL, audio);
+			
+			//audio = pkt_node_create(pcm_data+period_size*2, period_size*2);
+			//list_add_audio(NULL, audio);
 
 			memmove(recv_data, recv_data + ret, length - ret);
 			length -= ret;
@@ -959,7 +986,7 @@ void *vpk_test_recv(void* arg)
 
 	audio_mutex_init();
 
-	sleep(1);
+	//sleep(1);
 	while(1)
 	{
 		LOG_D("recv thread run.");
@@ -1007,6 +1034,8 @@ int main(int argc, char* argv[])
 
 
 	pcm16_alaw_tableinit();
+
+	alaw_pcm16_tableinit();
 
 	//vpk_test_play(client);
 	alsa_pcm_init();
@@ -1069,12 +1098,12 @@ int main(int argc, char* argv[])
 #endif
 
 //sleep(1);
-	char *g711_data = calloc(1, priv->buf_size/2);
+	char *g711_data = calloc(1, period_size);
 
 	//record_audio_init(8000, 1);
 
-	priv->buf_size = period_size * 2;
-	priv->buf = calloc(1, priv->buf_size * 4);
+	unsigned int buf_size = period_size * 2;
+	char* read_buffer = calloc(1, buf_size * 4);
 
 usleep(100000);
 	int frame_size = 0;
@@ -1109,12 +1138,11 @@ read_wait:
 				avail = period_size;
 
 			//double elapsed;
-			struct timeval result, prev, next;	
-
+			struct timeval prev, next;
 			gettimeofday(&prev, 0);
 
 			//ret = snd_pcm_readi(capture_handle, buf, avail);
-			ret = snd_pcm_readi(capture_handle, priv->buf, avail);
+			ret = snd_pcm_readi(capture_handle, read_buffer, avail);
 			gettimeofday(&next, 0);
 			printf("readi ret = %d, avail = %d, prev(%dus), next(%dus)\n", ret, avail, prev.tv_usec, next.tv_usec);
 			//ret = snd_pcm_readi(capture_handle, priv->buf, frames);
@@ -1126,18 +1154,29 @@ read_wait:
 			} else if (ret > 0) {
 			//printf("=========readi ret = %d, avail = %d\n", ret, avail);
 
-				frame_size += ret;
-				if (frame_size >= period_size) {
-					//printf("read frame_size = %d\n", frame_size);
-					frame_size -= period_size;
+#if 1
+				if (ret != period_size)
+					printf("record data size error, ret = %d, avail: %d, period_size: %d", ret, avail, period_size);
+				pcm16_to_alaw(/*priv->buf_size*/ret*2, read_buffer, g711_data);
+				ret = jt1078_package(encode_buff, g711_data, /*priv->buf_size/2*/ret);
+				send(client, encode_buff, ret, 0);
+#else
+			audio_node_t* audio = pkt_node_create(read_buffer, ret*2);
+			list_add_audio(NULL, audio);
+#endif
 
-					//if (ret*2 > priv->buf_size)
-					//	printf("record data size error, ret = %d, avail: %d, buffer size: %d", ret, avail, priv->buf_size);
-					//pcm16_to_alaw(/*priv->buf_size*/ret*2, priv->buf, g711_data);
-					//ret = jt1078_package(encode_buff, g711_data, /*priv->buf_size/2*/ret);
-					//send(client, encode_buff, ret, 0);
+				//frame_size += ret;
+				//if (frame_size >= period_size) {
+				//	printf("read frame_size = %d\n", frame_size);
+				//	frame_size -= period_size;
 
-				}
+				//	//if (ret*2 > priv->buf_size)
+				//	//	printf("record data size error, ret = %d, avail: %d, buffer size: %d", ret, avail, priv->buf_size);
+				//	//pcm16_to_alaw(/*priv->buf_size*/ret*2, priv->buf, g711_data);
+				//	//ret = jt1078_package(encode_buff, g711_data, /*priv->buf_size/2*/ret);
+				//	//send(client, encode_buff, ret, 0);
+
+				//}
 
 
 				////ret = jt1078_package(encode_buff, priv->buf, priv->buf_size);
@@ -1161,6 +1200,10 @@ read_wait:
 
 		pthread_mutex_unlock(&voice_mutex);
 
+		//play_pcm();
+
+		//audio_node_t* audio = list_del_audio(NULL);
+		//if (audio) alsa_pcm_play_8000_1(audio->data, audio->size);
 	}
 
 	snd_pcm_drain(capture_handle);
