@@ -1,4 +1,9 @@
-
+/**
+ * History:
+ * ================================================================
+ * 2019-03-11 qing.zou created
+ *
+ */
 #ifndef VMP_VECTOR_H
 #define VMP_VECTOR_H
 

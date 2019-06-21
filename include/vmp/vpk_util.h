@@ -50,6 +50,7 @@ TIMA_BEGIN_DELS
 	 ((tvp)->tv_usec cmp (uvp)->tv_usec) :				\
 	 ((tvp)->tv_sec cmp (uvp)->tv_sec))
 
+#define vpk_gettimeofday(tv, tz)  gettimeofday((tv), (tz))
 
 #define TO_HEX_CHAR(c)	((c) > 9 ? (c) + 55 : (c) + 48)
 

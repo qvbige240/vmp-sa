@@ -1,4 +1,9 @@
-
+/**
+ * History:
+ * ================================================================
+ * 2019-03-11 qing.zou created
+ *
+ */
 #include <stdbool.h>
 
 #include "vmp_vector.h"

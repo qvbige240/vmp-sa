@@ -1,4 +1,9 @@
-
+/**
+ * History:
+ * ================================================================
+ * 2019-03-11 qing.zou created
+ *
+ */
 #include "vmp_vector.h"
 
 #define CVECTOR_MALLOC	malloc
