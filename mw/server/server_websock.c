@@ -82,7 +82,7 @@ static void* server_websock_thread(void* arg)
 		char port[8] = {0};
 		websock->user_data = p;
 		sprintf(port, "%d", thiz->req.port);
-#if 1
+#if 0
 		libwebsock_bind(websock, "0.0.0.0", port);
 #else
 		//libwebsock_bind_ssl(websock, "0.0.0.0", port, "./privkey.pem", "./cacert.pem");
