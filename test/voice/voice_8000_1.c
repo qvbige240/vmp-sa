@@ -1006,6 +1006,15 @@ int main(int argc, char* argv[])
 	int ret = 0, avail;
 	int err;
 
+    char *str_ip = NULL;
+    if (argc > 1)
+        str_ip = argv[1];
+    else {
+        printf("args ip \n");
+        fprintf(stderr, "Unable to server with ip null.\n");
+        exit(1);
+    }
+
 	client = socket(AF_INET, SOCK_STREAM, 0);
 	if (client == -1)
 	{
@@ -1015,8 +1024,9 @@ int main(int argc, char* argv[])
 	memset(&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(PORT);
-	my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	//my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	//my_addr.sin_addr.s_addr = inet_addr("172.17.13.222");
+	my_addr.sin_addr.s_addr = inet_addr(str_ip);
 
 	if (connect(client, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) 
 	{
