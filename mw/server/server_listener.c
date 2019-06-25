@@ -155,6 +155,7 @@ static void setup_server(vmp_node_t* p, vmp_server_t *server, void *base)
 
 	e = (vmp_launcher_t *)ctx->service;
 
+	server->porter			= ctx->porter;
 	server->e				= e;
 	server->core			= p->parent;
 	if (base)

@@ -58,6 +58,8 @@ typedef int (*server_new_connection_handler)(vmp_launcher_t *e, vmp_connection_t
 //} vmp_socket_t;
 
 struct stream_server {
+	bs_server_object();
+
 	unsigned char			id;
 
 	//tima_memory_t			*mem;

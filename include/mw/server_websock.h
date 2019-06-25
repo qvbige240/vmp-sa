@@ -39,7 +39,18 @@ TIMA_BEGIN_DELS
 //	void					*priv;
 //};
 
-typedef int (*websock_connect_func)(void *client);
+typedef struct vmp_wserver_s
+{
+	bs_server_object();
+
+	unsigned char			id;
+
+	struct event_base		*event_base;
+
+	//pthread_t				pth_id;
+} vmp_wserver_t;
+
+typedef int (*websock_connect_func)(void *client, void *ws);
 
 typedef struct _ServerWebsockReq
 {

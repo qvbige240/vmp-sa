@@ -42,6 +42,8 @@ void context_init(void *conf)
 	p->conf = conf;
 	p->packager = tima_h264_rtmp_create();
 
+	p->porter = vmp_ports_create(10000, 10005);
+
 	context_set(p);
 	
 	node_init((void**)&p->vector_node);

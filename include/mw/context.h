@@ -37,6 +37,7 @@ typedef struct context
 	void*		conf;
 
 	void*		packager;
+	void*		porter;
 } context;
 
 void context_init(void *conf);

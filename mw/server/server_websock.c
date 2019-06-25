@@ -18,6 +18,7 @@ typedef struct _PrivInfo
 	ServerWebsockReq	req;
 	ServerWebsockRep	rep;
 
+	vmp_wserver_t		**wserver;
 	int					id;
 } PrivInfo;
 
@@ -55,9 +56,15 @@ static int ws_onopen(libwebsock_client_state *state)
 	PrivInfo* thiz = p->private;
 
 	fprintf(stderr, "ws_onopen: %d\n", state->sockfd);
-	
+
+	vmp_wserver_t *wserver = NULL;
+	if (thiz->wserver && state->server) {
+		unsigned char offset = thiz->wserver[0]->id;
+		wserver = thiz->wserver[state->server->id - offset];
+	}
+
 	if (thiz->req.on_connect)
-		thiz->req.on_connect(state);
+		thiz->req.on_connect(state, wserver);
 
 	return 0;
 }
@@ -67,6 +74,30 @@ static int ws_onclose(libwebsock_client_state *state)
 	fprintf(stderr, "ws_onclose: %d\n", state->sockfd);
 	return 0;
 }
+
+
+
+//void libwebsock_server_general(libwebsock_context *ctx, int num);
+static vmp_wserver_t** ws_server_general(libwebsock_context *ws, int num)
+{
+	int i = 0;
+	relay_server_t **server = libwebsock_server_general(ws, num);
+	vmp_wserver_t **wserver = calloc(1, sizeof(vmp_wserver_t*) * num);
+
+	context* ctx = context_get();
+
+	for (i = 0; i < num; i++)
+	{
+		wserver[i] = calloc(1, sizeof(vmp_wserver_t));
+		wserver[i]->event_base = server[i]->event_base;
+		wserver[i]->id = server[i]->id;
+		wserver[i]->porter = ctx->porter;
+	}
+	
+	return wserver;
+}
+
+
 
 static void* server_websock_thread(void* arg)
 {
@@ -82,7 +113,8 @@ static void* server_websock_thread(void* arg)
 		char port[8] = {0};
 		websock->user_data = p;
 		sprintf(port, "%d", thiz->req.port);
-#if 0
+		thiz->wserver = ws_server_general(websock, 8);
+#if 1
 		libwebsock_bind(websock, "0.0.0.0", port);
 #else
 		//libwebsock_bind_ssl(websock, "0.0.0.0", port, "./privkey.pem", "./cacert.pem");
