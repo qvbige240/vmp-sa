@@ -26,7 +26,7 @@ int tima_websock_fd_get(void *client)
 void* tima_websock_priv_get(void *client)
 {
 	libwebsock_client_state *c = client;
-	return_val_if_fail(c, -1);
+	return_val_if_fail(c, NULL);
 
 	return c->priv;
 }

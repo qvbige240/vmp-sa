@@ -14,6 +14,8 @@
 //#define PORT_DEBUG	0
 
 
+int vmp_ports_init(vmp_ports_t *vp, uint16_t start, uint16_t end);
+
 static int port_is_taken(uint32_t status)
 {
 	int ret = -1;
@@ -234,5 +236,6 @@ void vmp_ports_release(vmp_ports_t *vp, uint16_t port)
 			++(vp->high);
 		}
 	}
+
 	VMP_MUTEX_UNLOCK(vp->mutex_lock, 0);
 }

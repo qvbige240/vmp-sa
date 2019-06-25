@@ -32,6 +32,8 @@ SOURCES += 	vpk_util.c \
 			vpk_sock.c \
 			vmp_node.c \
 			vmp_vector.c \
+			vmp_thread.c \
+			vmp_ports.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 

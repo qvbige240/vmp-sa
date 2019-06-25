@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/time.h>
+#include <errno.h>
 
 #include "vmp_thread.h"
 
@@ -191,7 +193,7 @@ void *vmp_thread_setup_global_lock(void *lock, unsigned locktype, int enable_loc
 	}
 }
 
-unsigned long vmp_thread_get_id()
+unsigned long vmp_thread_get_id(void)
 {
 	union {
 		pthread_t		thr;

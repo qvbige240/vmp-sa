@@ -99,7 +99,7 @@ struct vmp_thread_condition_callbacks {
 
 int vmp_use_pthreads_init(void);
 
-unsigned long vmp_thread_get_id();
+unsigned long vmp_thread_get_id(void);
 void *vmp_thread_lock_alloc(unsigned locktype);
 void vmp_thread_lock_free(void *lock, unsigned locktype);
 int vmp_thread_lock_lock(unsigned mode, void *lock);

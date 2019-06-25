@@ -51,4 +51,10 @@
 		node_unregister_class(nclass, (void*)ctx->vector_node);  \
 	} while(0)
 
+
+#define bs_server_object()		\
+	vmp_ports_t			*porter;		/* allocate ports for relay sock */		\
+	vpk_sockaddr		local_addr
+
+
 #endif // TIMA_TYPEDEF_H

@@ -12,10 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <pthread.h>
-
 #include <event2/event.h>
 
+#include "vmp.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -11,6 +11,8 @@
 #include "vmp_log.h"
 #include "vmp_node.h"
 #include "vmp_vector.h"
+#include "vmp_thread.h"
+#include "vmp_ports.h"
 
 #ifdef __cplusplus
 extern "C" {
