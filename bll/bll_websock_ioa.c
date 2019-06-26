@@ -7,6 +7,7 @@
 
 #include "context.h"
 #include "ThreadPool.h"
+#include "server_websock.h"
 
 #include "event2/event.h"
 
@@ -170,16 +171,16 @@ static void* bll_websockioa_start(vmp_node_t* p)
 	tima_websock_callback_set(thiz->req.client, &sock);
 	tima_websock_priv_set(thiz->req.client, p);
 
-	VmpSocketIOA *s = NULL;
-	relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
+	//relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
+	vmp_wserver_t *ws = thiz->req.ws;
 
-	ret = vmp_relay_socket_create(rws, VPK_APPTYPE_WEBSOCKET_RELAY, &thiz->sock);
+	ret = vmp_relay_socket_create(ws, VPK_APPTYPE_WEBSOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
 		VMP_LOGE("relay socket create failed.");
 	}
 
-	s = thiz->sock;
-	s->read_event = event_new(rws->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
+	VmpSocketIOA *s = thiz->sock;
+	s->read_event = event_new(ws->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
 	event_add(s->read_event, NULL);
 	
 	return NULL;

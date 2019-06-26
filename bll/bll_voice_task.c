@@ -55,7 +55,7 @@ static int bll_voice_set(vmp_node_t* p, int id, void* data, int size)
 }
 
 /** client **/
-static int on_connect(void *client)
+static int on_connect(void *client, void *ws)
 {
 	int fd = tima_websock_fd_get(client);
 
@@ -66,6 +66,7 @@ static int on_connect(void *client)
 
 	WebsockIOAReq req = {0};
 	req.client	= client;
+	req.ws		= ws;
 	//p->parent	= thiz;
 	p->pfn_set(p, 0, &req, sizeof(WebsockIOAReq));
 	p->pfn_start(p);
