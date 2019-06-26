@@ -58,22 +58,6 @@ typedef struct _PrivInfo
 
 static int bll_sockioa_stream_close(vmp_node_t* p);
 static int bll_sockioa_delete(vmp_node_t* p);
-static int rtmp_push_start(vmp_node_t* p, unsigned long long sim, char channel, char* uri);
-static int rtmp_push_end(vmp_node_t* p, int state);
-
-
-#if 1
-static unsigned long long get_thread_id(void)
-{
-	union {
-		pthread_t thr;
-		ev_uint64_t id;
-	} r;
-	memset(&r, 0, sizeof(r));
-	r.thr = pthread_self();
-	return (unsigned long long)r.id;
-}
-#endif
 
 
 static int socket_input_release(vmp_node_t* p)
@@ -275,7 +259,7 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				thiz->sim = head.simno;
 				thiz->channel.id = head.channel;
 				TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
-					thiz->req.flowid, get_thread_id(), thiz->req.client.fd, thiz->sim, head.channel);
+					thiz->req.flowid, vmp_thread_get_id(), thiz->req.client.fd, thiz->sim, head.channel);
 
 //#ifdef _TEST
 //				char uri[256];
@@ -507,7 +491,7 @@ vmp_node_t* bll_sockioa_create(void)
 
 int bll_sockioa_delete(vmp_node_t* p)
 {
-	VMP_LOGI("bll_sockioa_delete %p\n", get_thread_id());
+	VMP_LOGI("bll_sockioa_delete %p\n", vmp_thread_get_id());
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)

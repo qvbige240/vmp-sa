@@ -191,6 +191,8 @@ static void* bll_voice_start(vmp_node_t* p)
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
+	vpk_hash_t* h = vpk_hash_create(2 << 16);
+
 	voi_device_server(thiz);
 	voi_websock_server(p);
 
