@@ -50,7 +50,7 @@ typedef struct vmp_wserver_s
 	//pthread_t				pth_id;
 } vmp_wserver_t;
 
-typedef int (*websock_connect_func)(void *client, void *ws);
+typedef int (*websock_connect_func)(void *ctx, void *rep);
 
 typedef struct _ServerWebsockReq
 {
@@ -62,7 +62,8 @@ typedef struct _ServerWebsockReq
 
 typedef struct _ServerWebsockRep
 {
-	
+	void					*client;
+	void					*ws;	/* vmp_wserver_t */
 } ServerWebsockRep;
 
 void server_websock_init(void);

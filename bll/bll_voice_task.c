@@ -55,19 +55,23 @@ static int bll_voice_set(vmp_node_t* p, int id, void* data, int size)
 }
 
 /** client **/
-static int on_connect(void *client, void *ws)
+static int on_connect(void *ctx, void *rep)
 {
+	PrivInfo* thiz = ctx;
+	ServerWebsockRep *rsp = rep;
+	void *client = rsp->client;
+	vmp_wserver_t *wserver = rsp->ws;
+
+	context* global = context_get();
+	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, global->vector_node);
+
 	int fd = tima_websock_fd_get(client);
-
 	TIMA_LOGI("websock server handle fd: %d", fd);
-
-	context* ctx = context_get();
-	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, ctx->vector_node);
 
 	WebsockIOAReq req = {0};
 	req.client	= client;
-	req.ws		= ws;
-	//p->parent	= thiz;
+	req.ws		= wserver;
+	p->parent	= thiz;
 	p->pfn_set(p, 0, &req, sizeof(WebsockIOAReq));
 	p->pfn_start(p);
 
@@ -190,8 +194,6 @@ static void* bll_voice_start(vmp_node_t* p)
 	VMP_LOGD("bll_voice_start");
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
-
-	vpk_hash_t* h = vpk_hash_create(2 << 16);
 
 	voi_device_server(thiz);
 	voi_websock_server(p);

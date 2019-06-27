@@ -63,8 +63,12 @@ static int ws_onopen(libwebsock_client_state *state)
 		wserver = thiz->wserver[state->server->id - offset];
 	}
 
+	ServerWebsockRep rep = {0};
+	rep.client	= state;
+	rep.ws		= wserver;
+
 	if (thiz->req.on_connect)
-		thiz->req.on_connect(state, wserver);
+		thiz->req.on_connect(thiz->req.ctx, (void*)&rep);
 
 	return 0;
 }
@@ -75,9 +79,6 @@ static int ws_onclose(libwebsock_client_state *state)
 	return 0;
 }
 
-
-
-//void libwebsock_server_general(libwebsock_context *ctx, int num);
 static vmp_wserver_t** ws_server_general(libwebsock_context *ws, int num)
 {
 	int i = 0;
@@ -96,8 +97,6 @@ static vmp_wserver_t** ws_server_general(libwebsock_context *ws, int num)
 	
 	return wserver;
 }
-
-
 
 static void* server_websock_thread(void* arg)
 {
