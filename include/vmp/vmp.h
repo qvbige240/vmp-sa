@@ -13,6 +13,7 @@
 #include "vmp_vector.h"
 #include "vmp_thread.h"
 #include "vmp_ports.h"
+#include "vmp_maps.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -195,6 +195,14 @@ void vpk_hash_set_destory(vpk_hash_t *h, void (*destory)(void *val))
 	h->destory = destory;
 }
 
+int vpk_hash_exist(vpk_hash_t *h, const char *key)
+{
+	uint32_t hash = 0;
+	struct hash_item *hi = vpk_hash_lookup(h, key, &hash);
+
+	return hi ? 1 : 0;
+}
+
 void *vpk_hash_get(vpk_hash_t *h, const char *key)
 {
 	uint32_t hash = 0;

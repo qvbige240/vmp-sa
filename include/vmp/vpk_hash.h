@@ -24,6 +24,7 @@ void vpk_hash_destroy(vpk_hash_t *h);
 void vpk_hash_set_destory(vpk_hash_t *h, void (*destory)(void *val));
 
 uint32_t vpk_hash_gen32(const char *key, size_t len);
+int vpk_hash_exist(vpk_hash_t *h, const char *key);
 void *vpk_hash_get(vpk_hash_t *h, const char *key);
 int vpk_hash_set(vpk_hash_t *h, const char *key, void *val);
 int vpk_hash_del(vpk_hash_t *h, const char *key);
