@@ -30,6 +30,7 @@ SOURCES += 	vpk_util.c \
 			vpk_libc.c \
 			vpk_ifilesys.c \
 			vpk_sock.c \
+			vpk_hash.c \
 			vmp_node.c \
 			vmp_vector.c \
 			vmp_thread.c \
