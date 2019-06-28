@@ -13,6 +13,7 @@
 #include "tima_buffer.h"
 #include "tima_websock.h"
 #include "tima_sockioa.h"
+#include "tima_ioamaps.h"
 
 
 #endif // TIMA_SUPPORT_H

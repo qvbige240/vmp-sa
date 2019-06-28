@@ -34,6 +34,7 @@ SOURCES +=  \
 	tima_logs.c \
 	tima_websock.c \
 	tima_sockioa.c \
+	tima_ioamaps.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 
