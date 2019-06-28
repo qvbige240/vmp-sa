@@ -27,6 +27,9 @@ typedef struct _VmpSocketIOA
 	vpk_socketio_t			abs;
 	int						bound;
 
+	int						dst_port;
+	int						src_port;
+
 	vpk_sockaddr			dest_addr;
 	vpk_sockaddr			local_addr;
 	struct bufferevent	   *bev;

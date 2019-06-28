@@ -87,6 +87,10 @@ int vmp_relay_socket_create(void *server, sock_application_t atype, VmpSocketIOA
 		local_addr.s4.sin_port = htons(port);
 		local_addr.s4.sin_addr.s_addr = INADDR_ANY;
 
+		dest_addr.s4.sin_family = PF_INET;
+		dest_addr.s4.sin_port = htons(0);		/* set dst port zero */
+		dest_addr.s4.sin_addr.s_addr = INADDR_ANY;
+
 		sock = vmp_unbound_relay_socket_create(server, PF_INET, VPK_PROTOTYPE_UDP, atype /*VPK_APPTYPE_WEBSOCKET_RELAY*/);
 		if (!sock) {
 			VMP_LOGE("create relay socket error!");
@@ -105,7 +109,9 @@ int vmp_relay_socket_create(void *server, sock_application_t atype, VmpSocketIOA
 
 	}
 
+	sock->src_port = port;
 	vpk_addr_copy(&sock->local_addr, &local_addr);
+	vpk_addr_copy(&sock->dest_addr, &dest_addr);
 
 
 	//unsigned short src_port=13000;
