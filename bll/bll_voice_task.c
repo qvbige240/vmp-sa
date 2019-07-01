@@ -23,6 +23,8 @@ typedef struct _PrivInfo
 
 	unsigned long		flowid;
 	int					id;
+
+	vmp_maps_t*			map;
 } PrivInfo;
 
 static int bll_voice_delete(vmp_node_t* p);
@@ -61,6 +63,7 @@ static int on_connect(void *ctx, void *rep)
 	ServerWebsockRep *rsp = rep;
 	void *client = rsp->client;
 	vmp_wserver_t *wserver = rsp->ws;
+	wserver->map = thiz->map;
 
 	context* global = context_get();
 	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, global->vector_node);
@@ -116,7 +119,6 @@ static int handle_message_callback(void* p, int msg, void* arg)
 	ss->client_cnt--;	// need lock...
 	TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
 
-
 	return 0;
 }
 
@@ -129,6 +131,7 @@ static int handle_relay_connection(vmp_server_t *ss, vmp_socket_t *sock)
 	PrivInfo* thiz = (PrivInfo*)ss->core;
 	thiz->flowid++;
 
+	ss->map = thiz->map;
 
 	char ip[INET_ADDRSTRLEN] = {0};
 	vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(&sock->peer_addr), ip, sizeof(ip));
@@ -138,7 +141,6 @@ static int handle_relay_connection(vmp_server_t *ss, vmp_socket_t *sock)
 	TIMA_LOGI("[%ld] relay server[%d] handle fd: %d, count: %d  (%s : %u)", 
 		thiz->flowid, ss->id, sock->fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&sock->peer_addr));
 	//inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&sock->peer_addr)));
-
 
 	SocketIOAReq req = {0};
 	req.flowid		= thiz->flowid;
@@ -194,6 +196,8 @@ static void* bll_voice_start(vmp_node_t* p)
 	VMP_LOGD("bll_voice_start");
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	thiz->map = tima_ioamaps_create(2 << 15);
 
 	voi_device_server(thiz);
 	voi_websock_server(p);

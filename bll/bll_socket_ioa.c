@@ -17,8 +17,6 @@
 
 #include "tima_jt1078_parser.h"
 
-#define JT1078_STREAM_PACKAGE_SIZE		980
-
 
 typedef struct StreamChannel
 {
@@ -44,6 +42,9 @@ typedef struct _PrivInfo
 	//size_t				wm_count;
 
 	unsigned long long	sim;
+	int					state;
+
+
 	StreamChannel		channel;
 
 	VmpSocketIOA		*sock;
@@ -193,8 +194,7 @@ static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size, Stream
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
-	TIMA_LOGD("relay send len = %d", len);
-
+	TIMA_LOGD("socket relay send len = %d", len);
 
 	return 0;
 }
@@ -218,6 +218,63 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 	return ret;
 }
 #endif
+
+static int socket_match_client(vmp_node_t* p, stream_header_t *head)
+{
+	int ret = 0;
+	VmpSocketIOA *wsock = NULL;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	vmp_server_t *server = thiz->req.s;
+
+	char tmp[16] = {0};
+	sprintf(tmp, "%012lld", head->simno);
+
+	if (thiz->state == SOCK_MATCH_STATE_GET) {
+		wsock = tima_ioamaps_get_type(server->map, tmp, MAPS_SOCK_WEBSKT);
+	}
+
+	if (thiz->sim == (unsigned long long)-1) {
+		thiz->sim = head->simno;
+		//thiz->channel.id = head.channel;
+		TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
+			thiz->req.flowid, vmp_thread_get_id(), thiz->req.client.fd, thiz->sim, head->channel);
+
+		RelaySocketIO* relay_sock = tima_ioamaps_put(server->map, tmp, thiz->sock, MAPS_SOCK_STREAM);
+		if (!relay_sock) {
+			TIMA_LOGE("sock map put failed.");
+			return -1;
+		}
+
+		thiz->state = SOCK_MATCH_STATE_GET;
+		wsock = tima_ioamaps_exist(relay_sock, MAPS_SOCK_WEBSKT);
+		//if (wsock) {
+		//	vpk_sockaddr_set_port(&thiz->sock->dest_addr, wsock->src_port);
+		//	if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
+		//		TIMA_LOGE("set dest addr port[%d] failed", wsock->src_port);
+		//		thiz->state = SOCK_MATCH_STATE_ERROR;
+		//		return -1;
+		//	}
+
+		//	thiz->sock->dst_port = wsock->src_port;
+		//	thiz->state = SOCK_MATCH_STATE_SUCCESS;
+		//	TIMA_LOGI("socket match[%d <-> %d] success.", thiz->sock->src_port, wsock->src_port);
+		//}
+	}
+
+	if (wsock) {
+		vpk_sockaddr_set_port(&thiz->sock->dest_addr, wsock->src_port);
+		if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
+			TIMA_LOGE("set dest addr port[%d] failed", wsock->src_port);
+			thiz->state = SOCK_MATCH_STATE_ERROR;
+			return -1;
+		}
+
+		thiz->sock->dst_port = wsock->src_port;
+		thiz->state = SOCK_MATCH_STATE_SUCCESS;
+		TIMA_LOGI("socket match success [%d <-> %d].", thiz->sock->src_port, wsock->src_port);
+	}
+	return 0;
+}
 
 static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
 {
@@ -255,19 +312,9 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				goto parse_end;
 			}
 
-			if (thiz->sim == (unsigned long long)-1) {
-				thiz->sim = head.simno;
-				thiz->channel.id = head.channel;
-				TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
-					thiz->req.flowid, vmp_thread_get_id(), thiz->req.client.fd, thiz->sim, head.channel);
-
-//#ifdef _TEST
-//				char uri[256];
-//				snprintf(uri, sizeof(uri), "/live/%lld_%d", thiz->sim, head.channel);
-//				rtmp_push_start(p, thiz->sim, head.channel, uri);
-//#else
-//				stream_url_query(p, thiz->sim, head.channel);
-//#endif
+			if (thiz->state != SOCK_MATCH_STATE_SUCCESS) {
+				socket_match_client(p, &head);
+				goto parse_end;
 			}
 			
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
