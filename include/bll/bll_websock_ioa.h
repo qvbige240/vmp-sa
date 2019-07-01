@@ -21,8 +21,9 @@ TIMA_BEGIN_DELS
 
 typedef struct _WebsockIOAReq
 {
-	void		*client;
-	void		*ws;
+	unsigned long		flowid;
+	void				*client;
+	void				*ws;
 } WebsockIOAReq;
 
 typedef struct _WebsockIOARep

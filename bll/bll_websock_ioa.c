@@ -5,11 +5,12 @@
  *
  */
 
+#include "event2/event.h"
+
 #include "context.h"
 #include "ThreadPool.h"
 #include "server_websock.h"
-
-#include "event2/event.h"
+#include "tima_jt1078_parser.h"
 
 #include "bll_websock_ioa.h"
 
@@ -19,6 +20,10 @@ typedef struct _PrivInfo
 	WebsockIOARep		rep;
 
 	VmpSocketIOA		*sock;
+	void				*client;
+
+	unsigned long long	sim;
+	int					state;
 
 	int					id;
 } PrivInfo;
@@ -52,7 +57,7 @@ static int bll_websockioa_set(vmp_node_t* p, int id, void* data, int size)
 	return 0;
 }
 
-static int websocket_input_proc(vmp_node_t* p, const char* buf, size_t size, void *channel)
+static int package_relay_proc(vmp_node_t* p, const char* buf, size_t size)
 {
 	size_t pos = 0, len;
 	size_t length = size;
@@ -62,7 +67,89 @@ static int websocket_input_proc(vmp_node_t* p, const char* buf, size_t size, voi
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
 	TIMA_LOGD("websock relay send len = %d", len);
 
+}
+
+static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
+{
+	int ret = 0;
+	VmpSocketIOA *sock = NULL;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	vmp_wserver_t *ws = thiz->req.ws;
+
+	char tmp[16] = {0};
+	sprintf(tmp, "%012lld", head->simno);
+
+	if (thiz->state == SOCK_MATCH_STATE_GET) {
+		sock = tima_ioamaps_get_type(ws->map, tmp, MAPS_SOCK_STREAM);
+	}
+
+	if (thiz->sim == (unsigned long long)-1) {
+		thiz->sim = head->simno;
+		TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
+			thiz->req.flowid, vmp_thread_get_id(), tima_websock_fd_get(thiz->client), thiz->sim, head->channel);
+
+		RelaySocketIO* relay_sock = tima_ioamaps_put(ws->map, tmp, thiz->sock, MAPS_SOCK_WEBSKT);
+		if (!relay_sock) {
+			TIMA_LOGE("websock map put failed.");
+			return -1;
+		}
+
+		thiz->state = SOCK_MATCH_STATE_GET;
+		sock = tima_ioamaps_exist(relay_sock, MAPS_SOCK_STREAM);
+	}
+
+	if (sock) {
+		vpk_sockaddr_set_port(&thiz->sock->dest_addr, sock->src_port);
+		if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
+			TIMA_LOGE("websock set dest addr port[%d] failed", sock->src_port);
+			thiz->state = SOCK_MATCH_STATE_ERROR;
+			return -1;
+		}
+
+		thiz->sock->dst_port = sock->src_port;
+		thiz->state = SOCK_MATCH_STATE_SUCCESS;
+		TIMA_LOGI("websocket match success [%d <-> %d].", thiz->sock->src_port, sock->src_port);
+	}
 	return 0;
+}
+static int websocket_input_proc(vmp_node_t* p, const char* buf, size_t size, void *channel)
+{
+	int ret = 0;
+	size_t length = size;
+	const char *data = buf;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	unsigned char *stream = NULL;
+	stream_header_t head = {0};
+
+	ret = packet_jt1078_parse((unsigned char*)data, length, &head, &stream);
+	if (ret == 0)
+		return 0;
+
+	if (ret < 0) {
+		TIMA_LOGE("[%ld] JT/T 1078-2016 parse failed, ret = %d", thiz->req.flowid, ret);
+		TIMA_LOGD("=====flowid[%ld] %lld[fd %d]", thiz->req.flowid, thiz->sim, tima_websock_fd_get(thiz->client));
+		goto parse_end;
+	}
+
+	if (ret > JT1078_STREAM_PACKAGE_SIZE) {
+		TIMA_LOGD("=====flowid[%d] %lld[fd %d], ret = %d", thiz->req.flowid, thiz->sim, tima_websock_fd_get(thiz->client), ret);
+		TIMA_LOGE("[%ld] JT/T 1078-2016 parse failed, ret = %d", thiz->req.flowid, ret);
+		ret = JT1078_STREAM_PACKAGE_SIZE;
+		goto parse_end;
+	}
+
+	if (thiz->state != SOCK_MATCH_STATE_SUCCESS) {
+		printf("[len=%ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, body len=%d, parsed=%d, state=%d\n",
+			length, head.simno, head.channel, data[15], data[28], data[29], head.bodylen, ret, thiz->state);
+		websocket_match_device(p, &head);
+	} else {
+		package_relay_proc(p, data, head.bodylen+30);
+	}
+
+
+parse_end:
+	return ret;
 }
 
 static int ioa_on_message(void *client, tima_wsmessage_t *msg)
@@ -72,7 +159,7 @@ static int ioa_on_message(void *client, tima_wsmessage_t *msg)
 	//fprintf(stderr, "Message opcode: %d\n", msg->opcode);
 	//fprintf(stderr, "Payload Length: %llu\n", msg->payload_len);
 	//fprintf(stderr, "[%p]Payload: %s\n", (void*)pthread_self(), msg->payload);
-	TIMA_LOGD("[%p]Payload: %s\n", (void*)pthread_self(), msg->payload);
+	TIMA_LOGD("[%p]Payload(len=%d): %s\n", (void*)pthread_self(), msg->payload_len, msg->payload);
 	//now let's send it back.
 
 	//libwebsock_send_text(state, msg->payload);
@@ -81,6 +168,9 @@ static int ioa_on_message(void *client, tima_wsmessage_t *msg)
 	//tima_websock_send_binary(client, msg->payload, msg->payload_len);
 
 	vmp_node_t *p =	tima_websock_priv_get(client);
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	thiz->client = client;
+
 	websocket_input_proc(p, msg->payload, msg->payload_len, NULL);
 
 	return 0;
@@ -167,6 +257,8 @@ static void* bll_websockioa_start(vmp_node_t* p)
 	sock.onmessage	= ioa_on_message;
 	sock.onclose	= ioa_on_close;
 	sock.onpong		= ioa_on_onpong;
+
+	thiz->sim = (unsigned long long)-1;
 
 	tima_websock_callback_set(thiz->req.client, &sock);
 	tima_websock_priv_set(thiz->req.client, p);

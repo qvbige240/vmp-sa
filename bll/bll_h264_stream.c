@@ -18,7 +18,7 @@
 #include "tima_h264.h"
 #include "rtmp_publish.h"
 
-#define JT1078_STREAM_PACKAGE_SIZE		980
+//#define JT1078_STREAM_PACKAGE_SIZE		980
 
 typedef void (*node_destroy)(void* ctx, void* data);
 
