@@ -57,14 +57,23 @@ typedef struct _PrivInfo
 
 static int bll_sockioa_delete(vmp_node_t* p);
 
-static int socket_input_release(vmp_node_t* p)
+
+static int sockioa_close_socket(vmp_node_t* p)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	evutil_closesocket(thiz->req.client.fd);
+	thiz->req.client.fd = 0;
+	return 0;
+}
+
+static int sockioa_input_release(vmp_node_t* p, int status)
 {
 	if (p) 
 	{
 		PrivInfo* thiz = (PrivInfo*)p->private;
 
 		if (p->pfn_callback) {
-			p->pfn_callback(thiz->req.ss, NODE_SUCCESS, NULL);
+			p->pfn_callback(thiz->req.ss, status, NULL);
 		}
 
 		if (thiz->req.client.bev) {
@@ -73,7 +82,9 @@ static int socket_input_release(vmp_node_t* p)
 		}
 		
 		//event_free(thiz->sock->read_event);
-		vmp_socket_release(thiz->sock);
+		if (thiz->sock) {
+			vmp_socket_release(thiz->sock);
+		}
 
 		bll_sockioa_delete(p);
 	}
@@ -87,12 +98,12 @@ static int socket_input_release(vmp_node_t* p)
 //	if ( msg != NODE_SUCCESS)
 //	{
 //		VMP_LOGW("socket_input_callback fail");
-//		socket_input_release(n);
+//		sockioa_input_release(n);
 //		//bll_sockioa_delete(n);
 //		return -1;
 //	}
 //
-//	socket_input_release(n);
+//	sockioa_input_release(n);
 //	//bll_sockioa_delete(n);
 //	return 0;
 //}
@@ -117,7 +128,7 @@ static int socket_input_release(vmp_node_t* p)
 //		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
 //
 //	TIMA_LOGD("================ closed fd %d ================", sock->fd);
-//	socket_input_release(p);
+//	sockioa_input_release(p);
 //
 //	return 0;
 //}
@@ -159,7 +170,7 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	//bufferevent_free(bev);
 
 	thiz->cond = 0;
-	socket_input_release(p);
+	sockioa_input_release(p, NODE_SUCCESS);
 }
 
 
@@ -332,12 +343,10 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 		ret = media_stream_proc(p, bev);
 
 		if (ret > 0) {
-
 			evbuffer_remove(input, thiz->buff, ret);
 			//vpk_file_save("./cif_raw_data.video", thiz->buff, ret);
 			len -= ret;
 		} else {
-			//usleep(110000);
 			break;
 		}
 
@@ -423,7 +432,7 @@ try_start:
 
 	return ;
 }
-static void socket_relay_init(vmp_node_t* p)
+static int socket_relay_init(vmp_node_t* p)
 {
 	int ret = 0;
 	VmpSocketIOA *s = NULL;
@@ -433,23 +442,30 @@ static void socket_relay_init(vmp_node_t* p)
 	ret = vmp_relay_socket_create(server, VPK_APPTYPE_SOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
 		VMP_LOGE("relay socket create failed.");
-
-		return;
+		return -1;
 	}
 
 	s = thiz->sock;
 	s->read_event = event_new(server->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
 	event_add(s->read_event, NULL);
+
+	return 0;
 }
 
 void* bll_sockioa_start(vmp_node_t* p)
 {
 	VMP_LOGD("bll_sockioa_start");
 
+	int ret = 0;
 	PrivInfo* thiz = p->private;
 	thiz->req.client.priv = p;
 
-	socket_relay_init(p);
+	ret = socket_relay_init(p);
+	if (ret < 0) {
+		sockioa_close_socket(p);
+		sockioa_input_release(p, NODE_FAIL);
+		return NULL;
+	}
 
 	socket_input_init(thiz);
 

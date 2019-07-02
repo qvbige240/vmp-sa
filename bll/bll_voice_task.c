@@ -57,7 +57,25 @@ static int bll_voice_set(vmp_node_t* p, int id, void* data, int size)
 }
 
 /** client **/
-static int on_connect(void *ctx, void *rep)
+static int websock_handle_callback(void* p, int msg, void* arg)
+{
+	vmp_wserver_t *ws = p;
+	if ( msg != NODE_SUCCESS)
+	{
+		VMP_LOGW("websock_handle_callback fail");
+
+		return -1;
+	}
+
+	//PrivInfo* thiz = (PrivInfo*)ss->core;
+	//ss->client_cnt--;
+	//TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
+	TIMA_LOGD("ws server[%d]", ws->id);
+
+	return 0;
+}
+
+static int websock_on_connect(void *ctx, void *rep)
 {
 	PrivInfo* thiz = ctx;
 	ServerWebsockRep *rsp = rep;
@@ -72,9 +90,10 @@ static int on_connect(void *ctx, void *rep)
 	TIMA_LOGI("websock server handle fd: %d", fd);
 
 	WebsockIOAReq req = {0};
-	req.client	= client;
-	req.ws		= wserver;
-	p->parent	= thiz;
+	req.client		= client;
+	req.ws			= wserver;
+	p->parent		= thiz;
+	p->pfn_callback = websock_handle_callback;
 	p->pfn_set(p, 0, &req, sizeof(WebsockIOAReq));
 	p->pfn_start(p);
 
@@ -96,7 +115,7 @@ static void* voi_websock_server(vmp_node_t* p)
 	ServerWebsockReq req = {0};
 	req.port		= 9002;
 	req.ctx			= thiz;
-	req.on_connect	= on_connect;
+	req.on_connect	= websock_on_connect;
 	server->parent	= thiz;
 	server->pfn_set(server, 0, &req, sizeof(ServerWebsockReq));
 	server->pfn_start(server);

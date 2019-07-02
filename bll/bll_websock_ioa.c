@@ -44,6 +44,28 @@ static int task_websockioa_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
+
+static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
+{
+	int ret = 0;
+	PrivInfo* thiz = p->private;
+	
+	TIMA_LOGD("websock release, %d", status);
+	if (p->pfn_callback) {
+		p->pfn_callback(thiz->req.ws, status, NULL);
+	}
+
+	if (thiz->sock) {
+		vmp_socket_release(thiz->sock);
+	}
+	
+	if (motivated) {
+		ret = tima_websock_close(thiz->req.client);
+	}
+
+	return ret;
+}
+
 static int bll_websockioa_get(vmp_node_t* p, int id, void* data, int size)
 {
 	return 0;
@@ -183,18 +205,17 @@ static int ioa_on_onpong(void *client)
 
 static int ioa_on_close(void *client)
 {
-	int fd = tima_websock_fd_get(client);
-
 	vmp_node_t *p =	tima_websock_priv_get(client);
-	PrivInfo* thiz = p->private;
+	//PrivInfo* thiz = p->private;
 
 	//relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
 	//event_free(thiz->sock->read_event);
 
-	vmp_socket_release(thiz->sock);
-
-
+	int fd = tima_websock_fd_get(client);
 	TIMA_LOGI("[%p]websock client close fd: %d", (void*)pthread_self(), fd);
+
+	//vmp_socket_release(thiz->sock);
+	websockioa_input_release(p, NODE_SUCCESS, 0);
 
 	return 0;
 }
@@ -265,6 +286,9 @@ static void* bll_websockioa_start(vmp_node_t* p)
 	ret = vmp_relay_socket_create(ws, VPK_APPTYPE_WEBSOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
 		VMP_LOGE("relay socket create failed.");
+		//websockioa_input_release(p, NODE_FAIL, 1);
+		tima_websock_close(thiz->req.client);		// maybe better to run next callback
+		return NULL;
 	}
 
 	VmpSocketIOA *s = thiz->sock;
