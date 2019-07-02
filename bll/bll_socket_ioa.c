@@ -41,11 +41,9 @@ typedef struct _PrivInfo
 	//int					wm_time;
 	//size_t				wm_count;
 
+	int					channel;
 	unsigned long long	sim;
 	int					state;
-
-
-	StreamChannel		channel;
 
 	VmpSocketIOA		*sock;
 
@@ -53,13 +51,11 @@ typedef struct _PrivInfo
 
 	//list_t				nalu_head;
 	//int					list_size;
-	pthread_mutex_t		list_mutex;
-	pthread_cond_t		cond_empty;
+	//pthread_mutex_t		list_mutex;
+	//pthread_cond_t		cond_empty;
 } PrivInfo;
 
-static int bll_sockioa_stream_close(vmp_node_t* p);
 static int bll_sockioa_delete(vmp_node_t* p);
-
 
 static int socket_input_release(vmp_node_t* p)
 {
@@ -68,7 +64,7 @@ static int socket_input_release(vmp_node_t* p)
 		PrivInfo* thiz = (PrivInfo*)p->private;
 
 		if (p->pfn_callback) {
-			p->pfn_callback(thiz->req.s, NODE_SUCCESS, NULL);
+			p->pfn_callback(thiz->req.ss, NODE_SUCCESS, NULL);
 		}
 
 		if (thiz->req.client.bev) {
@@ -79,99 +75,83 @@ static int socket_input_release(vmp_node_t* p)
 		//event_free(thiz->sock->read_event);
 		vmp_socket_release(thiz->sock);
 
-		tima_buffer_clean(&thiz->channel.buffer);
-		//if (thiz->channel.meta_data.data) {
-		//	free(thiz->channel.meta_data.data);
-		//	thiz->channel.meta_data.data = NULL;
-		//}
-
-		//list_clear_out(p);
-
 		bll_sockioa_delete(p);
 	}
 
 	return 0;
 }
 
-static int socket_input_callback(void* p, int msg, void* arg)
-{
-	vmp_node_t* n = (vmp_node_t*)p;
-	if ( msg != NODE_SUCCESS)
-	{
-		VMP_LOGW("socket_input_callback fail");
-		socket_input_release(n);
-		//bll_sockioa_delete(n);
-		return -1;
-	}
-
-	socket_input_release(n);
-	//bll_sockioa_delete(n);
-	return 0;
-}
-
-static int client_connection_close(vmp_socket_t *s, int immediately)
-{
-	vmp_node_t* p = (vmp_node_t*)s->priv;
-	PrivInfo* thiz = (PrivInfo*)p->private;
-	struct bufferevent *bev = s->bev;
-
-	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
-	bufferevent_disable(bev, EV_READ|EV_WRITE);
-
-	thiz->cond = 0;
-	usleep(5000);
-
-	while(thiz->running) {
-		usleep(100000);
-	}
-
-	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
-		thiz->req.flowid, thiz->sim, thiz->channel.id, s->fd);
-
-	TIMA_LOGD("================ closed fd %d ================", s->fd);
-	if (immediately) {
-		//bufferevent_free(bev);
-		socket_input_release(p);
-	} else {
-		//if (thiz->publish)
-		//	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
-		//else
-			socket_input_release(p);
-	}
-
-	return 0;
-}
-
-static int bll_sockioa_stream_close(vmp_node_t* p)
-{
-	PrivInfo* thiz = (PrivInfo*)p->private;
-
-	client_connection_close(&thiz->req.client, 0);
-
-	return 0;
-}
+//static int socket_input_callback(void* p, int msg, void* arg)
+//{
+//	vmp_node_t* n = (vmp_node_t*)p;
+//	if ( msg != NODE_SUCCESS)
+//	{
+//		VMP_LOGW("socket_input_callback fail");
+//		socket_input_release(n);
+//		//bll_sockioa_delete(n);
+//		return -1;
+//	}
+//
+//	socket_input_release(n);
+//	//bll_sockioa_delete(n);
+//	return 0;
+//}
+//
+//static int client_connection_close(vmp_socket_t *sock, int immediately)
+//{
+//	vmp_node_t* p = (vmp_node_t*)sock->priv;
+//	PrivInfo* thiz = (PrivInfo*)p->private;
+//	struct bufferevent *bev = sock->bev;
+//
+//	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
+//	bufferevent_disable(bev, EV_READ|EV_WRITE);
+//
+//	thiz->cond = 0;
+//	usleep(5000);
+//
+//	while(thiz->running) {
+//		usleep(50000);
+//	}
+//
+//	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
+//		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
+//
+//	TIMA_LOGD("================ closed fd %d ================", sock->fd);
+//	socket_input_release(p);
+//
+//	return 0;
+//}
+//
+//static int bll_sockioa_stream_close(vmp_node_t* p)
+//{
+//	PrivInfo* thiz = (PrivInfo*)p->private;
+//
+//	client_connection_close(&thiz->req.client, 0);
+//
+//	return 0;
+//}
 
 static void stream_socket_eventcb(struct bufferevent* bev, short event, void* arg)
 {
-	vmp_socket_t *s = (vmp_socket_t*)arg;
-	vmp_node_t* p = (vmp_node_t*)s->priv;
+	vmp_socket_t *sock = (vmp_socket_t*)arg;
+	vmp_node_t* p = (vmp_node_t*)sock->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	if( event & (BEV_EVENT_EOF)) {
 		TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d) EOF (0x%2x)", 
-			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+			thiz->req.flowid, thiz->sim, thiz->channel, thiz->req.client.fd, event);
 	} else if( event & BEV_EVENT_ERROR) {
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket ERROR (0x%2x)\n", 
-			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+			thiz->req.flowid, thiz->sim, thiz->channel, thiz->req.client.fd, event);
 	} else if( event & BEV_EVENT_TIMEOUT) {
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket TIMEOUT (0x%2x)\n", 
-			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+			thiz->req.flowid, thiz->sim, thiz->channel, thiz->req.client.fd, event);
 	} else if (event & BEV_EVENT_CONNECTED) {
 		TIMA_LOGI("[%ld] stream_socket_eventcb CONNECTED (0x%2x)\n", thiz->req.flowid, event);
 		return;
 	} else {
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) stream_socket_eventcb event = 0x%2x\n", 
-			thiz->req.flowid, thiz->sim, thiz->channel.id, thiz->req.client.fd, event);
+			thiz->req.flowid, thiz->sim, thiz->channel, thiz->req.client.fd, event);
 	}
 
 	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
@@ -179,18 +159,15 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	//bufferevent_free(bev);
 
 	thiz->cond = 0;
-	//if (thiz->publish)
-	//	rtmp_push_end(p, RTMP_PUB_STATE_TYPE_EOF);
-	//else
-		socket_input_release(p);
+	socket_input_release(p);
 }
 
 
-static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size, StreamChannel *channel)
+static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size)
 {
-	size_t pos = 0, len;
-	size_t length = size;
-	const char *data = buf;
+	size_t len;
+	//size_t length = size;
+	//const char *data = buf;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
@@ -221,10 +198,9 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 
 static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 {
-	int ret = 0;
 	VmpSocketIOA *wsock = NULL;
 	PrivInfo* thiz = (PrivInfo*)p->private;
-	vmp_server_t *server = thiz->req.s;
+	vmp_server_t *server = thiz->req.ss;
 
 	char tmp[16] = {0};
 	sprintf(tmp, "%012lld", head->simno);
@@ -235,7 +211,6 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 
 	if (thiz->sim == (unsigned long long)-1) {
 		thiz->sim = head->simno;
-		//thiz->channel.id = head.channel;
 		TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
 			thiz->req.flowid, vmp_thread_get_id(), thiz->req.client.fd, thiz->sim, head->channel);
 
@@ -247,18 +222,6 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 
 		thiz->state = SOCK_MATCH_STATE_GET;
 		wsock = tima_ioamaps_exist(relay_sock, MAPS_SOCK_WEBSKT);
-		//if (wsock) {
-		//	vpk_sockaddr_set_port(&thiz->sock->dest_addr, wsock->src_port);
-		//	if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
-		//		TIMA_LOGE("set dest addr port[%d] failed", wsock->src_port);
-		//		thiz->state = SOCK_MATCH_STATE_ERROR;
-		//		return -1;
-		//	}
-
-		//	thiz->sock->dst_port = wsock->src_port;
-		//	thiz->state = SOCK_MATCH_STATE_SUCCESS;
-		//	TIMA_LOGI("socket match[%d <-> %d] success.", thiz->sock->src_port, wsock->src_port);
-		//}
 	}
 
 	if (wsock) {
@@ -276,12 +239,11 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 	return 0;
 }
 
-static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *s*/)
+static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socket_t *sock*/)
 {
 	int ret = 0;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	struct evbuffer* input = bufferevent_get_input(bev);
-	//size_t len = evbuffer_get_length(input);
 
 	if (input) {
 		unsigned char *stream = NULL;
@@ -302,9 +264,6 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 				goto parse_end;
 			}
 
-			//printf("[len=%5ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, copy len=%ld, body len=%d, parsed=%d\n",
-			//	len, head.simno, head.channel, thiz->buff[15], thiz->buff[28], thiz->buff[29], clen, head.bodylen, ret);
-
 			if (ret > JT1078_STREAM_PACKAGE_SIZE) {
 				TIMA_LOGD("=====flowid[%d] %lld[fd %d], ret = %d", thiz->req.flowid, thiz->sim, thiz->req.client.fd, ret);
 				TIMA_LOGE("[%ld] JT/T 1078-2016 parse failed, ret = %d", thiz->req.flowid, ret);
@@ -319,11 +278,11 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 			
 			if ((head.mtype & 0xf0) == 0x30) {	// audio
 
-				thiz->channel.id = head.channel;
+				thiz->channel = head.channel;
 
 #if 1
-				//socket_input_proc(p, (const char*)stream, head.bodylen, &thiz->channel);
-				socket_input_proc(p, (const char*)thiz->buff, head.bodylen+30, &thiz->channel);
+				//socket_input_proc(p, (const char*)stream, head.bodylen);
+				socket_input_proc(p, (const char*)thiz->buff, head.bodylen+30);
 #else	// write back to device
 				int ret = bufferevent_write(bev, thiz->buff, head.bodylen+30);
 				VMP_LOGD("bufferevent_write len=%d", head.bodylen+30);
@@ -351,8 +310,8 @@ parse_end:
 static void stream_input_handler(struct bufferevent *bev, void* arg)
 {
 	int ret = 0;
-	vmp_socket_t *s = (vmp_socket_t*)arg;
-	vmp_node_t* p = (vmp_node_t*)s->priv;
+	vmp_socket_t *sock = (vmp_socket_t*)arg;
+	vmp_node_t* p = (vmp_node_t*)sock->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	if (!thiz->cond)
@@ -387,20 +346,20 @@ static void stream_input_handler(struct bufferevent *bev, void* arg)
 	thiz->running = 0;
 }
 
-static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *s)
+static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *sock)
 {
-	s->bev = bufferevent_socket_new(s->event_base, s->fd, VMP_BUFFEREVENTS_OPTIONS);
-	bufferevent_setcb(s->bev, stream_input_handler, NULL, stream_socket_eventcb, s);
-	//bufferevent_setwatermark(s->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
-	//bufferevent_settimeout(s->bev, 60, 0);
-	bufferevent_enable(s->bev, EV_READ|EV_WRITE); /* Start reading. */
+	sock->bev = bufferevent_socket_new(sock->event_base, sock->fd, VMP_BUFFEREVENTS_OPTIONS);
+	bufferevent_setcb(sock->bev, stream_input_handler, NULL, stream_socket_eventcb, sock);
+	//bufferevent_setwatermark(sock->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
+	//bufferevent_settimeout(sock->bev, 60, 0);
+	bufferevent_enable(sock->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
 }
 
 
 static void socket_input_init(PrivInfo* thiz)
 {
-	tima_buffer_init(&thiz->channel.buffer, 1<<10);
+	//tima_buffer_init(&thiz->channel.buffer, 1<<10);
 	thiz->sim = (unsigned long long)-1;
 
 	TIMA_LOGD("========== flowid[%d] client[fd %d] register ==========", thiz->req.flowid, thiz->req.client.fd);
@@ -454,7 +413,6 @@ try_start:
 		try_again = 1;
 		VMP_LOGD("recvfrom websock[len=%d]: %s", ret, recv_buffer);
 
-		//tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
 		ret = bufferevent_write(thiz->req.client.bev, recv_buffer, ret);
 
 	}
@@ -470,9 +428,9 @@ static void socket_relay_init(vmp_node_t* p)
 	int ret = 0;
 	VmpSocketIOA *s = NULL;
 	PrivInfo* thiz = p->private;
-	vmp_server_t *relay = thiz->req.s;
+	vmp_server_t *server = thiz->req.ss;
 
-	ret = vmp_relay_socket_create(relay, VPK_APPTYPE_SOCKET_RELAY, &thiz->sock);
+	ret = vmp_relay_socket_create(server, VPK_APPTYPE_SOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
 		VMP_LOGE("relay socket create failed.");
 
@@ -480,7 +438,7 @@ static void socket_relay_init(vmp_node_t* p)
 	}
 
 	s = thiz->sock;
-	s->read_event = event_new(relay->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
+	s->read_event = event_new(server->event_base, s->abs.fd, EV_READ|EV_PERSIST, relay_input_handler, p);
 	event_add(s->read_event, NULL);
 }
 
@@ -489,7 +447,6 @@ void* bll_sockioa_start(vmp_node_t* p)
 	VMP_LOGD("bll_sockioa_start");
 
 	PrivInfo* thiz = p->private;
-	//context * ctx = context_get();
 	thiz->req.client.priv = p;
 
 	socket_relay_init(p);
@@ -513,8 +470,8 @@ vmp_node_t* bll_sockioa_create(void)
 		PrivInfo* thiz = (PrivInfo*)malloc(sizeof(PrivInfo));
 		memset(thiz, 0, sizeof(PrivInfo));
 
-		pthread_mutex_init(&thiz->list_mutex, NULL);
-		pthread_cond_init(&thiz->cond_empty, NULL);
+		//pthread_mutex_init(&thiz->list_mutex, NULL);
+		//pthread_cond_init(&thiz->cond_empty, NULL);
 
 		thiz->cond	= 1;
 
@@ -543,8 +500,8 @@ int bll_sockioa_delete(vmp_node_t* p)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)
 	{
-		pthread_mutex_destroy(&thiz->list_mutex);
-		pthread_cond_destroy(&thiz->cond_empty);
+		//pthread_mutex_destroy(&thiz->list_mutex);
+		//pthread_cond_destroy(&thiz->cond_empty);
 		free(thiz);
 		p->private = NULL;
 	}

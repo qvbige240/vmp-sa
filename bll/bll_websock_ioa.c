@@ -59,19 +59,17 @@ static int bll_websockioa_set(vmp_node_t* p, int id, void* data, int size)
 
 static int package_relay_proc(vmp_node_t* p, const char* buf, size_t size)
 {
-	size_t pos = 0, len;
-	size_t length = size;
-	const char *data = buf;
+	size_t len;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
 	TIMA_LOGD("websock relay send len = %d", len);
 
+	return len;
 }
 
 static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 {
-	int ret = 0;
 	VmpSocketIOA *sock = NULL;
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	vmp_wserver_t *ws = thiz->req.ws;
@@ -147,7 +145,6 @@ static int websocket_input_proc(vmp_node_t* p, const char* buf, size_t size, voi
 		package_relay_proc(p, data, head.bodylen+30);
 	}
 
-
 parse_end:
 	return ret;
 }
@@ -159,7 +156,7 @@ static int ioa_on_message(void *client, tima_wsmessage_t *msg)
 	//fprintf(stderr, "Message opcode: %d\n", msg->opcode);
 	//fprintf(stderr, "Payload Length: %llu\n", msg->payload_len);
 	//fprintf(stderr, "[%p]Payload: %s\n", (void*)pthread_self(), msg->payload);
-	TIMA_LOGD("[%p]Payload(len=%d): %s\n", (void*)pthread_self(), msg->payload_len, msg->payload);
+	//TIMA_LOGD("[%p]Payload(len=%d): %s\n", (void*)pthread_self(), msg->payload_len, msg->payload);
 	//now let's send it back.
 
 	//libwebsock_send_text(state, msg->payload);
@@ -242,7 +239,6 @@ try_start:
 	if (try_again) {
 		goto try_start;
 	}
-
 
 }
 

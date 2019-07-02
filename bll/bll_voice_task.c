@@ -116,7 +116,7 @@ static int handle_message_callback(void* p, int msg, void* arg)
 	}
 
 	PrivInfo* thiz = (PrivInfo*)ss->core;
-	ss->client_cnt--;	// need lock...
+	ss->client_cnt--;
 	TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
 
 	return 0;
@@ -145,7 +145,7 @@ static int handle_relay_connection(vmp_server_t *ss, vmp_socket_t *sock)
 	SocketIOAReq req = {0};
 	req.flowid		= thiz->flowid;
 	req.e			= ss->e;
-	req.s			= ss;
+	req.ss			= ss;
 	memcpy(&req.client, sock, sizeof(vmp_socket_t));
 	p->parent		= ss->core;
 	p->pfn_callback = handle_message_callback;

@@ -24,7 +24,7 @@ typedef struct _SocketIOAReq
 	vmp_launcher_t		*e;
 	vmp_socket_t		client;
 
-	void				*s;
+	void				*ss;
 } SocketIOAReq;
 
 typedef struct SocketIOARep
