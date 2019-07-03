@@ -81,6 +81,13 @@ static int sockioa_input_release(vmp_node_t* p, int status)
 			thiz->req.client.bev = NULL;
 		}
 		
+		{
+			char key[16] = {0};
+			sprintf(key, "%012lld", thiz->sim);
+			vmp_server_t *server = thiz->req.ss;
+			tima_ioamaps_clear(server->map, key, MAPS_SOCK_STREAM);
+		}
+
 		//event_free(thiz->sock->read_event);
 		if (thiz->sock) {
 			vmp_socket_release(thiz->sock);

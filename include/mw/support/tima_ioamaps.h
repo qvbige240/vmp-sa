@@ -45,6 +45,8 @@ RelaySocketIO* tima_ioamaps_get(vmp_maps_t *vm, const char *key);
 void* tima_ioamaps_get_type(vmp_maps_t *vm, const char *key, SockMapsType type);
 void* tima_ioamaps_exist(RelaySocketIO *value, SockMapsType type);
 
+int tima_ioamaps_clear(vmp_maps_t *vm, const char *key, SockMapsType type);
+int tima_ioamaps_delete(vmp_maps_t *vm, const char *key);
 
 #ifdef __cplusplus
 }

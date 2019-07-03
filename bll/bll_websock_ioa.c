@@ -55,6 +55,13 @@ static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 		p->pfn_callback(thiz->req.ws, status, NULL);
 	}
 
+	{
+		char key[16] = {0};
+		sprintf(key, "%012lld", thiz->sim);
+		vmp_wserver_t *wserver = thiz->req.ws;
+		tima_ioamaps_clear(wserver->map, key, MAPS_SOCK_WEBSKT);
+	}
+
 	if (thiz->sock) {
 		vmp_socket_release(thiz->sock);
 	}

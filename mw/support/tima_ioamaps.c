@@ -92,3 +92,55 @@ void* tima_ioamaps_exist(RelaySocketIO *value, SockMapsType type)
 
 	return s;
 }
+
+int tima_ioamaps_delete(vmp_maps_t *vm, const char *key)
+{
+	RelaySocketIO* value = NULL;
+	return_val_if_fail(vm && vm->kh && key, -1);
+
+	VMP_MUTEX_LOCK(vm->mutex_lock, 0);
+
+	value = vpk_hash_get_and_del(vm->kh, key);
+
+	VMP_MUTEX_UNLOCK(vm->mutex_lock, 0);
+
+	if (value) {
+		free(value);
+	}
+	return 0;
+}
+
+int tima_ioamaps_clear(vmp_maps_t *vm, const char *key, SockMapsType type)
+{
+	char ret = -1;
+	RelaySocketIO* value = NULL;
+	return_val_if_fail(vm && vm->kh && key, -1);
+
+	VMP_MUTEX_LOCK(vm->mutex_lock, 0);
+
+	value = vpk_hash_get(vm->kh, key);
+	if (value) {
+		if (value->flag & type) {
+			value->sock[type-MAPS_SOCK_STARTBIT] = NULL;
+			value->flag &= ~type;
+		}
+
+		if (!value->flag) {
+			vpk_hash_del(vm->kh, key);
+			VMP_MUTEX_UNLOCK(vm->mutex_lock, 0);
+			free(value);
+			return 0;
+		}
+
+		ret = vpk_hash_set(vm->kh, key, value);
+	}
+
+	VMP_MUTEX_UNLOCK(vm->mutex_lock, 0);
+
+	if (ret < 0 && value) {
+		free(value);
+		value = NULL;
+	}
+
+	return 0;
+}
