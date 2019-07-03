@@ -22,7 +22,8 @@ VmpSocketIOA* vmp_unbound_relay_socket_create(void *e, int family, vpk_prototype
 	{
 		vpk_socket_ioa_create(e, family, type, &sock->abs);
 
-		sock->abs.apptype = atype;
+		sock->abs.apptype	= atype;
+		sock->abs.e			= e;
 	}
 
 	return sock;
@@ -35,6 +36,11 @@ void vmp_socket_release(VmpSocketIOA *s)
 		if (s->read_event) {
 			event_free(s->read_event);
 			s->read_event = NULL;
+		}
+
+		if (s->abs.e && s->src_port > 0) {
+			vmp_bserver_t *bs = s->abs.e;
+			vmp_ports_release(bs->porter, s->src_port);
 		}
 
 		close(s->abs.fd);
