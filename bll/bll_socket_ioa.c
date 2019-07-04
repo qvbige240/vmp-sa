@@ -115,39 +115,52 @@ static int sockioa_input_release(vmp_node_t* p, int status)
 //	return 0;
 //}
 //
-//static int client_connection_close(vmp_socket_t *sock, int immediately)
-//{
-//	vmp_node_t* p = (vmp_node_t*)sock->priv;
-//	PrivInfo* thiz = (PrivInfo*)p->private;
-//	struct bufferevent *bev = sock->bev;
-//
-//	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
-//	bufferevent_disable(bev, EV_READ|EV_WRITE);
-//
-//	thiz->cond = 0;
-//	usleep(5000);
-//
-//	while(thiz->running) {
-//		usleep(50000);
-//	}
-//
-//	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
-//		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
-//
-//	TIMA_LOGD("================ closed fd %d ================", sock->fd);
-//	sockioa_input_release(p);
-//
-//	return 0;
-//}
-//
-//static int bll_sockioa_stream_close(vmp_node_t* p)
-//{
-//	PrivInfo* thiz = (PrivInfo*)p->private;
-//
-//	client_connection_close(&thiz->req.client, 0);
-//
-//	return 0;
-//}
+static int client_connection_close(vmp_socket_t *sock, int immediately)
+{
+	vmp_node_t* p = (vmp_node_t*)sock->priv;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+	struct bufferevent *bev = sock->bev;
+
+	bufferevent_flush(bev, EV_READ|EV_WRITE, BEV_FLUSH); 
+	bufferevent_disable(bev, EV_READ|EV_WRITE);
+
+	thiz->cond = 0;
+	//usleep(5000);
+
+	while(thiz->running) {
+		usleep(50000);
+	}
+
+	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
+		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
+
+	TIMA_LOGD("================ closed fd %d ================", sock->fd);
+	sockioa_input_release(p, NODE_SUCCESS);
+
+	return 0;
+}
+
+static int bll_sockioa_stream_close(vmp_node_t* p)
+{
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	client_connection_close(&thiz->req.client, 0);
+
+	return 0;
+}
+
+static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size)
+{
+	size_t len;
+	//size_t length = size;
+	//const char *data = buf;
+	PrivInfo* thiz = (PrivInfo*)p->private;
+
+	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
+	TIMA_LOGD("socket relay send len = %d", len);
+
+	return 0;
+}
 
 static void stream_socket_eventcb(struct bufferevent* bev, short event, void* arg)
 {
@@ -176,22 +189,16 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	bufferevent_disable(bev, EV_READ|EV_WRITE); 
 	//bufferevent_free(bev);
 
+	if (thiz->state == SOCK_MATCH_STATE_SUCCESS) {
+		int ret = 0;
+		char end[64] = {0};
+		ret = jt1078_make_end(end, "END", 3);
+		socket_input_proc(p, end, ret);
+		thiz->state = SOCK_MATCH_STATE_DISCONN;
+	}
+
 	thiz->cond = 0;
 	sockioa_input_release(p, NODE_SUCCESS);
-}
-
-
-static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size)
-{
-	size_t len;
-	//size_t length = size;
-	//const char *data = buf;
-	PrivInfo* thiz = (PrivInfo*)p->private;
-
-	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
-	TIMA_LOGD("socket relay send len = %d", len);
-
-	return 0;
 }
 
 #if 0
@@ -400,7 +407,7 @@ static char recv_buffer[2048] = {0};
 
 static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 {
-	int ret = 0;
+	int ret = 0, len = 0;
 	int try_again = 0;
 	int ttl = TTL_IGNORE;
 	int tos = TOS_IGNORE;
@@ -424,13 +431,26 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 try_start:
 	try_again = 0;
 
-	ret = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
-	if (ret > 0) {
+	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
+	if (len > 0) {
 		try_again = 1;
-		VMP_LOGD("recvfrom websock[len=%d]: %s", ret, recv_buffer);
+		VMP_LOGD("recvfrom websock[len=%d]: %s", len, recv_buffer);
 
-		ret = bufferevent_write(thiz->req.client.bev, recv_buffer, ret);
-
+		unsigned char *stream = NULL;
+		stream_header_t head = {0};
+		ret = packet_jt1078_parse((unsigned char*)recv_buffer, len, &head, &stream);
+		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
+			if (head.channel == 0xff) {
+				if (head.mtype == 0xff) {
+					VMP_LOGW("END recvfrom websock[len=%d]", len);
+					bll_sockioa_stream_close(p);
+					return ;
+				}
+			}
+			ret = bufferevent_write(thiz->req.client.bev, recv_buffer, len);
+		} else {
+			TIMA_LOGW("[ss]relay 1078 parse error.");
+		}
 	}
 
 	if (try_again) {

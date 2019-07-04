@@ -81,3 +81,32 @@ int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head
 
 	return head->bodylen + 30;	
 }
+
+/**
+ * customized msg.
+ *
+ * @param buffer	The socket stream.
+ * @param data		The "END".
+ *
+ * @return	0 on success
+ *			
+ */
+int jt1078_make_end(char *buffer, const char *data, unsigned short len)
+{
+	int i = 0;
+
+	char *p = buffer;
+	p[i++] = 0x30;
+	p[i++] = 0x31;
+	p[i++] = 0x63;
+	p[i++] = 0x64;
+
+	p[14] = 0xff;
+	p[15] = 0xff;
+
+	p[28] = (len >> 8) & 0xff;
+	p[29] = len & 0xff;
+
+	memcpy(p+30, data, len);
+	return 30+len+1;
+}

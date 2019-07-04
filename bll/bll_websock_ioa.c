@@ -50,7 +50,7 @@ static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 	int ret = 0;
 	PrivInfo* thiz = p->private;
 	
-	TIMA_LOGD("websock release, %d", status);
+	TIMA_LOGD("websock release %d, cb status %d", thiz->state, status);
 	if (p->pfn_callback) {
 		p->pfn_callback(thiz->req.ws, status, NULL);
 	}
@@ -213,13 +213,21 @@ static int ioa_on_onpong(void *client)
 static int ioa_on_close(void *client)
 {
 	vmp_node_t *p =	tima_websock_priv_get(client);
-	//PrivInfo* thiz = p->private;
+	PrivInfo* thiz = p->private;
 
 	//relay_wserver_t *rws = tima_websock_get_relay_server(thiz->req.client);
 	//event_free(thiz->sock->read_event);
 
 	int fd = tima_websock_fd_get(client);
-	TIMA_LOGI("[%p]websock client close fd: %d", (void*)pthread_self(), fd);
+	TIMA_LOGW("[%p]websock client close fd: %d", (void*)pthread_self(), fd);
+
+	if (thiz->state == SOCK_MATCH_STATE_SUCCESS) {
+		int ret = 0;
+		char end[64] = {0};
+		ret = jt1078_make_end(end, "END", 3);
+		package_relay_proc(p, end, ret);
+		thiz->state = SOCK_MATCH_STATE_DISCONN;
+	}
 
 	//vmp_socket_release(thiz->sock);
 	websockioa_input_release(p, NODE_SUCCESS, 0);
@@ -232,7 +240,7 @@ static char recv_buffer[2048] = {0};
 
 static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 {
-	int ret = 0;
+	int ret = 0, len = 0;
 	int try_again = 0;
 	int ttl = TTL_IGNORE;
 	int tos = TOS_IGNORE;
@@ -256,12 +264,28 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 try_start:
 	try_again = 0;
 
-	ret = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
-	if (ret > 0) {
+	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
+	if (len > 0) {
 		try_again = 1;
-		VMP_LOGD("recvfrom socket[len=%d]: %s", ret, recv_buffer);
+		VMP_LOGD("recvfrom socket[len=%d]: %s", len, recv_buffer);
 
-		tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
+		unsigned char *stream = NULL;
+		stream_header_t head = {0};
+		ret = packet_jt1078_parse(recv_buffer, len, &head, &stream);
+		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
+			if (head.channel == 0xff) {
+				if (head.mtype == 0xff) {
+					VMP_LOGW("END recvfrom socket[len=%d]", len);
+					tima_websock_close(thiz->req.client);
+					return ;
+				}
+			}
+
+			tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
+		} else {
+			TIMA_LOGW("[ws]relay 1078 parse error.");
+		}
+
 	}
 
 	if (try_again) {

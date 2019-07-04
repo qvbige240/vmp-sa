@@ -32,6 +32,9 @@ typedef struct _stream_header
 
 int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head, unsigned char **body);
 
+/** customized msg **/
+int jt1078_make_end(char *buffer, const char *data, unsigned short len);
+
 TIMA_END_DELS
 
 #endif //TIMA_JT1078_PARSER_H
