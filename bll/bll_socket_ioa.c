@@ -157,7 +157,7 @@ static int socket_input_proc(vmp_node_t* p, const char* buf, size_t size)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
-	TIMA_LOGD("socket relay send len = %d", len);
+	//TIMA_LOGD("socket relay send len = %d", len);
 
 	return 0;
 }
@@ -434,7 +434,7 @@ try_start:
 	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
 	if (len > 0) {
 		try_again = 1;
-		VMP_LOGD("recvfrom websock[len=%d]: %s", len, recv_buffer);
+		//VMP_LOGD("recvfrom websock[len=%d]: %s", len, recv_buffer);
 
 		unsigned char *stream = NULL;
 		stream_header_t head = {0};

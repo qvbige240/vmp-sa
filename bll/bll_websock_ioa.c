@@ -92,7 +92,7 @@ static int package_relay_proc(vmp_node_t* p, const char* buf, size_t size)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
-	TIMA_LOGD("websock relay send len = %d", len);
+	//TIMA_LOGD("websock relay send len = %d", len);
 
 	return len;
 }
@@ -267,15 +267,18 @@ try_start:
 	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
 	if (len > 0) {
 		try_again = 1;
-		VMP_LOGD("recvfrom socket[len=%d]: %s", len, recv_buffer);
+		//VMP_LOGD("recvfrom socket[len=%d]: %s", len, recv_buffer);
 
 		unsigned char *stream = NULL;
 		stream_header_t head = {0};
-		ret = packet_jt1078_parse(recv_buffer, len, &head, &stream);
+		ret = packet_jt1078_parse((unsigned char*)recv_buffer, len, &head, &stream);
 		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
 			if (head.channel == 0xff) {
 				if (head.mtype == 0xff) {
 					VMP_LOGW("END recvfrom socket[len=%d]", len);
+
+					//thiz->state = SOCK_MATCH_STATE_DISCONN;
+					
 					tima_websock_close(thiz->req.client);
 					return ;
 				}

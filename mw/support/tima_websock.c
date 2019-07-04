@@ -65,7 +65,9 @@ int tima_websock_send_binary(void *client, char *data, unsigned int length)
 
 int tima_websock_close(void *client)
 {
-	return libwebsock_close(client);
+	//return libwebsock_close(client);
+	libwebsock_shutdown(client);
+	return 0;
 }
 
 relay_wserver_t* tima_websock_get_relay_server(void *client)
