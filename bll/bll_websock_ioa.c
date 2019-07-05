@@ -278,7 +278,6 @@ try_start:
 					VMP_LOGW("END recvfrom socket[len=%d]", len);
 
 					//thiz->state = SOCK_MATCH_STATE_DISCONN;
-					
 					tima_websock_close(thiz->req.client);
 					return ;
 				}

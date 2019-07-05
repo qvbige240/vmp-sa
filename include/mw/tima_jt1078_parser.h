@@ -19,7 +19,7 @@ typedef struct _stream_header
 	unsigned char		rtp;			/* 1 byte */
 	unsigned char		pt;				/* 1 byte */
 	unsigned short		flowid;			/* packet id 2 byte */
-	unsigned char		sim[6];			/* sim number bcd code, 6 byte */
+	unsigned char		simbcd[6];		/* sim number bcd code, 6 byte */
 	unsigned char		channel;		/* channel id, 1 byte */
 	unsigned char		mtype;			/* media data type, 1 byte */
 	unsigned char		timestamp[8];	/* data type, 8 byte */

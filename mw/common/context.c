@@ -42,7 +42,7 @@ void context_init(void *conf)
 	p->conf = conf;
 	p->packager = tima_h264_rtmp_create();
 
-	p->porter = vmp_ports_create(10000, 10005);
+	p->porter = vmp_ports_create(10000, 20000);
 
 	context_set(p);
 	

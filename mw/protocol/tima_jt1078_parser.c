@@ -62,6 +62,7 @@ int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head
 	head->rtp	= packet[pos++];
 	head->pt	= packet[pos++];
 
+	memcpy(head->simbcd, packet+8, 6);
 	head->simno = simno_get(packet+8);
 	//...
 

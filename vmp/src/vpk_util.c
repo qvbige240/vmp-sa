@@ -124,6 +124,41 @@ void vpk_snprintf(char *buf, unsigned int *pos, size_t len, const char *format, 
 		*pos = len;
 	}
 }
+
+char *vpk_bcdtostr(char *buf, unsigned char *bcd, int length, int flag)
+{
+	int i = 0, base = 16;
+
+	int slen = length*2;
+	char *str = buf;
+
+	int blen = length;
+	unsigned char *ptr = bcd;
+
+	char c = 0;
+	i = slen - 1;
+
+	while(blen-- > 0)
+	{
+		c = ptr[blen] % base;
+		if (c >= 0 && c < 10) {
+			str[i--] = c + '0';
+		} else if (c >= 10 && c < 16) {
+			str[i--] = c - 10 + 'a';
+		}
+
+		c = ptr[blen] / base;
+		if (c >= 0 && c < 10) {
+			str[i--] = c + '0';
+		} else if (c >= 10 && c < 16) {
+			str[i--] = c - 10 + 'a';
+		}
+	}
+	str[slen] = '\0';
+
+	return str;
+}
+
 /*
 static char* strcat_arg(char* str, unsigned int len, const char* first, va_list arg)
 {

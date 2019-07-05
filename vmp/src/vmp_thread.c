@@ -57,16 +57,16 @@ static int vpk_thread_unlock(unsigned mode, void *_lock)
 	return pthread_mutex_unlock(lock);
 }
 
-static unsigned long vpk_thread_get_id(void)
-{
-	union {
-		pthread_t		thr;
-		unsigned long	id;
-	} r;
-	memset(&r, 0, sizeof(r));
-	r.thr = pthread_self();
-	return (unsigned long)r.id;
-}
+//static unsigned long vpk_thread_get_id(void)
+//{
+//	union {
+//		pthread_t		thr;
+//		unsigned long	id;
+//	} r;
+//	memset(&r, 0, sizeof(r));
+//	r.thr = pthread_self();
+//	return (unsigned long)r.id;
+//}
 
 /** cond **/
 static void *vpk_thread_cond_alloc(unsigned condflags)

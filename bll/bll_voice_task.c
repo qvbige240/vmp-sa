@@ -218,6 +218,18 @@ static void* bll_voice_start(vmp_node_t* p)
 
 	thiz->map = tima_ioamaps_create(2 << 15);
 
+	//{
+	//	int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	//	vpk_sockaddr local_addr = {0};
+	//	local_addr.s4.sin_family = PF_INET;
+	//	local_addr.s4.sin_port = htons(10000);
+	//	local_addr.s4.sin_addr.s_addr = INADDR_ANY;
+	//	int ret = vpk_addr_bind(fd, &local_addr, 0);
+	//	if (ret >= 0) {
+	//		TIMA_LOGD("bind test port 10000");
+	//	}
+	//}
+
 	voi_device_server(thiz);
 	voi_websock_server(p);
 

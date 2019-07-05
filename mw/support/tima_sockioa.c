@@ -88,7 +88,7 @@ int vmp_relay_socket_create(void *server, sock_application_t atype, VmpSocketIOA
 			return -1;
 		}
 
-		VMP_LOGD("allocate port %d", port);
+		VMP_LOGI("%sallocate port %d", i > 0 ? "re-" : "", port);
 		local_addr.s4.sin_family = PF_INET;
 		local_addr.s4.sin_port = htons(port);
 		local_addr.s4.sin_addr.s_addr = INADDR_ANY;

@@ -71,6 +71,8 @@ VPKAPI void vpk_snprintf(char *buf, unsigned int *pos, size_t len, const char *f
 
 VPKAPI char* vpk_strstrip(char* str, char c);
 
+VPKAPI char *vpk_bcdtostr(char *buf, unsigned char *bcd, int length, int flag);
+
 #define VPK_HAVE_GETTIMEOFDAY
 #ifdef VPK_HAVE_GETTIMEOFDAY
 #define vpk_gettimeofday(tv, tz)  gettimeofday((tv), (tz))
