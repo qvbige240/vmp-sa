@@ -44,13 +44,12 @@ static int task_websockioa_callback(void* p, int msg, void* arg)
 	return 0;
 }
 
-
 static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 {
 	int ret = 0;
 	PrivInfo* thiz = p->private;
 	
-	TIMA_LOGD("websock release %d, cb status %d", thiz->state, status);
+	TIMA_LOGD("[%ld] websock release %d, cb status %d", thiz->req.flowid, thiz->state, status);
 	if (p->pfn_callback) {
 		p->pfn_callback(thiz->req.ws, status, NULL);
 	}
@@ -69,6 +68,8 @@ static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 	if (motivated) {
 		ret = tima_websock_close(thiz->req.client);
 	}
+
+	bll_websockioa_delete(p);
 
 	return ret;
 }
@@ -112,12 +113,12 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 
 	if (thiz->sim == (unsigned long long)-1) {
 		thiz->sim = head->simno;
-		TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
+		TIMA_LOGI("[%ld] ws %p fd=%d sim no. [%lld]: %d", 
 			thiz->req.flowid, vmp_thread_get_id(), tima_websock_fd_get(thiz->client), thiz->sim, head->channel);
 
 		RelaySocketIO* relay_sock = tima_ioamaps_put(ws->map, tmp, thiz->sock, MAPS_SOCK_WEBSKT);
 		if (!relay_sock) {
-			TIMA_LOGE("websock map put failed.");
+			TIMA_LOGE("[%ld] websock map put failed.", thiz->req.flowid);
 			return -1;
 		}
 
@@ -128,14 +129,14 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 	if (sock) {
 		vpk_sockaddr_set_port(&thiz->sock->dest_addr, sock->src_port);
 		if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
-			TIMA_LOGE("websock set dest addr port[%d] failed", sock->src_port);
+			TIMA_LOGE("[%ld] websock set dest addr port[%d] failed", thiz->req.flowid, sock->src_port);
 			thiz->state = SOCK_MATCH_STATE_ERROR;
 			return -1;
 		}
 
 		thiz->sock->dst_port = sock->src_port;
 		thiz->state = SOCK_MATCH_STATE_SUCCESS;
-		TIMA_LOGI("websocket match success [%d <-> %d].", thiz->sock->src_port, sock->src_port);
+		TIMA_LOGI("[%ld] websock match success [%d <-> %d].", thiz->req.flowid, thiz->sock->src_port, sock->src_port);
 	}
 	return 0;
 }
@@ -219,7 +220,7 @@ static int ioa_on_close(void *client)
 	//event_free(thiz->sock->read_event);
 
 	int fd = tima_websock_fd_get(client);
-	TIMA_LOGW("[%p]websock client close fd: %d", (void*)pthread_self(), fd);
+	TIMA_LOGW("[%ld] ws client closed. ( %lld fd %d)", thiz->req.flowid, thiz->sim, fd);
 
 	if (thiz->state == SOCK_MATCH_STATE_SUCCESS) {
 		int ret = 0;
@@ -275,7 +276,7 @@ try_start:
 		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
 			if (head.channel == 0xff) {
 				if (head.mtype == 0xff) {
-					VMP_LOGW("END recvfrom socket[len=%d]", len);
+					VMP_LOGW("[%ld] END recvfrom socket[len=%d]", thiz->req.flowid, len);
 
 					//thiz->state = SOCK_MATCH_STATE_DISCONN;
 					tima_websock_close(thiz->req.client);
@@ -285,7 +286,7 @@ try_start:
 
 			tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
 		} else {
-			TIMA_LOGW("[ws]relay 1078 parse error.");
+			TIMA_LOGW("[%ld] (ws) relay 1078 parse error.", thiz->req.flowid);
 		}
 
 	}
@@ -318,7 +319,7 @@ static void* bll_websockioa_start(vmp_node_t* p)
 
 	ret = vmp_relay_socket_create(ws, VPK_APPTYPE_WEBSOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
-		VMP_LOGE("relay socket create failed.");
+		VMP_LOGE("[%ld] (ws) relay socket create failed.", thiz->req.flowid);
 		//websockioa_input_release(p, NODE_FAIL, 1);
 		tima_websock_close(thiz->req.client);		// maybe better to run next callback
 		return NULL;
@@ -363,7 +364,7 @@ static vmp_node_t* bll_websockioa_create(void)
 
 static int bll_websockioa_delete(vmp_node_t* p)
 {
-	//VMP_LOGD("bll_websockioa_delete");
+	VMP_LOGI("bll_websockioa_delete %p\n", vmp_thread_get_id());
 
 	PrivInfo* thiz = (PrivInfo*)p->private;
 	if(thiz != NULL)

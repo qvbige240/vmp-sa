@@ -131,7 +131,7 @@ static int client_connection_close(vmp_socket_t *sock, int immediately)
 		usleep(50000);
 	}
 
-	TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d)", 
+	TIMA_LOGW("[%ld] ss connection closed. (%lld_%d fd %d)", 
 		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
 
 	TIMA_LOGD("================ closed fd %d ================", sock->fd);
@@ -169,7 +169,7 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	if( event & (BEV_EVENT_EOF)) {
-		TIMA_LOGW("[%ld] Connection closed. (%lld_%d fd %d) EOF (0x%2x)", 
+		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket EOF (0x%2x)", 
 			thiz->req.flowid, thiz->sim, thiz->channel, thiz->req.client.fd, event);
 	} else if( event & BEV_EVENT_ERROR) {
 		TIMA_LOGW("[%ld] (%lld_%d fd %d) socket ERROR (0x%2x)\n", 
@@ -196,6 +196,11 @@ static void stream_socket_eventcb(struct bufferevent* bev, short event, void* ar
 		socket_input_proc(p, end, ret);
 		thiz->state = SOCK_MATCH_STATE_DISCONN;
 	}
+
+	TIMA_LOGW("[%ld] ss connection closed. (%lld_%d fd %d)", 
+		thiz->req.flowid, thiz->sim, thiz->channel, sock->fd);
+
+	TIMA_LOGD("================ closed fd %d ================", thiz->req.client.fd);
 
 	thiz->cond = 0;
 	sockioa_input_release(p, NODE_SUCCESS);
@@ -236,12 +241,12 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 
 	if (thiz->sim == (unsigned long long)-1) {
 		thiz->sim = head->simno;
-		TIMA_LOGI("[%ld] %p fd=%d sim no. [%lld]: %d", 
+		TIMA_LOGI("[%ld] ss %p fd=%d sim no. [%lld]: %d", 
 			thiz->req.flowid, vmp_thread_get_id(), thiz->req.client.fd, thiz->sim, head->channel);
 
 		RelaySocketIO* relay_sock = tima_ioamaps_put(server->map, tmp, thiz->sock, MAPS_SOCK_STREAM);
 		if (!relay_sock) {
-			TIMA_LOGE("sock map put failed.");
+			TIMA_LOGE("[%ld] sock map put failed.", thiz->req.flowid);
 			return -1;
 		}
 
@@ -252,14 +257,14 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 	if (wsock) {
 		vpk_sockaddr_set_port(&thiz->sock->dest_addr, wsock->src_port);
 		if (vpk_sockaddr_get_port(&thiz->sock->dest_addr) < 1) {
-			TIMA_LOGE("set dest addr port[%d] failed", wsock->src_port);
+			TIMA_LOGE("[%ld] set dest addr port[%d] failed", thiz->req.flowid, wsock->src_port);
 			thiz->state = SOCK_MATCH_STATE_ERROR;
 			return -1;
 		}
 
 		thiz->sock->dst_port = wsock->src_port;
 		thiz->state = SOCK_MATCH_STATE_SUCCESS;
-		TIMA_LOGI("socket match success [%d <-> %d].", thiz->sock->src_port, wsock->src_port);
+		TIMA_LOGI("[%ld] socket match success [%d <-> %d].", thiz->req.flowid, thiz->sock->src_port, wsock->src_port);
 	}
 	return 0;
 }
@@ -379,7 +384,6 @@ static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *sock)
 	return 0;
 }
 
-
 static void socket_input_init(PrivInfo* thiz)
 {
 	//tima_buffer_init(&thiz->channel.buffer, 1<<10);
@@ -442,14 +446,14 @@ try_start:
 		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
 			if (head.channel == 0xff) {
 				if (head.mtype == 0xff) {
-					VMP_LOGW("END recvfrom websock[len=%d]", len);
+					VMP_LOGW("[%ld] END recvfrom websock[len=%d]", thiz->req.flowid, len);
 					bll_sockioa_stream_close(p);
 					return ;
 				}
 			}
 			ret = bufferevent_write(thiz->req.client.bev, recv_buffer, len);
 		} else {
-			TIMA_LOGW("[ss]relay 1078 parse error.");
+			TIMA_LOGW("[%ld] (ss) relay 1078 parse error.", thiz->req.flowid);
 		}
 	}
 
@@ -468,7 +472,7 @@ static int socket_relay_init(vmp_node_t* p)
 
 	ret = vmp_relay_socket_create(server, VPK_APPTYPE_SOCKET_RELAY, &thiz->sock);
 	if (ret < 0) {
-		VMP_LOGE("relay socket create failed.");
+		VMP_LOGE("[%ld] (ss) relay socket create failed.", thiz->req.flowid);
 		return -1;
 	}
 

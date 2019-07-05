@@ -24,6 +24,8 @@ typedef struct _PrivInfo
 	unsigned long		flowid;
 	int					id;
 
+	unsigned long		clientid;
+
 	vmp_maps_t*			map;
 } PrivInfo;
 
@@ -67,10 +69,9 @@ static int websock_handle_callback(void* p, int msg, void* arg)
 		return -1;
 	}
 
-	//PrivInfo* thiz = (PrivInfo*)ss->core;
-	//ss->client_cnt--;
-	//TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
-	TIMA_LOGD("ws server[%d]", ws->id);
+	PrivInfo* thiz = (PrivInfo*)ws->core;
+	ws->client_cnt--;
+	TIMA_LOGD("[%ld] ws relay server[%d] count: %d", thiz->clientid, ws->id, ws->client_cnt);
 
 	return 0;
 }
@@ -81,15 +82,22 @@ static int websock_on_connect(void *ctx, void *rep)
 	ServerWebsockRep *rsp = rep;
 	void *client = rsp->client;
 	vmp_wserver_t *wserver = rsp->ws;
-	wserver->map = thiz->map;
+
+	wserver->core	= thiz;
+	wserver->map	= thiz->map;
+
+	thiz->clientid++;
+	wserver->client_cnt++;
 
 	context* global = context_get();
 	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, global->vector_node);
 
 	int fd = tima_websock_fd_get(client);
-	TIMA_LOGI("websock server handle fd: %d", fd);
+	TIMA_LOGI("[%ld] ws relay server[%d] handle fd: %d, count: %d", 
+		thiz->clientid, wserver->id, fd, wserver->client_cnt);
 
 	WebsockIOAReq req = {0};
+	req.flowid		= thiz->clientid;
 	req.client		= client;
 	req.ws			= wserver;
 	p->parent		= thiz;
@@ -136,7 +144,7 @@ static int handle_message_callback(void* p, int msg, void* arg)
 
 	PrivInfo* thiz = (PrivInfo*)ss->core;
 	ss->client_cnt--;
-	TIMA_LOGD("[%ld] server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
+	TIMA_LOGD("[%ld] ss relay server[%d] count: %d", thiz->flowid, ss->id, ss->client_cnt);
 
 	return 0;
 }
@@ -156,8 +164,8 @@ static int handle_relay_connection(vmp_server_t *ss, vmp_socket_t *sock)
 	vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(&sock->peer_addr), ip, sizeof(ip));
 	printf("ip: %s:%u\n", ip, vpk_sockaddr_get_port(&sock->peer_addr));
 
-	//ss->client_cnt++;	// need lock and -- at release
-	TIMA_LOGI("[%ld] relay server[%d] handle fd: %d, count: %d  (%s : %u)", 
+	ss->client_cnt++;	// need lock and -- at release
+	TIMA_LOGI("[%ld] ss relay server[%d] handle fd: %d, count: %d  (%s : %u)", 
 		thiz->flowid, ss->id, sock->fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&sock->peer_addr));
 	//inet_ntoa(*(struct in_addr*)vpk_sockaddr_get_addr(&sock->peer_addr)));
 

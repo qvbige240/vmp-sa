@@ -45,8 +45,10 @@ typedef struct vmp_wserver_s
 
 	unsigned char			id;
 
+	void					*core;
 	struct event_base		*event_base;
 
+	unsigned int			client_cnt;		//need lock
 	//pthread_t				pth_id;
 } vmp_wserver_t;
 
