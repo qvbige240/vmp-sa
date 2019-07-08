@@ -53,6 +53,7 @@
 
 
 #define bs_server_object()		\
+	char				cmsg[VPK_CMSG_MAX_SIZE+1];		\
 	vmp_maps_t			*map;		\
 	vmp_ports_t			*porter;		/* allocate ports for relay sock */		\
 	vpk_sockaddr		local_addr

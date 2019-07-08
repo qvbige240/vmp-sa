@@ -25,6 +25,8 @@ typedef struct _PrivInfo
 	unsigned long long	sim;
 	int					state;
 
+	char				recv_buffer[VMP_UDP_PACKAGE_BUFFER_SIZE];
+
 	int					id;
 } PrivInfo;
 
@@ -136,7 +138,7 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 
 		thiz->sock->dst_port = sock->src_port;
 		thiz->state = SOCK_MATCH_STATE_SUCCESS;
-		TIMA_LOGI("[%ld] websock match success [%d <-> %d].", thiz->req.flowid, thiz->sock->src_port, sock->src_port);
+		TIMA_LOGI("[%ld] ws match success [%d <-> %d].", thiz->req.flowid, thiz->sock->src_port, sock->src_port);
 	}
 	return 0;
 }
@@ -236,9 +238,6 @@ static int ioa_on_close(void *client)
 	return 0;
 }
 
-static char cmsg[2048] = {0};
-static char recv_buffer[2048] = {0};
-
 static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 {
 	int ret = 0, len = 0;
@@ -257,6 +256,7 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 	vmp_node_t* p = arg;
 	PrivInfo* thiz = p->private;
 	VmpSocketIOA *s = thiz->sock;
+	vmp_wserver_t *ws = thiz->req.ws;
 
 	if(!s) {
 		return;
@@ -265,14 +265,14 @@ static void relay_input_handler(evutil_socket_t fd, short what, void* arg)
 try_start:
 	try_again = 0;
 
-	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, recv_buffer, 1024, &ttl, &tos, cmsg, 0, NULL);
+	len = vpk_udp_recvfrom(fd, &raddr, &s->local_addr, thiz->recv_buffer, 2048, &ttl, &tos, ws->cmsg, 0, NULL);
 	if (len > 0) {
 		try_again = 1;
-		//VMP_LOGD("recvfrom socket[len=%d]: %s", len, recv_buffer);
+		//VMP_LOGD("recvfrom socket[len=%d]: %s", len, thiz->recv_buffer);
 
 		unsigned char *stream = NULL;
 		stream_header_t head = {0};
-		ret = packet_jt1078_parse((unsigned char*)recv_buffer, len, &head, &stream);
+		ret = packet_jt1078_parse((unsigned char*)thiz->recv_buffer, len, &head, &stream);
 		if (ret > 0 && ret < JT1078_STREAM_PACKAGE_SIZE) {
 			if (head.channel == 0xff) {
 				if (head.mtype == 0xff) {
@@ -284,9 +284,9 @@ try_start:
 				}
 			}
 
-			tima_websock_send_binary(thiz->req.client, recv_buffer, ret);
+			tima_websock_send_binary(thiz->req.client, thiz->recv_buffer, ret);
 		} else {
-			TIMA_LOGW("[%ld] (ws) relay 1078 parse error.", thiz->req.flowid);
+			TIMA_LOGE("[%ld] (ws) relay 1078 parse error.", thiz->req.flowid);
 		}
 
 	}

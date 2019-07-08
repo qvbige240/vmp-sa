@@ -27,6 +27,7 @@ TIMA_BEGIN_DELS
 
 #define VPK_MAX_ADDR_STRING				(65)
 #define DEFAULT_CLIENT_SOCK_BUF_SIZE	(65536)
+#define VPK_CMSG_MAX_SIZE				(65536)
 
 typedef union {
 	struct sockaddr ss;

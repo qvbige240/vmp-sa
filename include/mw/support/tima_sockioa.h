@@ -21,6 +21,7 @@ extern "C"
 {
 #endif
 
+#define	VMP_UDP_PACKAGE_BUFFER_SIZE		(1024<<2)
 
 typedef struct _VmpSocketIOA
 {
@@ -39,7 +40,7 @@ typedef struct _VmpSocketIOA
 } VmpSocketIOA;
 
 VmpSocketIOA* vmp_unbound_relay_socket_create(void *e, int family, vpk_prototype_t type, sock_application_t atype);
-int vmp_relay_socket_create(void *e, sock_application_t atype, VmpSocketIOA **s);
+int vmp_relay_socket_create(void *server, sock_application_t atype, VmpSocketIOA **s);
 void vmp_socket_release(VmpSocketIOA *s);
 
 

@@ -431,7 +431,7 @@ static int is_connreset(void) {
 }
 
 
-#define CMSG_MAX_SIZE (65536)
+#define CMSG_MAX_SIZE		VPK_CMSG_MAX_SIZE
 #define MAX_ERRORS_IN_UDP_BATCH (1024)
 
 #define SOCK_TRIAL_EFFORTS_TO_SEND (2)
@@ -449,7 +449,7 @@ static int socket_readerr(int fd, vpk_sockaddr *orig_addr)
 
 	struct msghdr msg;
 	struct iovec iov;
-	char buffer[CMSG_MAX_SIZE];
+	char buffer[CMSG_MAX_SIZE];		//... 4*1024
 
 	char *cmsg = (char*)ecmsg;
 
