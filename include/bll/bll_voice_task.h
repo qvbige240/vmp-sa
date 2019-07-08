@@ -11,8 +11,6 @@
 #include "bll_typedef.h"
 #include "tima_server.h"
 
-#pragma pack(1)
-
 TIMA_BEGIN_DELS
 
 #define BLL_VOICE_TASK_CLASS		FOURCCLE('B','L','V','T')
@@ -30,8 +28,6 @@ typedef struct _VoiceTaskRep
 
 void bll_voice_init(void);
 void bll_voice_done(void);
-
-#pragma pack()
 
 TIMA_END_DELS
 

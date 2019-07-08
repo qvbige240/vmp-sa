@@ -13,12 +13,9 @@
 #include "tima_typedef.h"
 #include "tima_server.h"
 
-#pragma pack(1)
-
 TIMA_BEGIN_DELS
 
 #define SERVER_LISTENER_CLASS	FOURCCLE('S','V','R','L')
-
 
 typedef enum VmpStreamType {
 	VMP_STREAM_UNKNOWN = 0,
@@ -100,8 +97,6 @@ typedef struct _ServerListenerRep
 
 void server_listener_init(void);
 void server_listener_done(void);
-
-#pragma pack()
 
 TIMA_END_DELS
 
