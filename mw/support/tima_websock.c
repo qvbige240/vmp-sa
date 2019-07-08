@@ -31,6 +31,14 @@ void* tima_websock_priv_get(void *client)
 	return c->priv;
 }
 
+void* tima_websock_addr_get(void *client)
+{
+	libwebsock_client_state *c = client;
+	return_val_if_fail(c, NULL);
+
+	return c->sa;
+}
+
 int tima_websock_callback_set(void *client, TimaWebsockFunc *cb)
 {
 	libwebsock_client_state *c = client;

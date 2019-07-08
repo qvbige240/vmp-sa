@@ -93,8 +93,14 @@ static int websock_on_connect(void *ctx, void *rep)
 	vmp_node_t* p = node_create(BLL_WEBSOCK_IOA_CLASS, global->vector_node);
 
 	int fd = tima_websock_fd_get(client);
-	TIMA_LOGI("[%ld] ws relay server[%d] handle fd: %d, count: %d", 
-		thiz->clientid, wserver->id, fd, wserver->client_cnt);
+	vmp_addr *peer_addr = tima_websock_addr_get(client);
+
+	char ip[INET_ADDRSTRLEN] = {0};
+	vpk_inet_ntop(AF_INET, vpk_sockaddr_get_addr(peer_addr), ip, sizeof(ip));
+	printf("ip: %s:%u\n", ip, vpk_sockaddr_get_port(peer_addr));
+
+	TIMA_LOGI("[%ld] ws relay server[%d] handle fd: %d, count: %d  (%s : %u)", 
+		thiz->clientid, wserver->id, fd, wserver->client_cnt, ip, vpk_sockaddr_get_port(peer_addr));
 
 	WebsockIOAReq req = {0};
 	req.flowid		= thiz->clientid;
@@ -105,9 +111,6 @@ static int websock_on_connect(void *ctx, void *rep)
 	p->pfn_set(p, 0, &req, sizeof(WebsockIOAReq));
 	p->pfn_start(p);
 
-
-	//TIMA_LOGI("[%ld] server[%d] handle fd: %d, count: %d  (%s : %u)", 
-		//thiz->flowid, ss->id, sock->fd, ss->client_cnt, ip, vpk_sockaddr_get_port(&sock->peer_addr));
 	return 0;
 }
 

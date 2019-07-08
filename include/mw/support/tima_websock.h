@@ -51,6 +51,8 @@ int tima_websock_fd_get(void *client);
 
 void* tima_websock_priv_get(void *client);
 
+void* tima_websock_addr_get(void *client);
+
 int tima_websock_callback_set(void *client, TimaWebsockFunc *cb);
 
 int tima_websock_priv_set(void *client, void *priv);
