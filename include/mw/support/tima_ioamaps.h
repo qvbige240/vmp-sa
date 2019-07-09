@@ -24,12 +24,19 @@ typedef enum SockMapsType
 	MAPS_SOCK_WEBSKT	= 0x02,
 } SockMapsType;
 
-typedef struct RelaySocketIO
+typedef struct VoiceSockData
+{
+	void			*sock;
+	void			*job;
+} VoiceSockData;
+
+typedef struct SockHashValue
 {
 	unsigned char	flag;		/** bit0: sock stream, bit1: websock **/
 	unsigned char	sim[6];
-	void			*sock[2];
-} RelaySocketIO;
+	//void			*sock[2];
+	VoiceSockData	data[2];
+} SockHashValue;
 
 static INLINE vmp_maps_t* tima_ioamaps_create(int bucket)
 {
@@ -40,10 +47,12 @@ static INLINE void tima_ioamaps_destroy(vmp_maps_t *vm)
 	vmp_maps_destroy(vm);
 }
 
-RelaySocketIO* tima_ioamaps_put(vmp_maps_t *vm, const char *key, void *s, SockMapsType type);
-RelaySocketIO* tima_ioamaps_get(vmp_maps_t *vm, const char *key);
-void* tima_ioamaps_get_type(vmp_maps_t *vm, const char *key, SockMapsType type);
-void* tima_ioamaps_exist(RelaySocketIO *value, SockMapsType type);
+SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *data, SockMapsType type);
+SockHashValue* tima_ioamaps_get(vmp_maps_t *vm, const char *key);
+
+VoiceSockData tima_ioamaps_get_data(vmp_maps_t *vm, const char *key, SockMapsType type);
+//void* tima_ioamaps_get_type(vmp_maps_t *vm, const char *key, SockMapsType type);
+void* tima_ioamaps_exist(SockHashValue *value, SockMapsType type);
 
 int tima_ioamaps_clear(vmp_maps_t *vm, const char *key, SockMapsType type);
 int tima_ioamaps_delete(vmp_maps_t *vm, const char *key);

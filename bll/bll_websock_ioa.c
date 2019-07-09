@@ -110,7 +110,9 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 	sprintf(tmp, "%012lld", head->simno);
 
 	if (thiz->state == SOCK_MATCH_STATE_GET) {
-		sock = tima_ioamaps_get_type(ws->map, tmp, MAPS_SOCK_STREAM);
+		VoiceSockData data = tima_ioamaps_get_data(ws->map, tmp, MAPS_SOCK_STREAM);
+		//sock = tima_ioamaps_get_type(ws->map, tmp, MAPS_SOCK_STREAM);
+		sock = data.sock;
 	}
 
 	if (thiz->sim == (unsigned long long)-1) {
@@ -118,7 +120,10 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 		TIMA_LOGI("[%ld] ws %p fd=%d sim no. [%lld]: %d", 
 			thiz->req.flowid, vmp_thread_get_id(), tima_websock_fd_get(thiz->client), thiz->sim, head->channel);
 
-		RelaySocketIO* relay_sock = tima_ioamaps_put(ws->map, tmp, thiz->sock, MAPS_SOCK_WEBSKT);
+		VoiceSockData data;
+		data.sock	= thiz->sock;
+		//data.job	= &thiz->job;
+		SockHashValue* relay_sock = tima_ioamaps_put(ws->map, tmp, &data, MAPS_SOCK_WEBSKT);
 		if (!relay_sock) {
 			TIMA_LOGE("[%ld] websock map put failed.", thiz->req.flowid);
 			return -1;
