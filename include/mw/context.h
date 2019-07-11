@@ -38,6 +38,8 @@ typedef struct context
 
 	void*		packager;
 	void*		porter;
+
+	void*		workqueue;
 } context;
 
 void context_init(void *conf);

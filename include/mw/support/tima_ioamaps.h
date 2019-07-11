@@ -47,7 +47,9 @@ static INLINE void tima_ioamaps_destroy(vmp_maps_t *vm)
 	vmp_maps_destroy(vm);
 }
 
-SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *data, SockMapsType type);
+typedef int (*former_sock_proc)(VoiceSockData *data);
+
+SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *data, SockMapsType type, former_sock_proc proc);
 SockHashValue* tima_ioamaps_get(vmp_maps_t *vm, const char *key);
 
 VoiceSockData tima_ioamaps_get_data(vmp_maps_t *vm, const char *key, SockMapsType type);

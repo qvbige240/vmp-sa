@@ -44,6 +44,8 @@ void context_init(void *conf)
 
 	p->porter = vmp_ports_create(10000, 20000);
 
+	p->workqueue = vpk_workqueue_create(2);
+
 	context_set(p);
 	
 	node_init((void**)&p->vector_node);

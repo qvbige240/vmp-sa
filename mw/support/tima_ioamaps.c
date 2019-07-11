@@ -8,10 +8,32 @@
 #include "tima_typedef.h"
 #include "tima_ioamaps.h"
 
-
-SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *data, SockMapsType type)
+static int ioamaps_flush(SockHashValue* value, former_sock_proc proc)
 {
-	char ret = -1;
+	if (!value) {
+		return -1;
+	}
+
+	if (value->flag & MAPS_SOCK_STREAM) {
+		if (proc) proc(&value->data[MAPS_SOCK_STREAM-MAPS_SOCK_STARTBIT]);
+
+		memset(&value->data[MAPS_SOCK_STREAM-MAPS_SOCK_STARTBIT], 0x00, sizeof(VoiceSockData));
+		value->flag &= ~MAPS_SOCK_STREAM;
+	}
+
+	if (value->flag & MAPS_SOCK_WEBSKT) {
+		if (proc) proc(&value->data[MAPS_SOCK_WEBSKT-MAPS_SOCK_STARTBIT]);
+
+		memset(&value->data[MAPS_SOCK_WEBSKT-MAPS_SOCK_STARTBIT], 0x00, sizeof(VoiceSockData));
+		value->flag &= ~MAPS_SOCK_WEBSKT;
+	}
+
+	return 0;
+}
+
+SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *data, SockMapsType type, former_sock_proc proc)
+{
+	int ret = -1, print = 0;
 	SockHashValue* value = NULL;
 	return_val_if_fail(vm && vm->kh && key, NULL);
 
@@ -20,14 +42,19 @@ SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *
 	value = vpk_hash_get(vm->kh, key);
 	if (value) {
 		if (value->flag & type) {
-			VMP_MUTEX_UNLOCK(vm->mutex_lock, 0);
-			return value;
-		} else {
+			ioamaps_flush(value, proc);
+			print = 1;
+			//VMP_MUTEX_UNLOCK(vm->mutex_lock, 0);
+			//return value;
+		} /*else {
 			//value->data[type-MAPS_SOCK_STARTBIT].sock = data->sock;
 			//value->data[type-MAPS_SOCK_STARTBIT].job  = data->job;
 			memcpy(&value->data[type-MAPS_SOCK_STARTBIT], data, sizeof(VoiceSockData));
 			value->flag |= type;
-		}
+		}*/
+		memcpy(&value->data[type-MAPS_SOCK_STARTBIT], data, sizeof(VoiceSockData));
+		value->flag |= type;
+
 	} else {
 		value = calloc(1, sizeof(SockHashValue));
 		if (!value) {
@@ -47,6 +74,9 @@ SockHashValue* tima_ioamaps_put(vmp_maps_t *vm, const char *key, VoiceSockData *
 		free(value);
 		value = NULL;
 	}
+	
+	if (print)
+		TIMA_LOGW("the key[%s] have been connected and new connection will replace it\n", key);
 
 	return value;
 }
