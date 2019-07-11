@@ -25,6 +25,9 @@ typedef struct _PrivInfo
 	unsigned long long	sim;
 	int					state;
 
+	int					cleared;
+	vpk_job_t			job;
+
 	char				recv_buffer[VMP_UDP_PACKAGE_BUFFER_SIZE];
 
 	int					id;
@@ -56,7 +59,7 @@ static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 		p->pfn_callback(thiz->req.ws, status, NULL);
 	}
 
-	{
+	if (!thiz->cleared) {
 		char key[16] = {0};
 		sprintf(key, "%012lld", thiz->sim);
 		vmp_wserver_t *wserver = thiz->req.ws;
@@ -74,6 +77,28 @@ static int websockioa_input_release(vmp_node_t* p, int status, int motivated)
 	bll_websockioa_delete(p);
 
 	return ret;
+}
+
+/* job */
+static int ws_job_func(struct vpk_job *job)
+{
+	PrivInfo* thiz = job->user_data;
+
+	thiz->cleared = 1;
+	thiz->state = SOCK_MATCH_STATE_DISCONN;
+
+	tima_websock_close(thiz->req.client);
+
+	return 0;
+}
+static int ws_job_init(vmp_node_t* p)
+{
+	PrivInfo* thiz = p->private;
+
+	thiz->job.func = ws_job_func;
+	thiz->job.user_data = thiz;
+
+	return 0;
 }
 
 static int bll_websockioa_get(vmp_node_t* p, int id, void* data, int size)
@@ -95,9 +120,18 @@ static int package_relay_proc(vmp_node_t* p, const char* buf, size_t size)
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
 	len = vpk_udp_send(thiz->sock->abs.fd, &thiz->sock->dest_addr, buf, size);
-	//TIMA_LOGD("websock relay send len = %d", len);
+	//TIMA_LOGD("ws relay send len = %d", len);
 
 	return len;
+}
+
+static int former_matched_proc(VoiceSockData *data)
+{
+	context* ctx = context_get();
+
+	vpk_workqueue_add_job(ctx->workqueue, data->job);
+	
+	return 0;
 }
 
 static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
@@ -122,8 +156,8 @@ static int websocket_match_device(vmp_node_t* p, stream_header_t *head)
 
 		VoiceSockData data;
 		data.sock	= thiz->sock;
-		//data.job	= &thiz->job;
-		SockHashValue* relay_sock = tima_ioamaps_put(ws->map, tmp, &data, MAPS_SOCK_WEBSKT);
+		data.job	= &thiz->job;
+		SockHashValue* relay_sock = tima_ioamaps_put(ws->map, tmp, &data, MAPS_SOCK_WEBSKT, former_matched_proc);
 		if (!relay_sock) {
 			TIMA_LOGE("[%ld] websock map put failed.", thiz->req.flowid);
 			return -1;
@@ -315,6 +349,7 @@ static void* bll_websockioa_start(vmp_node_t* p)
 	sock.onpong		= ioa_on_onpong;
 
 	thiz->sim = (unsigned long long)-1;
+	ws_job_init(p);
 
 	tima_websock_callback_set(thiz->req.client, &sock);
 	tima_websock_priv_set(thiz->req.client, p);

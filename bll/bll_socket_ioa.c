@@ -45,6 +45,9 @@ typedef struct _PrivInfo
 	unsigned long long	sim;
 	int					state;
 
+	int					cleared;
+	vpk_job_t			job;
+
 	VmpSocketIOA		*sock;
 
 	unsigned char		buff[1024];
@@ -83,7 +86,7 @@ static int sockioa_input_release(vmp_node_t* p, int status)
 			thiz->req.client.bev = NULL;
 		}
 		
-		{
+		if (!thiz->cleared) {
 			char key[16] = {0};
 			sprintf(key, "%012lld", thiz->sim);
 			vmp_server_t *server = thiz->req.ss;
@@ -117,7 +120,7 @@ static int sockioa_input_release(vmp_node_t* p, int status)
 //	return 0;
 //}
 //
-static int client_connection_close(vmp_socket_t *sock, int immediately)
+static int client_connection_close(vmp_socket_t *sock)
 {
 	vmp_node_t* p = (vmp_node_t*)sock->priv;
 	PrivInfo* thiz = (PrivInfo*)p->private;
@@ -146,7 +149,7 @@ static int bll_sockioa_stream_close(vmp_node_t* p)
 {
 	PrivInfo* thiz = (PrivInfo*)p->private;
 
-	client_connection_close(&thiz->req.client, 0);
+	client_connection_close(&thiz->req.client);
 
 	return 0;
 }
@@ -228,6 +231,38 @@ static int vpk_file_save(const char* filename, void* data, size_t size)
 }
 #endif
 
+/* job */
+static int ss_job_func(struct vpk_job *job)
+{
+	PrivInfo* thiz = job->user_data;
+
+	thiz->cleared = 1;
+	thiz->state = SOCK_MATCH_STATE_DISCONN;
+
+	client_connection_close(&thiz->req.client);
+
+	return 0;
+}
+static int ss_job_init(vmp_node_t* p)
+{
+	PrivInfo* thiz = p->private;
+
+	thiz->job.func = ss_job_func;
+	thiz->job.user_data = thiz;
+
+	return 0;
+}
+
+/* if have a connection with one account(sim), new connection instead of old */
+static int former_matched_proc(VoiceSockData *data)
+{
+	context* ctx = context_get();
+
+	vpk_workqueue_add_job(ctx->workqueue, data->job);
+
+	return 0;
+}
+
 static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 {
 	VmpSocketIOA *wsock = NULL;
@@ -250,8 +285,8 @@ static int socket_match_client(vmp_node_t* p, stream_header_t *head)
 
 		VoiceSockData data;
 		data.sock	= thiz->sock;
-		//data.job	= &thiz->job;
-		SockHashValue* relay_sock = tima_ioamaps_put(server->map, tmp, &data, MAPS_SOCK_STREAM);
+		data.job	= &thiz->job;
+		SockHashValue* relay_sock = tima_ioamaps_put(server->map, tmp, &data, MAPS_SOCK_STREAM, former_matched_proc);
 		if (!relay_sock) {
 			TIMA_LOGE("[%ld] sock map put failed.", thiz->req.flowid);
 			return -1;
@@ -452,7 +487,8 @@ try_start:
 			if (head.channel == 0xff) {
 				if (head.mtype == 0xff) {
 					VMP_LOGW("[%ld] END recvfrom websock[len=%d]", thiz->req.flowid, len);
-					bll_sockioa_stream_close(p);
+					//bll_sockioa_stream_close(p);
+					client_connection_close(&thiz->req.client);
 					return ;
 				}
 			}
@@ -495,6 +531,8 @@ void* bll_sockioa_start(vmp_node_t* p)
 	int ret = 0;
 	PrivInfo* thiz = p->private;
 	thiz->req.client.priv = p;
+
+	ss_job_init(p);
 
 	ret = socket_relay_init(p);
 	if (ret < 0) {
