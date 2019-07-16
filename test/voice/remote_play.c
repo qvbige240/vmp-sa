@@ -55,7 +55,7 @@ static int vpk_file_open(void* p, const char* filename)
 	//PrivInfo* priv = thiz->priv;
 
 	//size_t size = 1024;
-	size_t size = 320;
+	size_t size = 1600;
 
 	int result;
 	priv->fp = fopen(filename, "r");
@@ -105,16 +105,24 @@ restart:
 
 	return -1;
 }
-
+// ./remote_play.demo 127.0.0.1 pcm_8000_1.pcm
 int main(int argc, char* argv[])
 {
-    struct sockaddr_in my_addr;
     int client;
-//    char *sbuff = "hello wow!";
-    char sbuff[255];
-    char encode_buff[1024];
-    char recv_data[255];
     int ret = 0;
+    char encode_buff[1024];
+    struct sockaddr_in my_addr;
+
+    char *str_ip = NULL;
+    if (argc > 2) {
+        str_ip = argv[1];
+        //vpk_file_open(NULL, "./pcm_8000_1.pcm");
+        vpk_file_open(NULL, argv[2]);
+    } else {
+        printf("args need server ip and pcm file  \n");
+        fprintf(stderr, "Unable to server with ip null.\n");
+        exit(1);
+    }
 
     client = socket(AF_INET, SOCK_STREAM, 0);
     if (client == -1)
@@ -125,8 +133,9 @@ int main(int argc, char* argv[])
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(PORT);
-    my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    //my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     //my_addr.sin_addr.s_addr = inet_addr("172.17.13.222");
+	my_addr.sin_addr.s_addr = inet_addr(str_ip);
 
     if (connect(client, (struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) 
     {
@@ -136,14 +145,6 @@ int main(int argc, char* argv[])
     }
 
 #if 1
-
-    //vpk_file_open(NULL, "./pcm_8000_1.pcm");
-    if (argc > 1)
-        vpk_file_open(NULL, argv[1]);
-    else {
-        printf("args need pcm file");
-        exit(1);
-    }
 
     printf("start send pcm data...\n");
     
@@ -161,12 +162,13 @@ int main(int argc, char* argv[])
         pcm16_to_alaw(priv->buf_size, priv->buf, g711_data);
         ret = jt1078_package(encode_buff, g711_data, priv->buf_size/2);
         send(client, encode_buff, ret, 0);
-        usleep(5000);
+        usleep(50000);
     }
     
 
 #else
-
+    char sbuff[255];
+    char recv_data[255];
     printf("me: ");
     while (fgets(sbuff, sizeof(sbuff), stdin) != NULL)
     {

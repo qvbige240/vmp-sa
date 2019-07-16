@@ -72,7 +72,7 @@ static int vpk_file_open(void* p, const char* filename)
 	//PrivInfo* priv = thiz->priv;
 
 	//size_t size = 1024;
-	size_t size = 800;
+	size_t size = 1600;
 
 	int result;
 	priv->fp = fopen(filename, "r");
@@ -124,14 +124,14 @@ restart:
 }
 
 #if 0
-snd_pcm_t *record_handle;	//PCMÉè±¸¾ä±úpcm.h
+snd_pcm_t *record_handle;	//PCMè®¾å¤‡å¥æŸ„pcm.h
 snd_pcm_uframes_t frames;
 
 static void alsa_release(int exitcode)
 {
 	usleep(200000);
 	printf("recv: SIGINT\n");
-	// ¹Ø±ÕPCMÉè±¸¾ä±ú
+	// å…³é—­PCMè®¾å¤‡å¥æŸ„
 	snd_pcm_drain(record_handle);
 	snd_pcm_close(record_handle);
 }
@@ -142,37 +142,37 @@ static int record_audio_init(unsigned int s_rate, unsigned int s_channel)
 	unsigned int rate = s_rate, channel = s_channel;
 
 	snd_pcm_uframes_t periodsize;
-	snd_pcm_hw_params_t *hw_params;	//Ó²¼şĞÅÏ¢ºÍPCMÁ÷ÅäÖÃ
+	snd_pcm_hw_params_t *hw_params;	//ç¡¬ä»¶ä¿¡æ¯å’ŒPCMæµé…ç½®
 
-	//1. ´ò¿ªPCM£¬×îºóÒ»¸ö²ÎÊıÎª0ÒâÎ¶×Å±ê×¼ÅäÖÃ
+	//1. æ‰“å¼€PCMï¼Œæœ€åä¸€ä¸ªå‚æ•°ä¸º0æ„å‘³ç€æ ‡å‡†é…ç½®
 	ret = snd_pcm_open(&record_handle, "default", SND_PCM_STREAM_CAPTURE, 0);
 	if (ret < 0) {
 		perror("snd_pcm_open");
 		exit(1);
 	}
 
-	//2. ·ÖÅäsnd_pcm_hw_params_t½á¹¹Ìå
+	//2. åˆ†é…snd_pcm_hw_params_tç»“æ„ä½“
 	ret = snd_pcm_hw_params_malloc(&hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_malloc");
 		exit(1);
 	}
 
-	//3. ³õÊ¼»¯hw_params
+	//3. åˆå§‹åŒ–hw_params
 	ret = snd_pcm_hw_params_any(record_handle, hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_any");
 		exit(1);
 	}
 
-	//4. ³õÊ¼»¯·ÃÎÊÈ¨ÏŞ
+	//4. åˆå§‹åŒ–è®¿é—®æƒé™
 	ret = snd_pcm_hw_params_set_access(record_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_set_access");
 		exit(1);
 	}
 
-	//5. ³õÊ¼»¯²ÉÑù¸ñÊ½SND_PCM_FORMAT_U8, 8, 16Î» 
+	//5. åˆå§‹åŒ–é‡‡æ ·æ ¼å¼SND_PCM_FORMAT_U8, 8, 16ä½ 
 	ret = snd_pcm_hw_params_set_format(record_handle, hw_params, SND_PCM_FORMAT_S16_LE);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_set_format");
@@ -186,7 +186,7 @@ static int record_audio_init(unsigned int s_rate, unsigned int s_channel)
 		exit(1);
 	}
 
-	//7. ÉèÖÃÍ¨µÀÊıÁ¿
+	//7. è®¾ç½®é€šé“æ•°é‡
 	//channel = 1;
 	ret = snd_pcm_hw_params_set_channels(record_handle, hw_params, channel);
 	if (ret < 0) {
@@ -217,7 +217,7 @@ static int record_audio_init(unsigned int s_rate, unsigned int s_channel)
 	}
 	printf("set periodsize: %d\n ", periodsize);
 
-	//8. ÉèÖÃhw_params
+	//8. è®¾ç½®hw_params
 	ret = snd_pcm_hw_params(record_handle, hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params");
@@ -259,14 +259,14 @@ static int record_audio_init(unsigned int s_rate, unsigned int s_channel)
 }
 
 snd_pcm_uframes_t frames_play;
-snd_pcm_t *playback_handle;//PCMÉè±¸¾ä±úpcm.h
+snd_pcm_t *playback_handle;//PCMè®¾å¤‡å¥æŸ„pcm.h
 
 static void alsa_play_release(int exitcode)
 {
 
 	usleep(200000);
 	printf("play: SIGINT\n");
-	// ¹Ø±ÕPCMÉè±¸¾ä±ú
+	// å…³é—­PCMè®¾å¤‡å¥æŸ„
 	snd_pcm_drain(playback_handle);
 	snd_pcm_close(playback_handle);
 
@@ -318,8 +318,8 @@ static void alsa_pcm_setting_8000_1()
 	//char *buffer;
 	int size;
 	snd_pcm_uframes_t periodsize_play;
-	//snd_pcm_t *playback_handle;//PCMÉè±¸¾ä±úpcm.h
-	snd_pcm_hw_params_t *hw_params;//Ó²¼şĞÅÏ¢ºÍPCMÁ÷ÅäÖÃ
+	//snd_pcm_t *playback_handle;//PCMè®¾å¤‡å¥æŸ„pcm.h
+	snd_pcm_hw_params_t *hw_params;//ç¡¬ä»¶ä¿¡æ¯å’ŒPCMæµé…ç½®
 	//if (argc != 2) {
 	//	printf("error: alsa_play_test [music name]\n");
 	//	exit(1);
@@ -331,7 +331,7 @@ static void alsa_pcm_setting_8000_1()
 	//	return 0;
 	//fseek(fp, 100, SEEK_SET);
 
-	//1. ´ò¿ªPCM£¬×îºóÒ»¸ö²ÎÊıÎª0ÒâÎ¶×Å±ê×¼ÅäÖÃ
+	//1. æ‰“å¼€PCMï¼Œæœ€åä¸€ä¸ªå‚æ•°ä¸º0æ„å‘³ç€æ ‡å‡†é…ç½®
 	//ret = snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0);
 	ret = snd_pcm_open(&playback_handle, "plughw:1,0", SND_PCM_STREAM_PLAYBACK, 0);
 	if (ret < 0) {
@@ -339,32 +339,32 @@ static void alsa_pcm_setting_8000_1()
 		exit(1);
 	}
 
-	//2. ·ÖÅäsnd_pcm_hw_params_t½á¹¹Ìå
+	//2. åˆ†é…snd_pcm_hw_params_tç»“æ„ä½“
 	ret = snd_pcm_hw_params_malloc(&hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_malloc");
 		exit(1);
 	}
-	//3. ³õÊ¼»¯hw_params
+	//3. åˆå§‹åŒ–hw_params
 	ret = snd_pcm_hw_params_any(playback_handle, hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_any");
 		exit(1);
 	}
-	//4. ³õÊ¼»¯·ÃÎÊÈ¨ÏŞ
+	//4. åˆå§‹åŒ–è®¿é—®æƒé™
 	ret = snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_set_access");
 		exit(1);
 	}
-	//5. ³õÊ¼»¯²ÉÑù¸ñÊ½SND_PCM_FORMAT_U8,8Î»
+	//5. åˆå§‹åŒ–é‡‡æ ·æ ¼å¼SND_PCM_FORMAT_U8,8ä½
 	ret = snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_S16_LE);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_set_format");
 		exit(1);
 	}
-	//6. ÉèÖÃ²ÉÑùÂÊ£¬Èç¹ûÓ²¼ş²»Ö§³ÖÎÒÃÇÉèÖÃµÄ²ÉÑùÂÊ£¬½«Ê¹ÓÃ×î½Ó½üµÄ
-	//val = 44100,ÓĞĞ©Â¼Òô²ÉÑùÆµÂÊ¹Ì¶¨Îª8KHz
+	//6. è®¾ç½®é‡‡æ ·ç‡ï¼Œå¦‚æœç¡¬ä»¶ä¸æ”¯æŒæˆ‘ä»¬è®¾ç½®çš„é‡‡æ ·ç‡ï¼Œå°†ä½¿ç”¨æœ€æ¥è¿‘çš„
+	//val = 44100,æœ‰äº›å½•éŸ³é‡‡æ ·é¢‘ç‡å›ºå®šä¸º8KHz
 
 
 	//val = 8000;
@@ -374,7 +374,7 @@ static void alsa_pcm_setting_8000_1()
 		perror("snd_pcm_hw_params_set_rate_near");
 		exit(1);
 	}
-	//7. ÉèÖÃÍ¨µÀÊıÁ¿
+	//7. è®¾ç½®é€šé“æ•°é‡
 	ret = snd_pcm_hw_params_set_channels(playback_handle, hw_params, channel);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params_set_channels");
@@ -404,7 +404,7 @@ static void alsa_pcm_setting_8000_1()
 	}
 	printf("set periodsize_play: %d\n ", periodsize_play);
 
-	//8. ÉèÖÃhw_params
+	//8. è®¾ç½®hw_params
 	ret = snd_pcm_hw_params(playback_handle, hw_params);
 	if (ret < 0) {
 		perror("snd_pcm_hw_params");
@@ -662,7 +662,7 @@ play_back:
 		{
 			/* EPIPE means underrun */
 			fprintf(stderr, "underrun occurred\n");
-			//Íê³ÉÓ²¼ş²ÎÊıÉèÖÃ£¬Ê¹Éè±¸×¼±¸ºÃ
+			//å®Œæˆç¡¬ä»¶å‚æ•°è®¾ç½®ï¼Œä½¿è®¾å¤‡å‡†å¤‡å¥½
 			snd_pcm_prepare(playback_handle);
 			continue;
 		} 
