@@ -72,7 +72,7 @@ static void* rtmp_data_pack(void *p, const char* data, int length)
 #endif
 	packet->m_body = body;
 
-	*(body++) = (data[4] & 0x1f) == 0x05 ? 0x17 : 0x27;
+	*(body++) = (data[0] & 0x1f) == 0x05 ? 0x17 : 0x27;
 	*(body++) = 0x01;
 	*(body++) = 0x00;
 	*(body++) = 0x00;
