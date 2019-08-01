@@ -82,7 +82,7 @@ static int ws_onclose(libwebsock_client_state *state)
 static vmp_wserver_t** ws_server_general(libwebsock_context *ws, int num)
 {
 	int i = 0;
-	relay_server_t **server = libwebsock_server_general(ws, num);
+	ws_server_t **server = libwebsock_server_general(ws, num);
 	vmp_wserver_t **wserver = calloc(1, sizeof(vmp_wserver_t*) * num);
 
 	context* ctx = context_get();
