@@ -76,6 +76,24 @@ void *vpk_bsearch(const void *key, const void *base, size_t nmemb, size_t size, 
 	return NULL;
 }
 
+VPKAPI size_t vpk_numproc(void)
+{
+#if defined(_SC_NPROCESSORS_ONLN)
+	return (size_t)sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(CTL_HW) && defined(HW_AVAILCPU)
+	int name[] = {CTL_HW, HW_AVAILCPU};
+	int ncpu;
+	size_t ncpu_sz = sizeof(ncpu);
+	if (sysctl(name, sizeof(name) / sizeof(name[0]), &ncpu, &ncpu_sz, NULL, 0) != 0 || sizeof(ncpu) != ncpu_sz) {
+		fprintf(stderr, "[ERROR] failed to obtain number of CPU cores, assuming as one\n");
+		ncpu = 1;
+	}
+	return ncpu;
+#else
+	return 1;
+#endif
+}
+
 VPKAPI int vpk_system_ex(const char *cmd, unsigned int timout)
 {
 	return system_exec(cmd, timout);

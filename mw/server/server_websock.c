@@ -100,7 +100,6 @@ static vmp_wserver_t** ws_server_general(libwebsock_context *ws, int num)
 
 static void* server_websock_thread(void* arg)
 {
-	//vmp_server_t *server = NULL;
 	libwebsock_context *websock = NULL;
 	vmp_node_t *p = (vmp_node_t*)arg;
 	PrivInfo* thiz = p->private;
@@ -112,7 +111,9 @@ static void* server_websock_thread(void* arg)
 		char port[8] = {0};
 		websock->user_data = p;
 		sprintf(port, "%d", thiz->req.port);
-		thiz->wserver = ws_server_general(websock, 8);
+		int num = vpk_numproc();
+		VMP_LOGI("websock server threads %d", num);
+		thiz->wserver = ws_server_general(websock, num);
 #if 1
 		libwebsock_bind(websock, "0.0.0.0", port);
 #else
