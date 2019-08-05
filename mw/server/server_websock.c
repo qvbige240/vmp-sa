@@ -5,6 +5,8 @@
  *
  */
 
+#include <sys/resource.h>
+
 #include "server_websock.h"
 
 #include "context.h"
@@ -105,6 +107,15 @@ static void* server_websock_thread(void* arg)
 	PrivInfo* thiz = p->private;
 
 	VMP_LOGI("server_websock_thread begin\n");
+
+	{
+		struct rlimit rlim;
+		if (getrlimit(RLIMIT_NOFILE, &rlim)) {
+			VMP_LOGE("getrlimit: %s\n", strerror(errno));
+			return NULL;
+		}
+		VMP_LOGI("max rlim: %d", rlim.rlim_cur);
+	}
 
 	websock = libwebsock_init();
 	if (websock) {
