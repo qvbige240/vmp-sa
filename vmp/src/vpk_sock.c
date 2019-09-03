@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 
 #include "vpk_sock.h"
+#include "vpk_logging.h"
 
 
 int vpk_socket_closeonexec(int fd)

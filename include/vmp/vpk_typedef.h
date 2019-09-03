@@ -13,14 +13,17 @@
 #include <string.h>
 
 #ifdef __cplusplus
-#define TIMA_BEGIN_DELS extern "C" {
-#define TIMA_END_DELS }
+#define VPK_BEGIN_DELS extern "C" {
+#define VPK_END_DELS }
 #else
-#define TIMA_BEGIN_DELS
-#define TIMA_END_DELS
+#define VPK_BEGIN_DELS
+#define VPK_END_DELS
 #endif
 
-#define MAX_PATH_SIZE				260
+#define TIMA_BEGIN_DELS             VPK_BEGIN_DELS
+#define TIMA_END_DELS               VPK_END_DELS
+
+#define MAX_PATH_SIZE				256
 #define MAX_ACTION_RECEIVE_SIZE		256
 
 #define ZERO_LEN_ARRAY	1
@@ -101,9 +104,5 @@ typedef enum _ret
 #define vpk_bcopy(src,dst,sz)	bcopy((src),(dst),(sz))
 
 #define VPKAPI			extern	
-
-
-#define LOG_D   printf
-
 
 #endif //VPK_TYPEDEF_H

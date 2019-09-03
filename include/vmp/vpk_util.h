@@ -11,7 +11,6 @@
 
 TIMA_BEGIN_DELS
 
-
 /* VPK_SWAP_VALUE - this swaps x for y */
 #define VPK_SWAP_VALUE(x, y)	do { (x) ^= (y); (y) ^= (x); (x) ^= (y); } while(0)
 
