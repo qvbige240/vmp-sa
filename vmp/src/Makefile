@@ -37,6 +37,7 @@ SOURCES += 	vpk_util.c \
 			vmp_thread.c \
 			vmp_ports.c \
 			vmp_maps.c \
+			vmp_shared.c \
 
 OBJS_NAME = $(basename $(SOURCES))
 

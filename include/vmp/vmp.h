@@ -14,6 +14,7 @@
 #include "vmp_thread.h"
 #include "vmp_ports.h"
 #include "vmp_maps.h"
+#include "vmp_shared.h"
 
 #ifdef __cplusplus
 extern "C" {
