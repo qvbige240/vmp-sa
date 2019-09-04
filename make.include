@@ -105,6 +105,7 @@ LIB_HTTP        = $(LIB_DIR)/libhttp.a
 LIB_BLL         = $(LIB_DIR)/libbll.a
 LIB_MW          = $(LIB_DIR)/libmw.a
 LIB_SERVER      = $(LIB_DIR)/libserver.a
+LIB_IPCS        = $(LIB_DIR)/libipcs.a
 
 
 STATIC_LIBS     += $(LIB_ZLOG)
@@ -123,5 +124,6 @@ STATIC_LIBS     += $(LIB_HTTP)
 STATIC_LIBS     += $(LIB_BLL)
 STATIC_LIBS     += $(LIB_MW)
 STATIC_LIBS     += $(LIB_SERVER)
+STATIC_LIBS     += $(LIB_IPCS)
 
 DEP_LIBS        += $(LIB_ZLOG)
