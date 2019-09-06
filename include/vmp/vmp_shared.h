@@ -9,6 +9,7 @@
 #define VMP_SHARED_H
 
 #include "vmp_typedef.h"
+#include "vpk/vpk_ipc.h"
 
 #ifdef __cplusplus
 extern "C" {

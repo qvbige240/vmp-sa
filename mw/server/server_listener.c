@@ -38,9 +38,11 @@ typedef struct _PrivInfo
 
 	int						id;
 
-	struct listener_server *listener;
+    struct event            *watching;
 
-	vmp_server_t			*main_server;
+	struct listener_server  *listener;
+
+	vmp_server_t		    *main_server;
 
 	vmp_server_t			**stream_server;
 } PrivInfo;
@@ -117,7 +119,33 @@ static INLINE void stream_server_setup(vmp_node_t* p, vmp_server_t *server, void
 		setup_server(p, server, event_base_new());
 }
 
+/** listener **/
+static void watch_process(evutil_socket_t fd, short event, void *arg)
+{
+    vmp_node_t *p = arg;
+    PrivInfo *thiz = p->private;
 
+    if (thiz->req.pfn_proc)
+    {
+        thiz->req.pfn_proc(thiz->req.ctx, 0, NULL);
+    }
+}
+
+static void watch_listener_server(vmp_server_t *server)
+{
+    vmp_node_t *p = server->priv;
+    PrivInfo *thiz = p->private;
+
+    int flags = EV_PERSIST;
+
+    //event_assign(&thiz->watching, server->event_base, -1, flags, watch_process, p);
+    thiz->watching = event_new(server->event_base, -1, flags, watch_process, p);
+
+    struct timeval tv;
+    evutil_timerclear(&tv);
+    tv.tv_sec = 5;
+    event_add(thiz->watching, &tv);
+}
 
 vmp_launcher_t *vmp_stream_service_create(void *mem, struct event_base *base)
 {
@@ -322,6 +350,9 @@ static void* server_listener_thread(void* arg)
 		setup_server(p, server, NULL);
 	stream_server_general(p, MAX_STREAM_SERVER_NUM);
 	setup_tcp_listener_server(p, server);
+
+    if (thiz->req.pfn_proc)
+        watch_listener_server(server);
 
 	//barrier_wait();
 	run_listener_server(thiz->listener);

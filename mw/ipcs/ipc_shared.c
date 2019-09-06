@@ -127,5 +127,7 @@ int ipc_stream_conn(vmp_shmdev_t *shm, int op)
     ret = g_data->vmon.number;
     shm_unlock(idev->semid);
 
+    printf("steam connection count %d\n", ret);
+
     return ret;
 }

@@ -80,14 +80,14 @@ struct vmp_connection_s {
 	vmp_socket_t		sock;
 };
 
-
-
 typedef struct _ServerListenerReq
 {
-	void*					base;
-	unsigned short			port;
-	void*					ctx;
-	bufferevent_data_cb		read_cb;
+    void                    *base;
+    unsigned short          port;
+    void                    *ctx;
+    bufferevent_data_cb     read_cb;
+
+    vmp_callback_func       pfn_proc;
 } ServerListenerReq;
 
 typedef struct _ServerListenerRep
