@@ -30,6 +30,10 @@ static void help(char *progname)
 	fprintf(stderr, "------------------------------------------------------------------\n");
 }
 
+static void interrupt_handler(int exitcode)
+{
+    exit(1);
+}
 int main(int argc, char* argv[])
 {
 #if 0
@@ -47,7 +51,10 @@ int main(int argc, char* argv[])
 	//sigaction(SIGSEGV, &action, NULL);
 	//sigaction(SIGFPE,  &action, NULL);
 #endif
-	fprintf(stdout, "\n ****************************** ******************************\n");
+
+    //signal(SIGINT, interrupt_handler);
+
+    fprintf(stdout, "\n ****************************** ******************************\n");
 	fprintf(stdout, " *    tima vmp stream server starting...                     *\n");
 	fprintf(stdout, " *    version %s                                           *", "v1.0");
 	fprintf(stdout, "\n ****************************** ******************************\n\n\n");

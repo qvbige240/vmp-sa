@@ -19,6 +19,8 @@ test/tvmpss_client
 premake
 vmp-server-*
 vmp-sa-*
+libwsclient
+libwebsock
 
 .*
 *.o
