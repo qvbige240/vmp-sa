@@ -58,13 +58,33 @@ static void demo_request_cb(struct evhttp_request *req, void *arg)
 	default: cmdtype = "unknown"; break;
 	}
 
-    printf("Received a %s request for %s\nHeaders:\n", cmdtype, evhttp_request_get_uri(req));
+    const char *uri = evhttp_request_get_uri(req);
+    printf("Received a %s request for %s\nHeaders:\n", cmdtype, uri);
 
     headers = evhttp_request_get_input_headers(req);
     for (header = headers->tqh_first; header; header = header->next.tqe_next)
     {
         printf("  %s: %s\n", header->key, header->value);
     }
+
+    struct evhttp_uri *decoded = NULL;
+    char *query = NULL;
+    char *value = NULL;
+    struct evkeyvalq params = {0};
+
+    decoded = evhttp_uri_parse(uri);
+    query = evhttp_uri_get_query(decoded);
+    printf("query: %s\n", query);
+    evhttp_parse_query_str(query, &params);
+    value = (char*)evhttp_find_header(&params, "id");
+    printf("value: %s\n", value);
+
+    headers = &params;
+    for (header = headers->tqh_first; header; header = header->next.tqe_next)
+    {
+        printf("  %s: %s\n", header->key, header->value);
+    }
+
 
     buf = evhttp_request_get_input_buffer(req);
     puts("Input data: <<<");
@@ -79,9 +99,190 @@ static void demo_request_cb(struct evhttp_request *req, void *arg)
     puts("demo_request_cb >>>");
 
     printf("========== replay 200\n");
+    struct evbuffer *reply_buffer = evbuffer_new();
+    evbuffer_add_printf(reply_buffer, "hello http");
+    evhttp_send_reply(req, 200, "OK", reply_buffer);
+    evbuffer_free(reply_buffer);
 
-    evhttp_send_reply(req, 200, "OK", NULL);
+    //evhttp_send_reply(req, 200, "OK", NULL);
 }
+
+#if 0
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+static const struct table_entry {
+	const char *extension;
+	const char *content_type;
+} content_type_table[] = {
+	{ "txt", "text/plain" },
+	{ "c", "text/plain" },
+	{ "h", "text/plain" },
+	{ "html", "text/html" },
+	{ "htm", "text/htm" },
+	{ "css", "text/css" },
+	{ "gif", "image/gif" },
+	{ "jpg", "image/jpeg" },
+	{ "jpeg", "image/jpeg" },
+	{ "png", "image/png" },
+	{ "pdf", "application/pdf" },
+	{ "ps", "application/postscript" },
+	{ NULL, NULL },
+};
+/* Try to guess a good content-type for 'path' */
+static const char *guess_content_type(const char *path)
+{
+	const char *last_period, *extension;
+	const struct table_entry *ent;
+	last_period = strrchr(path, '.');
+	if (!last_period || strchr(last_period, '/'))
+		goto not_found; /* no exension */
+	extension = last_period + 1;
+	for (ent = &content_type_table[0]; ent->extension; ++ent) {
+		if (!evutil_ascii_strcasecmp(ent->extension, extension))
+			return ent->content_type;
+	}
+
+not_found:
+	return "application/misc";
+}
+static void send_document_cb(struct evhttp_request *req, void *arg)
+{
+	struct evbuffer *evb = NULL;
+	const char *docroot = arg;
+	const char *uri = evhttp_request_get_uri(req);
+	struct evhttp_uri *decoded = NULL;
+	const char *path;
+	char *decoded_path;
+	char *whole_path = NULL;
+	size_t len;
+	int fd = -1;
+	struct stat st;
+
+	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+		demo_request_cb(req, arg);
+		return;
+	}
+
+	printf("Got a GET request for <%s>\n",  uri);
+
+	/* Decode the URI */
+	decoded = evhttp_uri_parse(uri);
+	if (!decoded) {
+		printf("It's not a good URI. Sending BADREQUEST\n");
+		evhttp_send_error(req, HTTP_BADREQUEST, 0);
+		return;
+	}
+
+	/* Let's see what path the user asked for. */
+	path = evhttp_uri_get_path(decoded);
+	if (!path) path = "/";
+
+	/* We need to decode it, to see what path the user really wanted. */
+	decoded_path = evhttp_uridecode(path, 0, NULL);
+	if (decoded_path == NULL)
+		goto err;
+	/* Don't allow any ".."s in the path, to avoid exposing stuff outside
+	 * of the docroot.  This test is both overzealous and underzealous:
+	 * it forbids aceptable paths like "/this/one..here", but it doesn't
+	 * do anything to prevent symlink following." */
+	if (strstr(decoded_path, ".."))
+		goto err;
+
+	len = strlen(decoded_path)+strlen(docroot)+2;
+	if (!(whole_path = malloc(len))) {
+		perror("malloc");
+		goto err;
+	}
+	evutil_snprintf(whole_path, len, "%s/%s", docroot, decoded_path);
+
+	if (stat(whole_path, &st)<0) {
+		goto err;
+	}
+
+	/* This holds the content we're sending. */
+	evb = evbuffer_new();
+
+	if (S_ISDIR(st.st_mode)) {
+		/* If it's a directory, read the comments and make a little
+		 * index page */
+
+		DIR *d;
+		struct dirent *ent;
+		const char *trailing_slash = "";
+
+		if (!strlen(path) || path[strlen(path)-1] != '/')
+			trailing_slash = "/";
+
+		if (!(d = opendir(whole_path)))
+			goto err;
+
+		evbuffer_add_printf(evb,
+                    "<!DOCTYPE html>\n"
+                    "<html>\n <head>\n"
+                    "  <meta charset='utf-8'>\n"
+		    "  <title>%s</title>\n"
+		    "  <base href='%s%s'>\n"
+		    " </head>\n"
+		    " <body>\n"
+		    "  <h1>%s</h1>\n"
+		    "  <ul>\n",
+		    decoded_path, /* XXX html-escape this. */
+		    path, /* XXX html-escape this? */
+		    trailing_slash,
+		    decoded_path /* XXX html-escape this */);
+
+		while ((ent = readdir(d))) {
+			const char *name = ent->d_name;
+
+			evbuffer_add_printf(evb,
+			    "    <li><a href=\"%s\">%s</a>\n",
+			    name, name);/* XXX escape this */
+		}
+		evbuffer_add_printf(evb, "</ul></body></html>\n");
+
+		closedir(d);
+
+		evhttp_add_header(evhttp_request_get_output_headers(req),
+		    "Content-Type", "text/html");
+	} else {
+		/* Otherwise it's a file; add it to the buffer to get
+		 * sent via sendfile */
+		const char *type = guess_content_type(decoded_path);
+		if ((fd = open(whole_path, O_RDONLY)) < 0) {
+			perror("open");
+			goto err;
+		}
+
+		if (fstat(fd, &st)<0) {
+			/* Make sure the length still matches, now that we
+			 * opened the file :/ */
+			perror("fstat");
+			goto err;
+		}
+		evhttp_add_header(evhttp_request_get_output_headers(req),
+		    "Content-Type", type);
+		evbuffer_add_file(evb, fd, 0, st.st_size);
+	}
+
+	evhttp_send_reply(req, 200, "OK", evb);
+	goto done;
+err:
+	evhttp_send_error(req, 404, "Document was not found");
+	if (fd>=0)
+		close(fd);
+done:
+	if (decoded)
+		evhttp_uri_free(decoded);
+	if (decoded_path)
+		free(decoded_path);
+	if (whole_path)
+		free(whole_path);
+	if (evb)
+		evbuffer_free(evb);
+}
+#endif
 
 static void *http_server_thread(void *arg)
 {
@@ -106,6 +307,8 @@ static void *http_server_thread(void *arg)
         thiz->req.func(thiz->req.ctx, 0, NULL);
 
     evhttp_set_cb(thiz->http, "/carnet/sr/tg/demo", demo_request_cb, NULL);
+
+    //evhttp_set_gencb(thiz->http, send_document_cb, ".");
 
     thiz->handle = evhttp_bind_socket_with_handle(thiz->http, "0.0.0.0", port);
     if (!thiz->handle) {
