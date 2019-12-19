@@ -13,6 +13,7 @@ LOCAL_INCLUDE += $(LOCAL_INCLUDE_DIR:%=-I$(ROOT_DIR)/%)
 LOCAL_INCLUDE += \
 	-I./ 	\
 	-I./include/ 	\
+	-I./server/ 	\
 	-I$(ROOT_DIR)/include/	\
 	-I$(ROOT_DIR)/include/vmp/ \
 	-I$(ROOT_DIR)/include/utils/  \
@@ -36,7 +37,8 @@ SOURCES +=  \
 	tima_http_client.c \
 	tima_http.c \
 	http_token.c \
-	tima_get_property.c
+	tima_get_property.c \
+	server/http_server.c
 
 OBJS_NAME = $(basename $(SOURCES))
 
