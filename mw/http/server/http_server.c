@@ -17,7 +17,7 @@
 
 #include "vpk.h"
 #include "http_server.h"
-
+#include "http_handler.h"
 
 typedef struct _PrivInfo
 {
@@ -27,7 +27,8 @@ typedef struct _PrivInfo
     // onion                    *server;
     // onion_url                *urls;
 
-    // web_handler_t            *sc_head;
+    http_handler_t              *sc_head;
+
     struct event_base           *base;
     struct evhttp               *http;
     struct evhttp_bound_socket  *handle;
@@ -68,13 +69,15 @@ static void demo_request_cb(struct evhttp_request *req, void *arg)
     }
 
     struct evhttp_uri *decoded = NULL;
+    const char *path = NULL;
     char *query = NULL;
     char *value = NULL;
     struct evkeyvalq params = {0};
 
     decoded = evhttp_uri_parse(uri);
     query = evhttp_uri_get_query(decoded);
-    printf("query: %s\n", query);
+    path = evhttp_uri_get_path(decoded);
+    printf("path: %s, query: %s\n", path, query);
     evhttp_parse_query_str(query, &params);
     value = (char*)evhttp_find_header(&params, "id");
     printf("value: %s\n", value);
@@ -284,6 +287,8 @@ done:
 }
 #endif
 
+
+
 static void *http_server_thread(void *arg)
 {
     PrivInfo *thiz = (PrivInfo *)arg;
@@ -307,6 +312,7 @@ static void *http_server_thread(void *arg)
         thiz->req.func(thiz->req.ctx, 0, NULL);
 
     evhttp_set_cb(thiz->http, "/carnet/sr/tg/demo", demo_request_cb, NULL);
+    evhttp_set_cb(thiz->http, "/carnet/sr/tg/test", demo_request_cb, NULL);
 
     //evhttp_set_gencb(thiz->http, send_document_cb, ".");
 
@@ -399,4 +405,58 @@ void http_server_destroy(PrivInfo *thiz)
     {
         free(thiz);
     }
+}
+
+/** url handler regisger **/
+static http_handler_t *http_handler_find(void *p, char *url)
+{
+    PrivInfo *thiz = p;
+    http_handler_t *s;
+
+    if (!url)
+    {
+        VMP_LOGE("null pointer");
+        return NULL;
+    }
+
+    for (s = thiz->sc_head; s != NULL; s = s->sc_next)
+    {
+        if (strcmp(s->sc_urls, url) == 0)
+            break;
+    }
+
+    return s;
+}
+
+int http_handler_register(void *http, char *url, void *handler, void *args)
+{
+    PrivInfo *thiz = http;
+    http_handler_t *s;
+
+    if (!http || !url || !handler)
+    {
+        VMP_LOGE("null pointer");
+        return -1;
+    }
+
+    if ((s = http_handler_find(http, url)) != NULL)
+    {
+        if (s->handler == handler)
+            return 0;
+        VMP_LOGW("path: %s have been registered!", url);
+        return 1;
+    }
+    s = calloc(1, sizeof(http_handler_t));
+    if (s == NULL)
+    {
+        VMP_LOGE("memory alloc failed.");
+        return -1;
+    }
+    s->sc_urls      = url;
+    s->sc_args      = args;
+    s->handler      = handler;
+    s->sc_next      = thiz->sc_head;
+    thiz->sc_head   = s;
+
+    return 0;
 }
