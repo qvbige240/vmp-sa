@@ -38,6 +38,8 @@ SOURCES +=  \
 	tima_http.c \
 	http_token.c \
 	tima_get_property.c \
+	server/http_demo.c \
+	server/http_handler.c \
 	server/http_server.c
 
 OBJS_NAME = $(basename $(SOURCES))

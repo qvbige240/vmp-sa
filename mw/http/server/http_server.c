@@ -70,8 +70,8 @@ static void demo_request_cb(struct evhttp_request *req, void *arg)
 
     struct evhttp_uri *decoded = NULL;
     const char *path = NULL;
-    char *query = NULL;
-    char *value = NULL;
+    const char *query = NULL;
+    const char *value = NULL;
     struct evkeyvalq params = {0};
 
     decoded = evhttp_uri_parse(uri);
@@ -79,7 +79,7 @@ static void demo_request_cb(struct evhttp_request *req, void *arg)
     path = evhttp_uri_get_path(decoded);
     printf("path: %s, query: %s\n", path, query);
     evhttp_parse_query_str(query, &params);
-    value = (char*)evhttp_find_header(&params, "id");
+    value = evhttp_find_header(&params, "id");
     printf("value: %s\n", value);
 
     headers = &params;
@@ -287,7 +287,19 @@ done:
 }
 #endif
 
+static int http_uri_add(PrivInfo *thiz)
+{
+    http_handler_t *s;
+    for (s = thiz->sc_head; s != NULL; s = s->sc_next)
+    {
+        if (s->sc_urls && s->handler)
+            evhttp_set_cb(thiz->http, s->sc_urls, s->handler, s->sc_args);
 
+    //evhttp_set_cb(thiz->http, "/carnet/sr/tg/demo", demo_request_cb, NULL);
+    }
+
+    return 0;
+}
 
 static void *http_server_thread(void *arg)
 {
@@ -311,10 +323,9 @@ static void *http_server_thread(void *arg)
     if (thiz->req.func)
         thiz->req.func(thiz->req.ctx, 0, NULL);
 
-    evhttp_set_cb(thiz->http, "/carnet/sr/tg/demo", demo_request_cb, NULL);
-    evhttp_set_cb(thiz->http, "/carnet/sr/tg/test", demo_request_cb, NULL);
-
-    //evhttp_set_gencb(thiz->http, send_document_cb, ".");
+    // evhttp_set_cb(thiz->http, "/carnet/sr/tg/demo", demo_request_cb, NULL);
+    // evhttp_set_cb(thiz->http, "/carnet/sr/tg/test", demo_request_cb, NULL);
+    http_uri_add(thiz);
 
     thiz->handle = evhttp_bind_socket_with_handle(thiz->http, "0.0.0.0", port);
     if (!thiz->handle) {
