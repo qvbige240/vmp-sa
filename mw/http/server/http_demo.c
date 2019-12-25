@@ -142,6 +142,7 @@ static void handle_demo(struct evhttp_request *req, void *p)
     PrivInfo *thiz = calloc(1, sizeof(PrivInfo));
 
     thiz->path = (char *)http_request_get_fullpath(req);
+    VMP_LOGD("path: %s", thiz->path);
 
     int ret = query_param_parse(thiz, req);
     if (ret != 0) {

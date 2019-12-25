@@ -26,6 +26,7 @@ LOCAL_INCLUDE += \
 	-I$(ROOT_DIR)/include/utils/ \
 	-I$(ROOT_DIR)/include/http/ \
 	-I$(ROOT_DIR)/include/cache/ \
+	-I$(ROOT_DIR)/mw/http/server \
 
 CFLAGS += $(LOCAL_INCLUDE) 
 

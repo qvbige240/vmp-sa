@@ -160,6 +160,54 @@ static void task_hbase_start(PrivInfo *thiz)
     p->pfn_start(p);
 }
 
+#include "http_server.h"
+#include "http_register.h"
+
+void *http_server = NULL;
+
+/** http server **/
+static int api_service_handle(void *p, void *request, void *response)
+{
+    //PrivInfo *thiz = p;
+    ApiDemoReq *req = request;
+    ApiDemoRsp *rsp = response;
+    VMP_LOGD("req id = %d\n", req->id);
+
+    rsp->id     = req->id;
+    rsp->count  = 11;
+    strncpy(rsp->name, "hello", sizeof(rsp->name));
+
+    return 0;
+}
+static void task_http_demo_register(PrivInfo *thiz)
+{
+    service_handler_t *service = calloc(1, sizeof(service_handler_t));
+    service->ctx            = thiz;
+    service->pfn_callback   = api_service_handle;
+
+    http_demo_register(http_server, service);
+}
+static int api_register_func(void *p, int msg, void *arg)
+{
+    task_http_demo_register(p);
+
+    return 0;
+}
+
+static void task_http_server(PrivInfo *thiz)
+{
+    VMP_LOGD("http server start...");
+    HttpServerReq req = {0};
+    req.port = 9090;
+    req.func = api_register_func;
+    req.ctx  = thiz;
+    http_server = http_server_create(thiz, &req);
+    if (http_server)
+    {
+        http_server_start(http_server);
+    }
+}
+
 #include "http_token.h"
 static int DoTimaTokenGetTest(unsigned long long seriesno)
 {
@@ -215,8 +263,10 @@ static void *bll_core_thread(void *arg)
     ipc_share_init(&thiz->ipcs);
 
     task_hbase_start(thiz);
-    task_server_listener(thiz);
-    task_voi_server_client(thiz);
+    // task_server_listener(thiz);
+    // task_voi_server_client(thiz);
+
+    task_http_server(thiz);
 
     while (thiz->cond)
     {
@@ -226,7 +276,7 @@ static void *bll_core_thread(void *arg)
         //	bll_core_onmsg(thiz, msg);
         //	free(msg);
         //}
-        while (1)
+        while (0)
         {
             sleep(100);
         }
