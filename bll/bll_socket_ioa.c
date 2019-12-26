@@ -420,7 +420,7 @@ static int client_connection_register(vmp_launcher_t *e, vmp_socket_t *sock)
 {
 	sock->bev = bufferevent_socket_new(sock->event_base, sock->fd, VMP_BUFFEREVENTS_OPTIONS);
 	bufferevent_setcb(sock->bev, stream_input_handler, NULL, stream_socket_eventcb, sock);
-	//bufferevent_setwatermark(sock->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
+	bufferevent_setwatermark(sock->bev, EV_READ, 0, VOI_BUFFEREVENT_HIGH_WATERMARK);
 	//bufferevent_settimeout(sock->bev, 60, 0);
 	bufferevent_enable(sock->bev, EV_READ|EV_WRITE); /* Start reading. */
 	return 0;
