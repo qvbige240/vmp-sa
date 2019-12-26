@@ -354,10 +354,10 @@ static int media_stream_proc(vmp_node_t* p, struct bufferevent *bev/*, vmp_socke
 
 #if 1
 				//socket_input_proc(p, (const char*)stream, head.bodylen);
-				socket_input_proc(p, (const char*)thiz->buff, head.bodylen+30);
+				socket_input_proc(p, (const char*)thiz->buff, head.bodylen+head.headlen);
 #else	// write back to device
-				int ret = bufferevent_write(bev, thiz->buff, head.bodylen+30);
-				VMP_LOGD("bufferevent_write len=%d", head.bodylen+30);
+				int ret = bufferevent_write(bev, thiz->buff, head.bodylen+head.headlen);
+				VMP_LOGD("bufferevent_write len=%d", head.bodylen+head.headlen);
 #endif
 
 			} else if ((head.mtype & 0xf0) == 0x40) {	// transparent

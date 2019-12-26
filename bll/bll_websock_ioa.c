@@ -209,11 +209,11 @@ static int websocket_input_proc(vmp_node_t* p, const char* buf, size_t size, voi
 	}
 
 	if (thiz->state != SOCK_MATCH_STATE_SUCCESS) {
-		printf("[len=%ld]#sim=%lld, channelid=%d, type[15]=%02x, [28:29]=%02x %02x, body len=%d, parsed=%d, state=%d\n",
-			length, head.simno, head.channel, data[15], data[28], data[29], head.bodylen, ret, thiz->state);
+		printf("[len=%ld]#sim=%lld, channelid=%d, type[15]=%02x, len[24:25]=%02x %02x, body len=%d, parsed=%d, state=%d\n",
+			length, head.simno, head.channel, data[15], data[24], data[25], head.bodylen, ret, thiz->state);
 		websocket_match_device(p, &head);
 	} else {
-		package_relay_proc(p, data, head.bodylen+30);
+		package_relay_proc(p, data, head.bodylen+head.headlen);
 	}
 
 parse_end:
