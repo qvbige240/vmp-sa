@@ -69,18 +69,22 @@ int packet_jt1078_parse(unsigned char *packet, int length, stream_header_t *head
 	head->channel	= packet[14];
 	head->mtype		= packet[15];
 
-	//int is_audio = ((packet[15]& 0xf0) == 0x30);
-	//if (is_audio)
-	//	head->bodylen = packet[28] * 2;
-	//else
+	int is_audio = ((packet[15]& 0xf0) == 0x30);
+	if (is_audio) {
+        //head->bodylen = packet[28] * 2;
+        head->bodylen = (packet[24] << 8) | packet[25];
+        head->headlen = 26;
+    } else {
 		head->bodylen = (packet[28] << 8) | packet[29];
+        head->headlen = 30;
+    }
 
-	*body = packet + 30;
+	*body = packet + head->headlen;
 
-	if (head->bodylen > length - 30)	/* less than one packet */
+	if (head->bodylen > length - head->headlen)	/* less than one packet */
 		return 0;
 
-	return head->bodylen + 30;	
+	return head->bodylen + head->headlen;	
 }
 
 /**

@@ -15,6 +15,8 @@ TIMA_BEGIN_DELS
 
 typedef struct _stream_header
 {
+    unsigned short      headlen;        /* head len 30 bytes or 26 bytes*/
+
 	unsigned char		magic[4];		/* 0x30 0x31 0x63 0x64, 4 byte */
 	unsigned char		rtp;			/* 1 byte */
 	unsigned char		pt;				/* 1 byte */
